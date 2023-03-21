@@ -27,6 +27,11 @@
 #define FAT_NAME_LEN 32
 #define FAT_FILE_SIZE 64
 
+// file permissions
+#define FAT_EXECUTE 1
+#define FAT_WRITE 2
+#define FAT_READ 4
+
 typedef struct filesystem {
     uint32_t fat_size;  // size, in bytes, of the FAT
     uint16_t block_size;  // size, in bytes, of each block

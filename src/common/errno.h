@@ -1,7 +1,7 @@
 #pragma once
 
 // errno global
-int ERRNO;
+extern int ERRNO;
 
 // helpers to set errno and return special codes (-1, NULL, etc)
 #define raise(code) do {ERRNO = code; return -1;} while(0)

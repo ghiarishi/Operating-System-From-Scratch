@@ -174,7 +174,7 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
     f->name[31] = 0;
     f->blockno = block;
     f->type = 1;  // regular file
-    f->perm = 6;  // read/write
+    f->perm = FAT_READ | FAT_WRITE;  // read/write
     time(&f->mtime);
     f->offset = 0;
     f->mode = mode;
@@ -224,4 +224,9 @@ ssize_t fs_read_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, uint32_t le
         if (bytes_read == -1) raise(PEHOSTIO);
         return bytes_read;
     }
+}
+
+// todo
+ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, void *str, uint32_t len) {
+    return 0;
 }
