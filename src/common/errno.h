@@ -1,11 +1,11 @@
 #pragma once
 
 // errno global
-int PERRNO = 0;
+int ERRNO;
 
 // helpers to set errno and return special codes (-1, NULL, etc)
-#define raise(code) do {PERRNO = code; return -1;} while(0)
-#define raise_n(code) do {PERRNO = code; return NULL;} while(0)
+#define raise(code) do {ERRNO = code; return -1;} while(0)
+#define raise_n(code) do {ERRNO = code; return NULL;} while(0)
 
 // ==== error codes ====
 // prefixed with PE to differentiate from E in <errno.h>
