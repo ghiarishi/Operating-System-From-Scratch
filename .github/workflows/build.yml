@@ -1,0 +1,22 @@
+# This simple workflow just alerts us when the build obviously breaks.
+
+name: Build
+
+on: [ push, pull_request ]
+
+jobs:
+  build-pennfat:
+    runs-on: ubuntu-latest
+    container: cis548/docker-env:cis3800
+    steps:
+      - uses: actions/checkout@v3
+      - run: make clean
+      - run: make pennfat
+
+  build-pennos:
+    runs-on: ubuntu-latest
+    container: cis548/docker-env:cis3800
+    steps:
+      - uses: actions/checkout@v3
+      - run: make clean
+      - run: make pennos
