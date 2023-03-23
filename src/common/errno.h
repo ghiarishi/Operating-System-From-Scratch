@@ -14,7 +14,7 @@ extern int ERRNO;
 
 // ==== filesystem ====
 // error space: 1000-2000
-#define PEHOSTFS 1001  // could not operate on file in host filesystem
+#define PEHOSTFS 1001  // could not open/close file in host filesystem
 #define PEHOSTIO 1002  // could not perform I/O in host filesystem
 #define PEBADFS 1003   // invalid PennFAT file, or was otherwise unable to mount
 #define PENOFILE 1004  // specified file does not exist
