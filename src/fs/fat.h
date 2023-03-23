@@ -34,19 +34,11 @@
 #define FAT_WRITE 2
 #define FAT_READ 4
 
-typedef struct filesystem {
-    uint32_t fat_size;  // size, in bytes, of the FAT
-    uint16_t block_size;  // size, in bytes, of each block
-    uint16_t *fat;  // ptr to uint16_t[fat_size / 2]; entry 0 used for table/block size
-    // data: uint8_t[block_size * (n_entries - 1)]; 0-indexed
-    int host_fd;
-} fs_t;
-
 typedef struct filestat {
     // filesystem internals
     char name[FAT_NAME_LEN];
     uint32_t size;
-    uint16_t blockno;
+    uint16_t blockno;  // will be unique for each file
     uint8_t type;
     uint8_t perm;
     time_t mtime;
@@ -58,6 +50,19 @@ typedef struct file {
     uint32_t offset;  // current seek position
     int mode;
 } file_t;
+
+typedef struct filesystem {
+    uint32_t fat_size;  // size, in bytes, of the FAT
+    uint16_t block_size;  // size, in bytes, of each block
+    uint16_t *fat;  // ptr to uint16_t[fat_size / 2]; entry 0 used for table/block size
+    // data: uint8_t[block_size * (n_entries - 1)]; 0-indexed
+    int host_fd;
+    // keep track of the open files for exclusive locking/deleting purposes
+    // use array doubling, starting size 4 files
+    unsigned int opened_size;
+    unsigned int opened_count;
+    file_t **open_files;
+} fs_t;
 
 // underlying iface for spec iface
 fs_t *fs_mount(const char *path);

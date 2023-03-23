@@ -10,13 +10,10 @@
  * @throw PEBADFS The filesystem file is invalid
  */
 fs_t *fs_mount(const char *path) {
-    fs_t *fs = malloc(sizeof(fs_t));
-
     // open host system file
     int fd = open(path, O_RDWR);
     if (fd == -1)
         raise_n(PEHOSTFS);
-    fs->host_fd = fd;
 
     // read the first 2 bytes for blockno info and block size
     uint8_t info[2];
@@ -28,35 +25,45 @@ fs_t *fs_mount(const char *path) {
         raise_n(PEBADFS);
 
     // ensure that the filesystem is valid and load in filesystem info
+    uint16_t block_size;
     if (info[0] == 0 || info[0] > 32)
         raise_n(PEBADFS);
     switch (info[1]) {
         case 0:
-            fs->block_size = 256;
+            block_size = 256;
             break;
         case 1:
-            fs->block_size = 512;
+            block_size = 512;
             break;
         case 2:
-            fs->block_size = 1024;
+            block_size = 1024;
             break;
         case 3:
-            fs->block_size = 2048;
+            block_size = 2048;
             break;
         case 4:
-            fs->block_size = 4096;
+            block_size = 4096;
             break;
         default:
             raise_n(PEBADFS);
     }
-    fs->fat_size = fs->block_size * info[0];
 
     // load in the FAT into memory
     if (lseek(fd, 0, SEEK_SET) == -1)
         raise_n(PEHOSTIO);
+
+    // create the fs struct and map the FAT
+    fs_t *fs = malloc(sizeof(fs_t));
+    fs->host_fd = fd;
+    fs->fat_size = block_size * info[0];
     fs->fat = mmap(NULL, fs->fat_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (fs->fat == MAP_FAILED)
+    if (fs->fat == MAP_FAILED) {
+        free(fs);
         raise_n(PEHOSTIO);
+    }
+    fs->opened_size = 4;
+    fs->opened_count = 0;
+    fs->open_files = malloc(sizeof(file_t *) * fs->opened_size);
 
     // and we're good
     return fs;
@@ -64,6 +71,7 @@ fs_t *fs_mount(const char *path) {
 
 /**
  * Unmount a filesystem and free any associated memory.
+ * Any open files in the filesystem should be closed first to avoid memory leaks.
  * @param fs the entry to free
  * @return 0 normally; -1 on error
  * @throw PEHOSTFS could not close the host file for the entry
@@ -72,6 +80,7 @@ int fs_unmount(fs_t *fs) {
     // unlink the memory and free the heap-alloced entry
     munmap(fs->fat, fs->fat_size);
     if (close(fs->host_fd) == -1) raise(PEHOSTFS);
+    free(fs->open_files);
     free(fs);
     return 0;
 }
@@ -79,7 +88,6 @@ int fs_unmount(fs_t *fs) {
 /**
  * Open a file in the filesystem. If the file is opened in F_WRITE or F_APPEND mode, the file is created if it does not
  * exist.
- * TODO: A file can be opened any number of times in F_READ mode but only once at a time in F_WRITE or F_APPEND mode. // maybe this should be at the OS level so entry doesn't have to track open files
  * If the provided file name is longer than 31 characters and a new file is created, the created file's name will be
  * truncated to 31 characters.
  * @param fs the filesystem
@@ -90,6 +98,7 @@ int fs_unmount(fs_t *fs) {
  * @throw PEHOSTIO failed to read from/write to host filesystem
  * @throw PETOOFAT the operation would make a new file but the filesystem is full
  * @throw PEINVAL the operation would make a new file but the filename is invalid
+ * @throw PEINUSE the requested file was opened in an exclusive mode and is currently in use
  */
 file_t *fs_open(fs_t *fs, const char *name, int mode) {
     uint32_t offset = fs_find(fs, name);
@@ -100,19 +109,41 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
         return fs_makefile(fs, name, mode);
     }
 
-    // todo is the file exclusively locked?
-
     // file was found
     file_t *f = malloc(sizeof(file_t));
-    // seek to right place in hostfs
+    // seek to right place in hostfs and link the dir entry to memory
     if (fs_hostseek(fs, 1, offset) == -1) return NULL;
     f->entry = mmap(NULL, sizeof(filestat_t), PROT_READ | PROT_WRITE, MAP_SHARED, fs->host_fd, 0);
     if (f->entry == MAP_FAILED) {
         free(f);
         raise_n(PEHOSTIO);
     }
+
+    // is the file exclusively locked?
+    for (int i = 0; i < fs->opened_count; ++i) {
+        file_t *opened = fs->open_files[i];
+        if (opened->entry->blockno != f->entry->blockno) continue;
+        // cannot open the file if:
+        // - already open in W/A mode
+        // - we want to open it in W/A mode
+        if (opened->mode != F_READ || mode != F_READ) {
+            munmap(f->entry, sizeof(filestat_t));
+            free(f);
+            raise_n(PEINUSE);
+        }
+    }
+
+    // otherwise, we can continue opening it
+    // set up other file struct attrs
     f->offset = mode == F_APPEND ? f->entry->size : 0;
     f->mode = mode;
+    // record that we opened the file in fs
+    if (fs->opened_count == fs->opened_size) {
+        fs->opened_size *= 2;
+        fs->open_files = realloc(fs->open_files, sizeof(file_t *) * fs->opened_size);
+    }
+    fs->open_files[fs->opened_count] = f;
+    fs->opened_count++;
 
     // if the file was found and we are in write mode, truncate it to 0 bytes
     if (mode == F_WRITE) {
@@ -136,9 +167,27 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
  * @param fs the filesystem
  * @param f the file to close
  * @return 0 on a success, -1 on error.
+ * @throw PEINVAL the file's entry is invalid
  */
 int fs_close(fs_t *fs, file_t *f) {
-    // todo if this was the last open instance of a deleted file, delete it now
+    unsigned count = 0;
+    for (int i = 0; i < fs->opened_count; ++i) {
+        // remove it from the fs' list of open files by swapping it with the last open file and decreasing size
+        if (fs->open_files[i] == f) {
+            // this will segfault if f is not actually open but just don't do that
+            file_t *temp = fs->open_files[fs->opened_count - 1];
+            fs->open_files[fs->opened_count - 1] = f;
+            fs->open_files[i] = temp;
+            fs->opened_count--;
+        }
+        // is this the last instance of this file open?
+        if (fs->open_files[i]->entry->blockno == f->entry->blockno) count++;
+    }
+    // if this was the last open instance of a deleted file (name[0] == 2), delete it now (name[0] = 1)
+    if (!count && f->entry->name[0] == 2)
+        f->entry->name[0] = 1;
+    // free memory
+    if (munmap(f->entry, sizeof(filestat_t)) == -1) raise(PEINVAL);
     free(f);
     return 0;
 }
@@ -257,10 +306,15 @@ int fs_unlink(fs_t *fs, const char *fname) {
         blockno = next_blockno;
     } while (blockno != FAT_EOF);
     // then mark the file as deleted in the root dir
-    // todo is this file still in use?
-    // todo if so, set this to 2
-    // todo otherwise, set it to 1
+    // is this file still in use?
+    // if so, set name[0] to 2; otherwise, set it to 1
     uint8_t one = 1;
+    for (int i = 0; i < fs->opened_count; ++i) {
+        if (fs->open_files[i]->entry->blockno == f.blockno) {
+            one = 2;
+            break;
+        }
+    }
     if (fs_write_blk(fs, 1, offset, &one, 1) != 1) raise(PEHOSTIO);
     return 0;
 }
