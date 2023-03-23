@@ -20,3 +20,5 @@ extern int ERRNO;
 #define PENOFILE 1004  // specified file does not exist
 #define PEINUSE 1005   // the specified file is in use in another context and an exclusive operation was called
 #define PETOOFAT 1006  // the filesystem is too fat and has no space for a new file
+#define PEFMODE 1007   // attempted operation on a file in the wrong mode
+#define PEFPERM 1008   // attempted operation on a file without read/write permissions

@@ -89,47 +89,230 @@ int fs_unmount(fs_t *fs) {
  * @throw PENOFILE the requested file was in read mode and does not exist
  * @throw PEHOSTIO failed to read from/write to host filesystem
  * @throw PETOOFAT the operation would make a new file but the filesystem is full
+ * @throw PEINVAL the operation would make a new file but the filename is invalid
  */
 file_t *fs_open(fs_t *fs, const char *name, int mode) {
-    // traverse the root directory looking for the file with given name
-    uint32_t offset = 0;
-    char tempname[FAT_NAME_LEN];
-    ssize_t r;
-    bool found = false;
-    do {
-        r = fs_read_blk(fs, 1, offset, FAT_NAME_LEN - 1, tempname);
-        tempname[r] = 0;
-        if (tempname[0] == 0) break; // end of directory
-        if (strcmp(tempname, name) == 0) {
-            found = true;
-            break;
-        };
-        offset += FAT_FILE_SIZE;
-    } while (r);
+    uint32_t offset = fs_find(fs, name);
 
     // if the file was not found, create it if in a creation mode
-    if (!found) {
+    if (offset == -1) {
         if (mode == F_READ) raise_n(PENOFILE);
         return fs_makefile(fs, name, mode);
     }
 
     // file was found
+    ssize_t r;
     file_t *f = malloc(sizeof(file_t));
-    f->offset = 0;
-    f->mode = mode;
     r = fs_read_blk(fs, 1, offset, FAT_FILE_SIZE, f);
     if (r == -1) return NULL;
     if (r != FAT_FILE_SIZE) raise_n(PEHOSTIO);
+    f->offset = mode == F_APPEND ? f->size : 0;
+    f->mode = mode;
+
+    // if the file was found and we are in write mode, truncate it to 0 bytes
+    if (mode == F_WRITE) {
+        // traverse FAT and set all blocks past first to free
+        if (fs->fat[f->blockno] != FAT_EOF) {
+            uint16_t blockno = fs->fat[f->blockno];
+            fs->fat[f->blockno] = FAT_EOF;
+            do {
+                uint16_t next_block = fs->fat[blockno];
+                fs->fat[blockno] = FAT_FREE;
+                blockno = next_block;
+            } while (fs->fat[blockno] != FAT_EOF);
+        }
+        f->size = 0;
+    }
     return f;
 }
 
+/**
+ * Closes the specified file, freeing any associated memory.
+ * @param fs the filesystem
+ * @param f the file to close
+ * @return 0 on a success, -1 on error.
+ */
+int fs_close(fs_t *fs, file_t *f) {
+    free(f);
+    return 0;
+}
 
-int fs_close(fs_t *fs, file_t *f);
-int fs_read(fs_t *fs, file_t *f, uint32_t len, char *buf);
-int fs_write(fs_t *fs, file_t *f, const char *str, uint32_t len);
-int fs_lseek(fs_t *fs, file_t *f, int offset, int whence);
-int fs_unlink(fs_t *fs, const char *fname);
-int fs_ls(fs_t *fs, const char *fname);
+/**
+ * Read up to `n` bytes from the specified file into `buf`.
+ * @param fs the filesystem to read from
+ * @param f the file to read from
+ * @param len the maximum number of bytes to read
+ * @param buf a buffer to store the read bytes
+ * @return the number of bytes read; -1 on error
+ * @throw PEFPERM you do not have permission to read this file
+ * @throw PEHOSTIO failed to read from host filesystem
+ */
+ssize_t fs_read(fs_t *fs, file_t *f, uint32_t len, char *buf) {
+    if (!(f->perm & FAT_READ)) raise(PEFPERM);
+    ssize_t bytes_read = fs_read_blk(fs, f->blockno, f->offset, len, buf);
+    f->offset += bytes_read;
+    return bytes_read;
+}
+
+/**
+ * Write up to `n` bytes from `buf` into the specified file.
+ * @param fs the filesystem to write to
+ * @param f the file to write to
+ * @param str a buffer storing the bytes to write
+ * @param len the maximum number of bytes to write
+ * @return the number of bytes written; -1 on error
+ * @throw PEFMODE the file is not in write or append mode
+ * @throw PEFPERM you do not have permission to write to this file
+ * @throw PEHOSTIO failed to read from host filesystem
+ * @throw PETOOFAT filesystem is full
+ */
+ssize_t fs_write(fs_t *fs, file_t *f, const char *str, uint32_t len) {
+    if (!(f->mode == F_WRITE || f->mode == F_APPEND)) raise(PEFMODE);
+    if (!(f->perm & FAT_WRITE)) raise(PEFPERM);
+    // append mode always seeks to EOF before writing
+    if (f->mode == F_APPEND) fs_lseek(fs, f, 0, F_SEEK_END);
+
+    // if the offset is past EOF, fill in hole with null bytes
+    while (f->offset > f->size) {
+        uint8_t zeroes[fs->block_size];
+        bzero(zeroes, fs->block_size);
+        uint32_t to_write = f->offset - f->size < fs->block_size ? f->offset - f->size : fs->block_size;
+        ssize_t w = fs_write_blk(fs, f->blockno, f->size, zeroes, to_write);
+        if (w == -1) return -1;
+        f->size += w;
+    }
+
+    // write to file
+    ssize_t bytes_written = fs_write_blk(fs, f->blockno, f->offset, str, len);
+    f->offset += bytes_written;
+    if (f->offset > f->size) {
+        f->size = f->offset;
+    }
+    return bytes_written;
+}
+
+/**
+ * Seek the file offset to the given position, given by `offset`. If `whence` is `F_SEEK_SET` this is relative to the
+ * start of the file, for `F_SEEK_CUR` relative to the current position, and for `F_SEEK_END` relative to the end of
+ * the file.
+ * @param fs the filesystem
+ * @param f the file to seek
+ * @param offset where to seek to relative to `whence`
+ * @param whence the seek mode
+ * @return the new location in bytes from start of file; -1 on error
+ * @throw PEINVAL whence is not a valid option
+ */
+uint32_t fs_lseek(fs_t *fs, file_t *f, int offset, int whence) {
+    switch (whence) {
+        case F_SEEK_SET:
+            f->offset = offset;
+            break;
+        case F_SEEK_CUR:
+            f->offset += offset;
+            break;
+        case F_SEEK_END:
+            f->offset = f->size + offset;
+            break;
+        default:
+            raise(PEINVAL);
+    }
+    return f->offset;
+}
+
+/**
+ * Removes the file with the given name. Frees any associated memory in the FAT.
+ * @param fs the filesystem
+ * @param fname the name of the file to delete
+ * @return 0 on success; -1 on error
+ * @throw PENOFILE the specified file does not exist
+ * @throw PEHOSTIO failed to i/o with the host fs
+ */
+int fs_unlink(fs_t *fs, const char *fname) {
+    uint32_t offset = fs_find(fs, fname);
+    if (offset == -1) raise(PENOFILE);
+    // get fileinfo to free all the alloc'd memory
+    filestat_t f;
+    if (fs_read_blk(fs, 1, offset, FAT_FILE_SIZE, &f) != FAT_FILE_SIZE) raise(PEHOSTIO);
+    uint16_t blockno = f.blockno;
+    do {
+        uint16_t next_blockno = fs->fat[blockno];
+        fs->fat[blockno] = FAT_FREE;
+        blockno = next_blockno;
+    } while (blockno != FAT_EOF);
+    // then mark the file as deleted in the root dir
+    // todo is this file still in use?
+    // todo if so, set this to 2
+    // todo otherwise, set it to 1
+    uint8_t one = 1;
+    if (fs_write_blk(fs, 1, offset, &one, 1) != 1) raise(PEHOSTIO);
+    return 0;
+}
+
+/**
+ * Gets information for a file. If `fname` is NULL, gets information for all the files.
+ * It is the caller's responsibility to free each of the returned structs. Use the convenience method `fs_freels()` to
+ * do this quickly.
+ * @param fs the filesystem
+ * @param fname the name of the file to get the stat of, or NULL to list all files
+ * @return a pointer to a list of filestat struct pointers. The array will always be terminated with a NULL pointer.
+ * @throw PEHOSTIO failed to read from host filesystem
+ */
+filestat_t **fs_ls(fs_t *fs, const char *fname) {
+    if (fname == NULL) return fs_lsall(fs);
+    // return stat for one file, as array of 1 ptr
+    uint32_t offset = fs_find(fs, fname);
+    if (offset == -1) return NULL;
+    filestat_t **fstat = malloc(sizeof(filestat_t *) * 2);
+    fstat[0] = malloc(sizeof(filestat_t));
+    ssize_t r = fs_read_blk(fs, 1, offset, FAT_FILE_SIZE, fstat[0]);
+    if (r != FAT_FILE_SIZE) {
+        free(fstat[0]);
+        free(fstat);
+        ERRNO = PEHOSTIO;
+        return NULL;
+    }
+    fstat[1] = NULL;
+    return fstat;
+}
+
+/**
+ * Helper for fs_ls.
+ */
+filestat_t **fs_lsall(fs_t *fs) {
+    // traverse the root directory, use array doubling starting at n = 4
+    int size = 4, count = 0;
+    filestat_t **f = malloc(sizeof(filestat_t *) * size);
+    uint32_t offset = 0;
+    filestat_t tempf;
+    ssize_t r;
+    do {
+        r = fs_read_blk(fs, 1, offset, FAT_FILE_SIZE, &tempf);
+        if (r == -1) {
+            // error; free anything we've alloced
+            for (int i = 0; i < count; ++i) {
+                free(f[i]);
+            }
+            free(f);
+            return NULL;
+        }
+        if (tempf.name[0] == 0) return f; // end of directory
+        if (tempf.name[0] > 2) {
+            // copy to end of array
+            filestat_t *newf = malloc(sizeof(filestat_t));
+            memcpy(newf, &tempf, sizeof(filestat_t));
+            f[count] = newf;
+            count++;
+            // if the array needs more space, double it
+            if (count == size) {
+                size *= 2;
+                f = realloc(f, sizeof(filestat_t *) * size);
+            }
+        }
+        offset += FAT_FILE_SIZE;
+    } while (r);
+    f[count] = NULL;
+    return f;
+}
 
 // ==== low-level helpers ====
 /**
@@ -138,10 +321,20 @@ int fs_ls(fs_t *fs, const char *fname);
  * @param name the name of the file
  * @param mode the mode to return the newly-created file in
  * @return the new file, NULL on error
+ * @throw PEINVAL file name is invalid
  * @throw PEHOSTIO failed to read from/write to host filesystem
  * @throw PETOOFAT the filesystem is full
  */
 file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
+    // validate filename; must be at least 1 character and alnum/[._-]
+    int namelen = strlen(name); // NOLINT(cppcoreguidelines-narrowing-conversions)
+    char letter;
+    if (!namelen) raise_n(PEINVAL);
+    for (int i = 0; i < namelen; ++i) {
+        letter = name[i];
+        if (!(isalnum(letter) || letter == '-' || letter == '_' || letter == '.')) raise_n(PEINVAL);
+    }
+
     // traverse the root directory looking for deleted files or end of dir
     uint32_t offset = 0;
     char indicator;
@@ -153,25 +346,24 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
         offset += FAT_FILE_SIZE;
     }
 
-    // find the next free block
-    uint16_t block = 1;
-    bool found_free_space = false;
-    while (block < fs->fat_size / 2) {
-        if (fs->fat[block] == 0) {
-            found_free_space = true;
-            break;
-        }
-        block++;
+    // if we stopped searching because we hit the end of the directory block, write 0s to the next block
+    if (r == 0) {
+        uint8_t zeroes[fs->block_size];
+        bzero(zeroes, fs->block_size);
+        r = fs_write_blk(fs, 1, offset, zeroes, fs->block_size);
+        if (r == -1) return NULL;
+        if (r != fs->block_size) raise_n(PEHOSTIO);
     }
-    if (!found_free_space) raise_n(PETOOFAT);
+
+    // find the next free block
+    uint16_t block = fs_link_next_free(fs);
+    if (!block) raise_n(PETOOFAT);
 
     // here is where I will make my file
-    // mark that the block is used
-    fs->fat[block] = FAT_EOF;
     // create the file object
     file_t *f = malloc(sizeof(file_t));
-    strncpy(f->name, name, 31);
-    f->name[31] = 0;
+    strncpy(f->name, name, FAT_NAME_LEN - 1);
+    f->name[FAT_NAME_LEN - 1] = 0;
     f->blockno = block;
     f->type = 1;  // regular file
     f->perm = FAT_READ | FAT_WRITE;  // read/write
@@ -205,7 +397,7 @@ ssize_t fs_read_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, uint32_t le
         offset -= fs->block_size;
         blk_base_no = next_block;
     }
-    // seek to the right spot
+    // seek to the right spot on host
     if (lseek(fs->host_fd, fs->fat_size + fs->block_size * (blk_base_no - 1) + offset, SEEK_SET) == -1) raise(PEHOSTIO);
     // do we need to split the read?
     ssize_t bytes_read, r;
@@ -226,7 +418,106 @@ ssize_t fs_read_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, uint32_t le
     }
 }
 
-// todo
-ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, void *str, uint32_t len) {
+/**
+ * Similar to fs_read, except takes a block number and offset. Traverses the FAT if offset > fs.block_size.
+ * If the write would overflow past the EOF block, allocs a new block.
+ * @param fs the filesystem to read from
+ * @param blk_base_no the block number the file starts in
+ * @param offset where to start reading relative to the base block number
+ * @param len the maximum number of bytes to write
+ * @param buf a buffer to store the bytes to write
+ * @return the number of bytes written; -1 on error
+ * @throw PEINVAL the provided block number or offset is outside the filesystem
+ * @throw PEHOSTIO failed to read from host filesystem
+ * @throw PETOOFAT filesystem is full
+ */
+ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, const void *str, uint32_t len) {
+    if (blk_base_no >= fs->fat_size / 2 || blk_base_no == 0) raise(PEINVAL);
+    // seek to the right offset
+    while (offset >= fs->block_size) {
+        uint16_t next_block = fs->fat[blk_base_no];
+        if (next_block == FAT_EOF) {
+            // alloc a new block and link it
+            next_block = fs_link_next_free(fs);
+            if (!next_block) raise(PETOOFAT);
+            fs->fat[blk_base_no] = next_block;
+        }
+        offset -= fs->block_size;
+        blk_base_no = next_block;
+    }
+    // seek to the right spot on host
+    if (lseek(fs->host_fd, fs->fat_size + fs->block_size * (blk_base_no - 1) + offset, SEEK_SET) == -1) raise(PEHOSTIO);
+    // do we need to split the write?
+    ssize_t bytes_written, r;
+    if (offset + len > fs->block_size) {
+        // write as much as we can to this block, then recursive call to write to the next
+        bytes_written = write(fs->host_fd, str, fs->block_size - offset);
+        if (bytes_written == -1) raise(PEHOSTIO);
+        uint16_t next_block = fs->fat[blk_base_no];
+        if (next_block == FAT_EOF) {
+            // alloc a new block and link it
+            next_block = fs_link_next_free(fs);
+            if (!next_block) raise(PETOOFAT);
+            fs->fat[blk_base_no] = next_block;
+        }
+        r = fs_write_blk(fs, next_block, 0, str + bytes_written, len - bytes_written);
+        if (r == -1) return -1;
+        return bytes_written + r;
+    } else {
+        // read the requested length from the block
+        bytes_written = write(fs->host_fd, str, len);
+        if (bytes_written == -1) raise(PEHOSTIO);
+        return bytes_written;
+    }
+}
+
+/**
+ * Finds the next free block on the filesystem and marks it as used in the FAT.
+ * @param fs the filesystem
+ * @return The next free block number (1-indexed), or 0 if there are no free blocks.
+ */
+uint16_t fs_link_next_free(fs_t *fs) {
+    uint16_t block = 1;
+    while (block < fs->fat_size / 2) {
+        if (fs->fat[block] == 0) {
+            fs->fat[block] = FAT_EOF;
+            return block;
+        }
+        block++;
+    }
     return 0;
+}
+
+/**
+ * Find the offset of the file with the given name in the root directory.
+ * @param fs the filesystem
+ * @param fname the name of the file to search for
+ * @return the offset of the file entry from the root dir on success, -1 (0xffffffff) on error
+ * @throw PEHOSTIO failed to read from host filesystem
+ */
+uint32_t fs_find(fs_t *fs, const char *fname) {
+    // traverse the root directory looking for the file with given name
+    uint32_t offset = 0;
+    char tempname[FAT_NAME_LEN];
+    ssize_t r;
+    do {
+        r = fs_read_blk(fs, 1, offset, FAT_NAME_LEN, tempname);
+        if (r == -1) return -1;
+        if (tempname[0] == 0) return -1; // end of directory
+        if (strncmp(tempname, fname, FAT_NAME_LEN) == 0) {
+            return offset;
+        };
+        offset += FAT_FILE_SIZE;
+    } while (r);
+    return -1;
+}
+
+/**
+ * Free the filestat list returned by `fs_ls()`.
+ */
+void fs_freels(filestat_t **stat) {
+    for (int i = 0; stat[i] != NULL; ++i) {
+        free(stat[i]);
+    }
+    free(stat);
 }
