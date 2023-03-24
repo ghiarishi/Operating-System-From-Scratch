@@ -188,13 +188,7 @@ int fs_close(fs_t *fs, file_t *f) {
     // if this was the last open instance of a deleted file (name[0] == 2), delete it now (name[0] = 1, free blocks)
     if (!count && f->entry->name[0] == 2) {
         f->entry->name[0] = 1;
-        // free all the alloc'd memory
-        uint16_t blockno = f->entry->blockno;
-        do {
-            uint16_t next_blockno = fs->fat[blockno];
-            fs->fat[blockno] = FAT_FREE;
-            blockno = next_blockno;
-        } while (blockno != FAT_EOF);
+        fs_freeblk(fs, f->entry->blockno);
     }
 
     // write the entry back to the dir
@@ -325,16 +319,10 @@ int fs_unlink(fs_t *fs, const char *fname) {
             break;
         }
     }
-
-    if (one == 1) {
-        // free all the alloc'd memory
-        uint16_t blockno = f.blockno;
-        do {
-            uint16_t next_blockno = fs->fat[blockno];
-            fs->fat[blockno] = FAT_FREE;
-            blockno = next_blockno;
-        } while (blockno != FAT_EOF);
-    }
+    // if we are actually deleting the file now, set the blocks as free
+    if (one == 1)
+        fs_freeblk(fs, f.blockno);
+    // and write to the dir
     if (fs_write_blk(fs, 1, offset, &one, 1) != 1) raise(PEHOSTIO);
     return 0;
 }
@@ -671,4 +659,21 @@ off_t fs_hostseek(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
     off_t retval = lseek(fs->host_fd, fs->fat_size + fs->block_size * (blk_base_no - 1) + offset, SEEK_SET);
     if (retval == -1) raise(PEHOSTIO);
     return retval;
+}
+
+/**
+ * Marks all the blocks in the file starting at `blockno` as free in the FAT.
+ * @param fs the filesystem
+ * @param blockno the block number to start freeing at
+ * @return the number of blocks freed
+ */
+int fs_freeblk(fs_t *fs, uint16_t blockno) {
+    int freed = 0;
+    do {
+        uint16_t next_blockno = fs->fat[blockno];
+        fs->fat[blockno] = FAT_FREE;
+        freed++;
+        blockno = next_blockno;
+    } while (blockno != FAT_EOF);
+    return freed;
 }

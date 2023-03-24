@@ -240,6 +240,7 @@ void ls(char **args) {
         // blockno perm size month day time name
         fprintf(stdout, "%d\t%c%c%c\t%d\t%s\t%s\n", entry->blockno, x, r, w, entry->size, date, entry->name);
     }
+    fs_freels(entries);
 }
 
 void chmod(char **args) {
