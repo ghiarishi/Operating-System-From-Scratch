@@ -471,6 +471,7 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
     f->entry = entry;
     f->offset = 0;
     f->mode = mode;
+    f->stdiomode = FIO_NONE;
     // record that we opened the file in fs
     if (fs->opened_count == fs->opened_size) {
         fs->opened_size *= 2;
