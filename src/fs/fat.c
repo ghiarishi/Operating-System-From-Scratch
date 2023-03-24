@@ -215,8 +215,9 @@ int fs_close(fs_t *fs, file_t *f) {
 ssize_t fs_read(fs_t *fs, file_t *f, uint32_t len, char *buf) {
     if (!(f->entry->perm & FAT_READ)) raise(PEFPERM);
     // only read until EOF
+    if (f->offset > f->entry->size) return 0;
     if (f->offset + len > f->entry->size)
-        len = f->offset - f->entry->size;
+        len = f->entry->size - f->offset;
     if (!len) return 0;
     ssize_t bytes_read = fs_read_blk(fs, f->entry->blockno, f->offset, len, buf);
     f->offset += bytes_read;
@@ -374,7 +375,7 @@ filestat_t **fs_lsall(fs_t *fs) {
             free(f);
             return NULL;
         }
-        if (tempf.name[0] == 0) return f; // end of directory
+        if (tempf.name[0] == 0 || r == 0) break; // end of directory
         if (tempf.name[0] > 2) {
             // copy to end of array
             filestat_t *newf = malloc(sizeof(filestat_t));
@@ -388,7 +389,7 @@ filestat_t **fs_lsall(fs_t *fs) {
             }
         }
         offset += FAT_FILE_SIZE;
-    } while (r);
+    } while (true);
     f[count] = NULL;
     return f;
 }

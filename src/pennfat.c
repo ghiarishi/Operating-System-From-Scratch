@@ -179,15 +179,42 @@ void cat(char **args) {
         cmd_abort("Usage: cat [FILE ...] [-w OUTPUT_FILE | -a APPEND_FILE]\n");
     if (fs == NULL)
         cmd_abort("You do not have a filesystem mounted\n");
-    // todo file stuff, here's just reading files
-    // open each file, then read its contents to stdout in 4KB chunks
-    char buf[4096];
-    ssize_t bytes_read;
+    // figure out if we are outputting to a file
+    char *output_filename;
+    int output_mode = 0, n_input_files = 0;
     for (int i = 1; i < n_args; ++i) {
+        if (strcmp(args[i], "-w") == 0) {
+            if (i != n_args - 2) cmd_abort("Usage: cat [FILE ...] [-w OUTPUT_FILE | -a APPEND_FILE]\n");
+            output_mode = F_WRITE;
+            output_filename = args[i + 1];
+            break;
+        }
+        if (strcmp(args[i], "-a") == 0) {
+            if (i != n_args - 2) cmd_abort("Usage: cat [FILE ...] [-w OUTPUT_FILE | -a APPEND_FILE]\n");
+            output_mode = F_APPEND;
+            output_filename = args[i + 1];
+            break;
+        }
+        n_input_files++;
+    }
+    // if we're writing to a file, open it
+    file_t *dest;
+    if (output_mode) {
+        dest = fs_open(fs, output_filename, output_mode);
+        if (dest == NULL) {
+            p_perror("fs_open");
+            return;
+        }
+    }
+
+    // open each read file, then read its contents to stdout in 4KB chunks
+    char buf[4097];
+    ssize_t bytes_read;
+    for (int i = 1; i <= n_input_files; ++i) {
         file_t *f = fs_open(fs, args[i], F_READ);
         if (f == NULL) {
             p_perror("fs_open");
-            return;
+            goto cat_end;
         }
         // read until there is nothing more
         do {
@@ -195,25 +222,41 @@ void cat(char **args) {
             bytes_read = fs_read(fs, f, 4096, buf);
             if (bytes_read == -1) {
                 p_perror("fs_read");
-                return;
+                fs_close(fs, f);
+                goto cat_end;
             }
+            buf[bytes_read] = 0;
             // then write that chunk to the dest
-            // todo if dest is a file
-//            if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
-//                p_perror("fs_write");
-//                return;
-//            }
-            // if dest is stdout
-            if (write(STDOUT_FILENO, buf, bytes_read) == -1) {
-                perror("write");
-                return;
+            if (output_mode) {
+                if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
+                    p_perror("fs_write");
+                    fs_close(fs, f);
+                    goto cat_end;
+                }
+            } else {
+                // if dest is stdout
+                if (write(STDOUT_FILENO, buf, bytes_read) == -1) {
+                    perror("write");
+                    fs_close(fs, f);
+                    goto cat_end;
+                }
             }
         } while (bytes_read);
         fs_close(fs, f);
     }
-    // todo close dest
+    cat_end:
+    // close dest if it's a file
+    if (output_mode)
+        fs_close(fs, dest);
 }
 
+/**
+ * cp [ -h ] SOURCE DEST
+ * Copies SOURCE to DEST. With -h, SOURCE is from the host OS.
+ *
+ * cp SOURCE -h DEST
+ * Copies SOURCE from the filesystem to DEST in the host OS.
+ */
 void cp(char **args) {
 
 }
@@ -243,6 +286,10 @@ void ls(char **args) {
     fs_freels(entries);
 }
 
+/**
+ * chmod
+ * Similar to chmod(1) in the VM.
+ */
 void chmod(char **args) {
 
 }
