@@ -451,8 +451,10 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
     }
 
     // if we stopped searching because we hit the end of the directory block, write 0s to the next block
-    if (r == 0)
+    if (r == 0) {
+        if (fs_extendblk(fs, 1, offset) == -1) return NULL;
         bzero(fs_dataoffset(fs, 1, offset), fs->block_size);
+    }
 
     // find the next free block
     uint16_t block = fs_link_next_free(fs);
@@ -464,6 +466,7 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
     filestat_t *entry = fs_dataoffset(fs, 1, offset);
     strncpy(entry->name, name, FAT_NAME_LEN - 1);
     entry->name[FAT_NAME_LEN - 1] = 0;
+    entry->size = 0;
     entry->blockno = block;
     entry->type = 1;  // regular file
     entry->perm = FAT_READ | FAT_WRITE;  // read/write
@@ -540,29 +543,24 @@ ssize_t fs_read_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, uint32_t le
 ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, const void *str, uint32_t len) {
     if (blk_base_no >= fs->fat_size / 2 || blk_base_no == 0) raise(PEINVAL);
     // seek to the right spot on host
-    if (fs_hostseek(fs, blk_base_no, offset) == -1) return -1;
-    offset = offset % fs->block_size;
+    int blkno = fs_extendblk(fs, blk_base_no, offset);
+    if (blkno == -1) return -1;
+    uint16_t blk_offset = offset % fs->block_size;
     // do we need to split the write?
     ssize_t bytes_written, r;
-    if (offset + len > fs->block_size) {
+    if (blk_offset + len > fs->block_size) {
         // write as much as we can to this block, then recursive call to write to the next
-        bytes_written = write(fs->host_fd, str, fs->block_size - offset);
-        if (bytes_written == -1) raise(PEHOSTIO);
-        uint16_t next_block = fs->fat[blk_base_no];
-        if (next_block == FAT_EOF) {
-            // alloc a new block and link it
-            next_block = fs_link_next_free(fs);
-            if (!next_block) raise(PETOOFAT);
-            fs->fat[blk_base_no] = next_block;
-        }
+        bytes_written = fs->block_size - blk_offset;
+        memcpy(fs_dataoffset(fs, blkno, blk_offset), str, bytes_written);
+        int next_block = fs_extendblk(fs, blk_base_no, offset + bytes_written);
+        if (next_block == -1) return -1;
         r = fs_write_blk(fs, next_block, 0, str + bytes_written, len - bytes_written);
         if (r == -1) return -1;
         return bytes_written + r;
     } else {
         // write the requested length to the block
-        bytes_written = write(fs->host_fd, str, len);
-        if (bytes_written == -1) raise(PEHOSTIO);
-        return bytes_written;
+        memcpy(fs_dataoffset(fs, blkno, offset), str, len);
+        return len;
     }
 }
 
@@ -619,16 +617,14 @@ void fs_freels(filestat_t **stat) {
 }
 
 /**
- * Seek the fd on the host filesystem to the position specified by the block number + offset. If this operation would
- * go past the EOF of a block, allocates a new block.
+ * Extend the block starting at `blk_base_no` to be at least `offset + 1` in size.
  * @param fs the filesystem
  * @param blk_base_no the block number to start from
  * @param offset how far to seek relative to the start of the block number
- * @return the offset on the host filesystem on success, -1 on error
- * @throw PEHOSTIO could not seek on host
+ * @return the block number the offset lands in on success, -1 on error
  * @throw PETOOFAT the filesystem is full
  */
-off_t fs_hostseek(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
+int fs_extendblk(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
     // seek to the right offset
     while (offset >= fs->block_size) {
         uint16_t next_block = fs->fat[blk_base_no];
@@ -641,10 +637,7 @@ off_t fs_hostseek(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
         offset -= fs->block_size;
         blk_base_no = next_block;
     }
-    // seek to the right spot on host
-    off_t retval = lseek(fs->host_fd, fs->fat_size + fs->block_size * (blk_base_no - 1) + offset, SEEK_SET);
-    if (retval == -1) raise(PEHOSTIO);
-    return retval;
+    return blk_base_no;
 }
 
 /**

@@ -85,6 +85,6 @@ ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, const void
 uint16_t fs_link_next_free(fs_t *fs);
 uint32_t fs_find(fs_t *fs, const char *fname);
 void fs_freels(filestat_t **stat);
-off_t fs_hostseek(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
+int fs_extendblk(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
 int fs_freeblk(fs_t *fs, uint16_t blk_base_no);
 void *fs_dataoffset(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
