@@ -207,45 +207,66 @@ void cat(char **args) {
         }
     }
 
-    // todo stdin
-
-    // open each read file, then read its contents to stdout in 4KB chunks
     char buf[4097];
     ssize_t bytes_read;
-    for (int i = 1; i <= n_input_files; ++i) {
-        file_t *f = fs_open(fs, args[i], F_READ);
-        if (f == NULL) {
-            p_perror("fs_open");
-            goto cat_end;
-        }
-        // read until there is nothing more
+
+    // stdin
+    if (n_input_files == 0) {
+        if (output_mode == 0)
+            cmd_abort("Usage: cat [FILE ...] [-w OUTPUT_FILE | -a APPEND_FILE]\n");
+        // copy from stdin until EOF
         do {
             // read a chunk
-            bytes_read = fs_read(fs, f, 4096, buf);
+            bytes_read = read(STDIN_FILENO, buf, 4096);
             if (bytes_read == -1) {
-                p_perror("fs_read");
-                fs_close(fs, f);
+                perror("read");
                 goto cat_end;
             }
             buf[bytes_read] = 0;
             // then write that chunk to the dest
-            if (output_mode) {
-                if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
-                    p_perror("fs_write");
-                    fs_close(fs, f);
-                    goto cat_end;
-                }
-            } else {
-                // if dest is stdout
-                if (write(STDOUT_FILENO, buf, bytes_read) == -1) {
-                    perror("write");
-                    fs_close(fs, f);
-                    goto cat_end;
-                }
+            if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
+                p_perror("fs_write");
+                goto cat_end;
             }
         } while (bytes_read);
-        fs_close(fs, f);
+    } else {
+        // open each read file, then read its contents to stdout in 4KB chunks
+        for (int i = 1; i <= n_input_files; ++i) {
+            file_t *f = fs_open(fs, args[i], F_READ);
+            if (f == NULL) {
+                p_perror("fs_open");
+                goto cat_end;
+            }
+            // read until there is nothing more
+            do {
+                // read a chunk
+                bytes_read = fs_read(fs, f, 4096, buf);
+                if (bytes_read == -1) {
+                    p_perror("fs_read");
+                    fs_close(fs, f);
+                    goto cat_end;
+                }
+                buf[bytes_read] = 0;
+                // then write that chunk to the dest
+                if (output_mode) {
+                    if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
+                        p_perror("fs_write");
+                        fs_close(fs, f);
+                        goto cat_end;
+                    }
+                } else {
+                    // if dest is stdout
+                    if (write(STDOUT_FILENO, buf, bytes_read) == -1) {
+                        perror("write");
+                        fs_close(fs, f);
+                        goto cat_end;
+                    }
+                }
+            } while (bytes_read);
+            fs_close(fs, f);
+        }
     }
+
     cat_end:
     // close dest if it's a file
     if (output_mode)

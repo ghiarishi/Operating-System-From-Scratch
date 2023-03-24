@@ -4,7 +4,7 @@ Contributors: Andrew Zhu <!-- add yourself here -->
 
 ## Namespacing
 
-All kernel-level functions will start with the prefix `fs_`. These consist of:
+All kernel-level functions will start with the prefix `fs_`.
 
 All user-level functions will start with the prefix `f_`.
 
