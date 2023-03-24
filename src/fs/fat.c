@@ -141,6 +141,7 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
     // set up other file struct attrs
     f->offset = mode == F_APPEND ? f->entry->size : 0;
     f->mode = mode;
+    f->stdiomode = FIO_NONE;
     // record that we opened the file in fs
     if (fs->opened_count == fs->opened_size) {
         fs->opened_size *= 2;

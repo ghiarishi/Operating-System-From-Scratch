@@ -42,6 +42,9 @@ void p_perror(const char *prefix) {
         case PEFNAME:
             msg = "invalid filename";
             break;
+        case PETOOMANYF:
+            msg = "too many open files";
+            break;
             // default
         default:
             msg = "unknown error";

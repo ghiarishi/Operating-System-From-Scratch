@@ -27,5 +27,7 @@ extern int ERRNO;
 #define PEFPERM 1008   // attempted operation on a file without read/write permissions
 #define PEFNAME 1009   // the filename is invalid
 
+#define PETOOMANYF 1101 // you have too many files open already
+
 // ==== functions ====
 void p_perror(const char *prefix);

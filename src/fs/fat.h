@@ -34,6 +34,11 @@
 #define FAT_WRITE 2
 #define FAT_READ 4
 
+// file_t modes
+#define FIO_NONE 0
+#define FIO_STDOUT 1
+#define FIO_STDIN 2
+
 typedef struct filestat {
     // filesystem internals
     char name[FAT_NAME_LEN];
@@ -49,6 +54,7 @@ typedef struct file {
     filestat_t *entry;  // mmaped to file entry in directory
     uint32_t offset;  // current seek position
     int mode;
+    uint8_t stdiomode;  // 0 = nothing, 1 = stdout, 2 = stdin
 } file_t;
 
 typedef struct filesystem {
