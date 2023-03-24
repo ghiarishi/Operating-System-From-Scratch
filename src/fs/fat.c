@@ -141,7 +141,6 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
     // set up other file struct attrs
     f->offset = mode == F_APPEND ? f->entry->size : 0;
     f->mode = mode;
-    f->dirfile_offset = offset;
     // record that we opened the file in fs
     if (fs->opened_count == fs->opened_size) {
         fs->opened_size *= 2;
@@ -150,17 +149,13 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
     fs->open_files[fs->opened_count] = f;
     fs->opened_count++;
 
-    // if the file was found and we are in write mode, truncate it to 0 bytes
-    if (mode == F_WRITE) {
+    // if the file was found and we are in write mode and have write permissions, truncate it to 0 bytes
+    if (mode == F_WRITE && (f->entry->perm & FAT_WRITE)) {
         // traverse FAT and set all blocks past first to free
         if (fs->fat[f->entry->blockno] != FAT_EOF) {
             uint16_t blockno = fs->fat[f->entry->blockno];
             fs->fat[f->entry->blockno] = FAT_EOF;
-            do {
-                uint16_t next_block = fs->fat[blockno];
-                fs->fat[blockno] = FAT_FREE;
-                blockno = next_block;
-            } while (fs->fat[blockno] != FAT_EOF);
+            fs_freeblk(fs, fs->fat[blockno]);
         }
         f->entry->size = 0;
     }
@@ -475,7 +470,6 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
     f->entry = entry;
     f->offset = 0;
     f->mode = mode;
-    f->dirfile_offset = offset;
     // record that we opened the file in fs
     if (fs->opened_count == fs->opened_size) {
         fs->opened_size *= 2;

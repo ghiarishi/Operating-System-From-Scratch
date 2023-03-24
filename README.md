@@ -8,5 +8,5 @@
 - basic CI
 - all filesystem kernel-level methods
 - low-level FAT implementation
-- pennfat standalone
+- pennfat standalone (all commands)
 - main errno implementation

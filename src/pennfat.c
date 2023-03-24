@@ -121,10 +121,8 @@ void touch(char **args) {
             continue;
         }
         // write 0 bytes to end to update modified time
-        if (fs_write(fs, f, NULL, 0) == -1) {
+        if (fs_write(fs, f, NULL, 0) == -1)
             p_perror("fs_write");
-            continue;
-        }
         fs_close(fs, f);
     }
 }
@@ -410,11 +408,61 @@ void ls(char **args) {
 }
 
 /**
- * chmod
+ * chmod ([+-=][rwx]*|OCT) FILE ...
  * Similar to chmod(1) in the VM.
+ *
+ * execute = 1
+ * write = 2
+ * read = 4
  */
 void chmod(char **args) {
+    int n_args = toklen(args);
+    if (n_args < 3)
+        cmd_abort("chmod ([+=-][rwx]*|OCT) FILE ...\n");
+    if (fs == NULL)
+        cmd_abort("You do not have a filesystem mounted\n");
 
+    uint8_t bitset = 0;
+    char mode;
+    // parse arg 1: does it start with [+=-]?
+    if (args[1][0] == '+' || args[1][0] == '=' || args[1][0] == '-') {
+        mode = args[1][0];
+        for (int i = 1; i < strlen(args[1]); ++i) {
+            if (args[1][i] == 'x')
+                bitset |= FAT_EXECUTE;
+            else if (args[1][i] == 'w')
+                bitset |= FAT_WRITE;
+            else if (args[1][i] == 'r')
+                bitset |= FAT_READ;
+            else
+                cmd_abort("mode must be of the form /[+=-][rwx]+/ or in the range [0..7]\n");
+        }
+    } else {
+        // must be a single octal digit then
+        if (!isdigit(args[1][0]))
+            cmd_abort("mode must be of the form /[+=-][rwx]+/ or in the range [0..7]\n");
+        int arg = atoi(args[1]);
+        if (arg < 0 || arg > 7)
+            cmd_abort("mode must be of the form /[+=-][rwx]+/ or in the range [0..7]\n");
+        bitset = arg;
+        mode = '=';
+    }
+
+    // open each file, then set its permission based on bitset and mode
+    for (int i = 2; i < n_args; ++i) {
+        file_t *f = fs_open(fs, args[i], F_APPEND);
+        if (f == NULL) {
+            p_perror("fs_open");
+            return;
+        }
+        if (mode == '+')
+            f->entry->perm |= bitset;
+        else if (mode == '=')
+            f->entry->perm = bitset;
+        else // mode == '-'
+            f->entry->perm &= ~bitset;
+        fs_close(fs, f);
+    }
 }
 
 // ==== main "shell" impl ====
