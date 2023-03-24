@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdio.h>  // for fprintf() to stderr
+
 // errno global
 extern int ERRNO;
 
@@ -9,6 +11,7 @@ extern int ERRNO;
 
 // ==== error codes ====
 // prefixed with PE to differentiate from E in <errno.h>
+// each of these should be added to p_perror() after defining here
 // ==== generic ====
 #define PEINVAL 22  // generic invalid argument given to syscall
 
@@ -22,3 +25,7 @@ extern int ERRNO;
 #define PETOOFAT 1006  // the filesystem is too fat and has no space for a new file
 #define PEFMODE 1007   // attempted operation on a file in the wrong mode
 #define PEFPERM 1008   // attempted operation on a file without read/write permissions
+#define PEFNAME 1009   // the filename is invalid
+
+// ==== functions ====
+void p_perror(const char *prefix);

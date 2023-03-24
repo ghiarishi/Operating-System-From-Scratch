@@ -49,6 +49,7 @@ typedef struct file {
     filestat_t *entry;  // mmaped to file entry in directory
     uint32_t offset;  // current seek position
     int mode;
+    uint32_t dirfile_offset;  // offset from root of block 1 in FAT
 } file_t;
 
 typedef struct filesystem {
@@ -74,6 +75,7 @@ ssize_t fs_write(fs_t *fs, file_t *f, const char *str, uint32_t len);
 uint32_t fs_lseek(fs_t *fs, file_t *f, int offset, int whence);
 int fs_unlink(fs_t *fs, const char *fname);
 filestat_t **fs_ls(fs_t *fs, const char *fname);
+int fs_rename(fs_t *fs, const char *oldname, const char *newname);
 
 // low-level helpers
 filestat_t **fs_lsall(fs_t *fs);
@@ -83,4 +85,4 @@ ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, const void
 uint16_t fs_link_next_free(fs_t *fs);
 uint32_t fs_find(fs_t *fs, const char *fname);
 void fs_freels(filestat_t **stat);
-int fs_hostseek(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
+off_t fs_hostseek(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
