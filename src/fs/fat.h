@@ -49,7 +49,6 @@ typedef struct file {
     filestat_t *entry;  // mmaped to file entry in directory
     uint32_t offset;  // current seek position
     int mode;
-    uint32_t dirfile_offset;  // offset from root of block 1 in FAT
 } file_t;
 
 typedef struct filesystem {

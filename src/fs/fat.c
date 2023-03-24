@@ -559,7 +559,7 @@ ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, const void
         return bytes_written + r;
     } else {
         // write the requested length to the block
-        memcpy(fs_dataoffset(fs, blkno, offset), str, len);
+        memcpy(fs_dataoffset(fs, blkno, blk_offset), str, len);
         return len;
     }
 }
@@ -670,7 +670,8 @@ void *fs_dataoffset(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
     // seek to the right offset
     while (offset >= fs->block_size) {
         uint16_t next_block = fs->fat[blk_base_no];
-        if (next_block == FAT_EOF) raise_n(PEINVAL);
+        if (next_block == FAT_EOF)
+            raise_n(PEINVAL);
         offset -= fs->block_size;
         blk_base_no = next_block;
     }
