@@ -48,16 +48,28 @@ fs_t *fs_mount(const char *path) {
             raise_n(PEBADFS);
     }
 
+    // calculations
+    int fat_blocks = info[1];
+    int n_entries = block_size * fat_blocks / 2;
+    int data_size = block_size * (n_entries - 1);
+    // special case: if n_entries = 0x10000, cut off the end block (0xffff) since we can't reach it
+    if (n_entries == 0x10000) data_size -= block_size;
+
     // load in the FAT into memory
     if (lseek(fd, 0, SEEK_SET) == -1)
         raise_n(PEHOSTIO);
 
-    // create the fs struct and map the FAT
+    // create the fs struct and map the FAT, and whole data block
     fs_t *fs = malloc(sizeof(fs_t));
     fs->host_fd = fd;
-    fs->fat_size = block_size * info[1];
+    fs->fat_size = block_size * fat_blocks;
     fs->block_size = block_size;
     fs->fat = mmap(NULL, fs->fat_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (fs->fat == MAP_FAILED) {
+        free(fs);
+        raise_n(PEHOSTIO);
+    }
+    fs->data = mmap(NULL, fs->fat_size + data_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (fs->fat == MAP_FAILED) {
         free(fs);
         raise_n(PEHOSTIO);
@@ -109,12 +121,8 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
     }
 
     // file was found
-    ssize_t r;
     file_t *f = malloc(sizeof(file_t));
-    f->entry = malloc(sizeof(filestat_t));
-    r = fs_read_blk(fs, 1, offset, FAT_FILE_SIZE, f->entry);
-    if (r == -1) return NULL;
-    if (r != FAT_FILE_SIZE) raise_n(PEHOSTIO);
+    f->entry = (filestat_t *) fs_dataoffset(fs, 1, offset);
 
     // is the file exclusively locked?
     for (int i = 0; i < fs->opened_count; ++i) {
@@ -124,7 +132,6 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
         // - already open in W/A mode
         // - we want to open it in W/A mode
         if (opened->mode != F_READ || mode != F_READ) {
-            munmap(f->entry, sizeof(filestat_t));
             free(f);
             raise_n(PEINUSE);
         }
@@ -182,22 +189,13 @@ int fs_close(fs_t *fs, file_t *f) {
         if (fs->open_files[i]->entry->blockno == f->entry->blockno) count++;
     }
 
-    // update the filename (check if we were deleted at some point)
-    if (fs_read_blk(fs, 1, f->dirfile_offset, 1, f->entry->name) != 1) raise(PEHOSTIO);
-
     // if this was the last open instance of a deleted file (name[0] == 2), delete it now (name[0] = 1, free blocks)
     if (!count && f->entry->name[0] == 2) {
         f->entry->name[0] = 1;
         fs_freeblk(fs, f->entry->blockno);
     }
 
-    // write the entry back to the dir
-    ssize_t r = fs_write_blk(fs, 1, f->dirfile_offset, f->entry, FAT_FILE_SIZE);
-    if (r == -1) return -1;
-    if (r != FAT_FILE_SIZE) raise(PEHOSTIO);
-
     // free memory
-    free(f->entry);
     free(f);
     return 0;
 }
@@ -244,16 +242,11 @@ ssize_t fs_write(fs_t *fs, file_t *f, const char *str, uint32_t len) {
 
     // if the offset is past EOF, fill in hole with null bytes, one block at a time
     while (f->offset > f->entry->size) {
-        uint8_t zeroes[fs->block_size];
-        bzero(zeroes, fs->block_size);
-        uint32_t to_write;
-        if (f->offset - f->entry->size < fs->block_size)
+        uint32_t to_write = fs->block_size - (f->entry->size % fs->block_size);
+        if (f->entry->size + to_write > f->offset)
             to_write = f->offset - f->entry->size;
-        else
-            to_write = fs->block_size;
-        ssize_t w = fs_write_blk(fs, f->entry->blockno, f->entry->size, zeroes, to_write);
-        if (w == -1) return -1;
-        f->entry->size += w;
+        bzero(fs_dataoffset(fs, f->entry->blockno, f->entry->size), to_write);
+        f->entry->size += to_write;
     }
 
     // write to file
@@ -308,23 +301,21 @@ int fs_unlink(fs_t *fs, const char *fname) {
     uint32_t offset = fs_find(fs, fname);
     if (offset == -1) return -1;
     // get fileinfo
-    filestat_t f;
-    if (fs_read_blk(fs, 1, offset, FAT_FILE_SIZE, &f) != FAT_FILE_SIZE) raise(PEHOSTIO);
+    filestat_t *f = (filestat_t *) fs_dataoffset(fs, 1, offset);
     // then mark the file as deleted in the root dir
     // is this file still in use?
     // if so, set name[0] to 2; otherwise, set it to 1
-    uint8_t one = 1;
+    char one = 1;
     for (int i = 0; i < fs->opened_count; ++i) {
-        if (fs->open_files[i]->entry->blockno == f.blockno) {
+        if (fs->open_files[i]->entry->blockno == f->blockno) {
             one = 2;
             break;
         }
     }
     // if we are actually deleting the file now, set the blocks as free
     if (one == 1)
-        fs_freeblk(fs, f.blockno);
-    // and write to the dir
-    if (fs_write_blk(fs, 1, offset, &one, 1) != 1) raise(PEHOSTIO);
+        fs_freeblk(fs, f->blockno);
+    f->name[0] = one;
     return 0;
 }
 
@@ -421,7 +412,9 @@ int fs_rename(fs_t *fs, const char *oldname, const char *newname) {
         if (ERRNO != PENOFILE) return -1;
     }
     // ok, write the new name to the file
-    if (fs_write_blk(fs, 1, offset, newname, FAT_NAME_LEN) == -1) return -1;
+    filestat_t *f = (filestat_t *) fs_dataoffset(fs, 1, offset);
+    strncpy(f->name, newname, FAT_NAME_LEN);
+    time(&f->mtime);
     return 0;
 }
 
@@ -458,13 +451,8 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
     }
 
     // if we stopped searching because we hit the end of the directory block, write 0s to the next block
-    if (r == 0) {
-        uint8_t zeroes[fs->block_size];
-        bzero(zeroes, fs->block_size);
-        r = fs_write_blk(fs, 1, offset, zeroes, fs->block_size);
-        if (r == -1) return NULL;
-        if (r != fs->block_size) raise_n(PEHOSTIO);
-    }
+    if (r == 0)
+        bzero(fs_dataoffset(fs, 1, offset), fs->block_size);
 
     // find the next free block
     uint16_t block = fs_link_next_free(fs);
@@ -473,7 +461,7 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
     // here is where I will make my file
     // create the file object
     file_t *f = malloc(sizeof(file_t));
-    filestat_t *entry = malloc(sizeof(filestat_t));
+    filestat_t *entry = fs_dataoffset(fs, 1, offset);
     strncpy(entry->name, name, FAT_NAME_LEN - 1);
     entry->name[FAT_NAME_LEN - 1] = 0;
     entry->blockno = block;
@@ -485,10 +473,6 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
     f->offset = 0;
     f->mode = mode;
     f->dirfile_offset = offset;
-    // write to the directory
-    r = fs_write_blk(fs, 1, offset, f->entry, FAT_FILE_SIZE);
-    if (r == -1) return NULL;
-    if (r != FAT_FILE_SIZE) raise_n(PEHOSTIO);
     // record that we opened the file in fs
     if (fs->opened_count == fs->opened_size) {
         fs->opened_size *= 2;
@@ -557,6 +541,7 @@ ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, const void
     if (blk_base_no >= fs->fat_size / 2 || blk_base_no == 0) raise(PEINVAL);
     // seek to the right spot on host
     if (fs_hostseek(fs, blk_base_no, offset) == -1) return -1;
+    offset = offset % fs->block_size;
     // do we need to split the write?
     ssize_t bytes_written, r;
     if (offset + len > fs->block_size) {
@@ -677,4 +662,24 @@ int fs_freeblk(fs_t *fs, uint16_t blockno) {
         blockno = next_blockno;
     } while (blockno != FAT_EOF);
     return freed;
+}
+
+/**
+ * Return a pointer to the location in the data memory map corresponding to the offset relative to the given block.
+ * Traverses the FAT if necessary.
+ * @param fs the filesystem
+ * @param blk_base_no the block to start at
+ * @param offset how for to go
+ * @return a pointer to the right place
+ * @throw PEINVAL the specified offset is not within the file starting at the given block
+ */
+void *fs_dataoffset(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
+    // seek to the right offset
+    while (offset >= fs->block_size) {
+        uint16_t next_block = fs->fat[blk_base_no];
+        if (next_block == FAT_EOF) raise_n(PEINVAL);
+        offset -= fs->block_size;
+        blk_base_no = next_block;
+    }
+    return fs->data + fs->fat_size + fs->block_size * (blk_base_no - 1) + offset;
 }

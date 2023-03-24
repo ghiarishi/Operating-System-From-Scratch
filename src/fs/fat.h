@@ -56,7 +56,7 @@ typedef struct filesystem {
     uint32_t fat_size;  // size, in bytes, of the FAT
     uint16_t block_size;  // size, in bytes, of each block
     uint16_t *fat;  // ptr to uint16_t[fat_size / 2]; entry 0 used for table/block size
-    // data: uint8_t[block_size * (n_entries - 1)]; 0-indexed
+    uint8_t *data; // ptr to uint8_t[fat_size + block_size * (n_entries - 1)]; 0-indexed
     int host_fd;
     // keep track of the open files for exclusive locking/deleting purposes
     // use array doubling, starting size 4 files
@@ -87,3 +87,4 @@ uint32_t fs_find(fs_t *fs, const char *fname);
 void fs_freels(filestat_t **stat);
 off_t fs_hostseek(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
 int fs_freeblk(fs_t *fs, uint16_t blk_base_no);
+void *fs_dataoffset(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
