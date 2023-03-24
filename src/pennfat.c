@@ -207,6 +207,8 @@ void cat(char **args) {
         }
     }
 
+    // todo stdin
+
     // open each read file, then read its contents to stdout in 4KB chunks
     char buf[4097];
     ssize_t bytes_read;
@@ -258,7 +260,107 @@ void cat(char **args) {
  * Copies SOURCE from the filesystem to DEST in the host OS.
  */
 void cp(char **args) {
+    int n_args = toklen(args);
+    if (n_args < 3 || n_args > 4)
+        cmd_abort("Usage: cp SOURCE -h DEST | cp [-h] SOURCE DEST\n");
+    if (fs == NULL)
+        cmd_abort("You do not have a filesystem mounted\n");
 
+    char buf[4097];
+    ssize_t bytes_read;
+    // local copy
+    if (n_args == 3) {
+        file_t *src = fs_open(fs, args[1], F_READ);
+        if (src == NULL) {
+            p_perror("fs_open");
+            return;
+        }
+        file_t *dest = fs_open(fs, args[2], F_WRITE);
+        if (dest == NULL) {
+            fs_close(fs, src);
+            p_perror("fs_open");
+            return;
+        }
+        // read until there is nothing more
+        do {
+            // read a chunk
+            bytes_read = fs_read(fs, src, 4096, buf);
+            if (bytes_read == -1) {
+                p_perror("fs_read");
+                break;
+            }
+            buf[bytes_read] = 0;
+            // then write that chunk to the dest
+            if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
+                p_perror("fs_write");
+                break;
+            }
+        } while (bytes_read);
+        fs_close(fs, src);
+        fs_close(fs, dest);
+    } else if (strcmp(args[1], "-h") == 0) {
+        // from host
+        int src = open(args[2], O_RDONLY);
+        if (src == -1) {
+            p_perror("open");
+            return;
+        }
+        file_t *dest = fs_open(fs, args[3], F_WRITE);
+        if (dest == NULL) {
+            close(src);
+            p_perror("fs_open");
+            return;
+        }
+        // read until there is nothing more
+        do {
+            // read a chunk
+            bytes_read = read(src, buf, 4096);
+            if (bytes_read == -1) {
+                p_perror("fs_read");
+                break;
+            }
+            buf[bytes_read] = 0;
+            // then write that chunk to the dest
+            if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
+                p_perror("fs_write");
+                break;
+            }
+        } while (bytes_read);
+        close(src);
+        fs_close(fs, dest);
+    } else if (strcmp(args[2], "-h") == 0) {
+        // to host
+        file_t *src = fs_open(fs, args[1], F_READ);
+        if (src == NULL) {
+            p_perror("fs_open");
+            return;
+        }
+        int dest = open(args[3], O_WRONLY | O_TRUNC | O_CREAT, 0666);
+        if (dest == -1) {
+            fs_close(fs, src);
+            p_perror("open");
+            return;
+        }
+        // read until there is nothing more
+        do {
+            // read a chunk
+            bytes_read = fs_read(fs, src, 4096, buf);
+            if (bytes_read == -1) {
+                p_perror("fs_read");
+                break;
+            }
+            buf[bytes_read] = 0;
+            // then write that chunk to the dest
+            if (write(dest, buf, bytes_read) != bytes_read) {
+                p_perror("fs_write");
+                break;
+            }
+        } while (bytes_read);
+        fs_close(fs, src);
+        close(dest);
+    } else {
+        cmd_abort("Usage: cp SOURCE -h DEST | cp [-h] SOURCE DEST\n");
+    }
 }
 
 /**
