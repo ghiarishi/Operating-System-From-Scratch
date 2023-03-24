@@ -33,6 +33,7 @@ typedef struct file {
     filestat_t *entry;  // mmaped to file entry in directory
     uint32_t offset;  // current seek position
     int mode;
+    uint8_t stdiomode;  // 0 = FAT file, 1 = stdout, 2 = stdin
 } file_t;
 ```
 
@@ -52,3 +53,13 @@ typedef struct filestat {
 
 The OS should maintain a file descriptor table for each process linking an int to one of these `struct file`s.
 The low-level filesystem implementation operates using pointers to open file structs.
+
+## stdin/stdout
+
+Each `file_t *` struct contains information on whether it is a special file for reading from/writing to stdin/stdout.
+The user-level functions `f_read()` and `f_write()` should check this information and redirect to the C API where
+necessary rather than the FAT API.
+
+Each process, on creation, should set entries `PSTDIN_FILENO` and `PSTDOUT_FILENO` in its PCB's fd table to file structs
+with the correct flag set. This allows for later redirecting stdin/stdout by overwriting the entries in the fd table
+with file structs linked to files on the FAT filesystem.

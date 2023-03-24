@@ -19,3 +19,4 @@ follow:
 - low-level FAT implementation
 - pennfat standalone (all commands)
 - main errno implementation
+- pair-programming/designing details for user-level filesystem implementation

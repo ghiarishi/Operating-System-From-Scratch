@@ -54,7 +54,7 @@ typedef struct file {
     filestat_t *entry;  // mmaped to file entry in directory
     uint32_t offset;  // current seek position
     int mode;
-    uint8_t stdiomode;  // 0 = nothing, 1 = stdout, 2 = stdin
+    uint8_t stdiomode;  // 0 = FAT file, 1 = stdout, 2 = stdin
 } file_t;
 
 typedef struct filesystem {
