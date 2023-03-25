@@ -14,7 +14,7 @@ void this_would_be_main(int argc, char **argv) {
     char *path = argv[1];
     fs = fs_mount(path);
     if (fs == NULL) {
-        p_perror("fs_mount")
+        p_perror("fs_mount");
         exit(EXIT_FAILURE);
     }
     // we have a fs
