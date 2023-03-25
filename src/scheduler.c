@@ -251,6 +251,7 @@ static void makeContext(ucontext_t *ucp, void (*func)(), int thread) {
     else
     makecontext(ucp, func, 0);
 }
+
 static void makeContexts(void) {
     makeContext(&schedulerContext, scheduler, 0);
     // makeContext(threadContexts, cat, 0);
@@ -288,13 +289,6 @@ int main(void) {
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
     signal(SIGTSTP, SIG_IGN); // Ctrl-Z
 
-    newProcess(2290, -1);
-    newProcess(2292, -1);
-    newProcess(2294, 0);
-    newProcess(2296, 1);
-    newProcess(2298, 1);
-    newProcess(2245, 0);
-    newProcess(2223, 0);
     
     makeContexts();
     setAlarmHandler();
