@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct {
+typedef struct processControlBlock {
     ucontext_t *context;
     int pid;
     int priority;

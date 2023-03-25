@@ -20,13 +20,13 @@ static const int quantum = 100000; // 10 milliseconds
 const int schedulerList[6] = {-1, 0, -1, -1, 0, 1};
 
 // Define the structure for a Process
-typedef struct {
+typedef struct Process{
     struct Process* next; // Pointer to next Process in the queue
-    
+    struct processControlBlock* pcb;
 } Process;
 
 // Define the structure for a priority queue
-typedef struct {
+typedef struct processQueue{
     Process* head; // Pointer to the first process in the queue
     Process* tail; // Pointer to the last process in the queue
 } processQueue;
@@ -144,8 +144,8 @@ void addtoIdleQ(Process* p){
 
 void newProcess(int id, int priority) {
     // Create a new thread and set its ID and priority level
-    ucontext_t uc0;
-    Process* new_Process = createPcb(uc0, id, id, priority, "sleep");
+    ucontext_t *uc0 = malloc(sizeof(ucontext_t));
+    Process* new_Process = createPcb(&uc0, id, id, priority, "sleep");
     new_Process->pcb->pid = id;
     new_Process->pcb->priority = (priority != PRIORITY_HIGH && priority != PRIORITY_MEDIUM && priority != PRIORITY_LOW) ? PRIORITY_MEDIUM : priority;
     new_Process->next = NULL;
@@ -286,8 +286,6 @@ int main(void) {
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
     signal(SIGTSTP, SIG_IGN); // Ctrl-Z
 
-    ucontext_t *uc0 = malloc(sizeof(ucontext_t));
-    processControlBlock *p = createPcb(uc0, 2245, 2245, 0, "sleep 5");
     newProcess(2245, -1);
 
     makeContexts();
