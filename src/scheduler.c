@@ -5,6 +5,7 @@
 #include <sys/time.h> // setitimer
 #include <ucontext.h> // getcontext, makecontext, setcontext, swapcontext
 #include <unistd.h> // read, usleep, write
+#include <stddef.h>
 #include "pcb.h"
 
 #define PRIORITY_HIGH -1
@@ -23,7 +24,7 @@ typedef struct processQueue{
     Process* tail; // Pointer to the last process in the queue
 } processQueue;
 
-processQueue *medium_priority_queue = {NULL, NULL};
+processQueue *medium_priority_queue = NULL;
 
 // Function to add a thread to the appropriate priority queue
 void enqueue_Process(Process* new_Process) {
@@ -46,7 +47,7 @@ void newProcess(int id, int priority) {
     ucontext_t *uc = malloc(sizeof(ucontext_t));
     // Process* new_Process = NULL;
     Process* new_Process = malloc(sizeof(Process));
-    new_Process->pcb = createPcb(uc, id, id, priority, "sleep 5");
+    new_Process->pcb = createPcb(*uc, id, id, priority, "sleep 5");
     new_Process->next = NULL;
     printf("Hello there");
     // enqueue_Process(new_Process);
@@ -57,6 +58,8 @@ int main() {
     signal(SIGINT, SIG_IGN); // Ctrl-C
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
     signal(SIGTSTP, SIG_IGN); // Ctrl-Z
+
+    printf("hello");
 
     newProcess(500, 0);
     return 0;
