@@ -1,5 +1,4 @@
-// #ifndef SCHEDULER_H
-// #define SCHEDULER_H
+#pragma once
 
 #include <signal.h> // sigaction, sigemptyset, sigfillset, signal
 #include <stdio.h> // dprintf, fputs, perror
@@ -29,5 +28,4 @@ void enqueueProcess(struct Process* newProcess);
 
 struct Process* dequeueProcess(int priority);
 
-// #endif /* SCHEDULER_H */
 

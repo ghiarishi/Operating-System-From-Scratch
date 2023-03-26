@@ -3,7 +3,7 @@ CC = clang
 
 # define sources
 SRCS = $(wildcard src/common/**.c) $(wildcard src/fs/**.c)
-OSSRCS = src/pennos.c $(SRCS) 
+OSSRCS = src/pennos.c $(SRCS) src/scheduler.c src/pcb.c
 FSSRCS = src/pennfat.c $(SRCS) $(wildcard src/pennfat/**.c)
 SCHEDSRCS = src/scheduler.c $(SRCS)
 
