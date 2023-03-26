@@ -5,11 +5,14 @@ CC = clang
 SRCS = $(wildcard src/common/**.c) $(wildcard src/fs/**.c)
 OSSRCS = src/pennos.c $(SRCS)
 FSSRCS = src/pennfat.c $(SRCS) $(wildcard src/pennfat/**.c)
-SCHEDSRCS = src/scheduler.c $(SRCS) $(wildcard src/scheduler/**.c)
+SCHEDSRCS = src/scheduler.c $(SRCS)
+
+#  
 
 OSOBJS = $(OSSRCS:.c=.o)
 FSOBJS = $(FSSRCS:.c=.o)
 SCHEDOBJS = $(SCHEDSRCS:.c=.o)
+
 
 # output dir
 BIN = bin
