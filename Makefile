@@ -2,15 +2,12 @@ TARGETS = pennfat pennos
 CC = clang
 
 # define sources
-SRCS = $(wildcard src/common/**.c) $(wildcard src/fs/**.c)
-OSSRCS = src/pennos.c $(SRCS) src/scheduler.c src/pcb.c
+SRCS = $(wildcard src/common/**.c) $(wildcard src/fs/**.c) $(wildcard src/process/**.c)
+OSSRCS = src/pennos.c $(SRCS) # src/process/scheduler.c src/process/pcb.c
 FSSRCS = src/pennfat.c $(SRCS) $(wildcard src/pennfat/**.c)
-SCHEDSRCS = src/scheduler.c $(SRCS)
-
 
 OSOBJS = $(OSSRCS:.c=.o)
 FSOBJS = $(FSSRCS:.c=.o)
-SCHEDOBJS = $(SCHEDSRCS:.c=.o)
 
 
 # output dir
@@ -28,8 +25,5 @@ pennos: $(OSOBJS)
 pennfat: $(FSOBJS)
 	$(CC) -o $(BIN)/$@ $^
 
-scheduler: $(SCHEDOBJS)
-	$(CC) -o $(BIN)/$@ $^
-
 clean:
-	$(RM) $(OSOBJS) $(FSOBJS) $(SCHEDOBJS) $(TARGETS:%=$(BIN)/%)
+	$(RM) $(OSOBJS) $(FSOBJS) $(TARGETS:%=$(BIN)/%)
