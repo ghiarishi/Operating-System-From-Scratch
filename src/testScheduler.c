@@ -212,12 +212,12 @@ int pick_thread() {
     }
     }
     if (node == NULL) {
-    node = (NODE *)malloc(sizeof(NODE));
-    node->pcb = (pcb_t *)malloc(sizeof(pcb_t));
-    node->pcb->pid = 1;
-    node->pcb->priority = -1;
-    node->pcb->status = READY;
-    node->pcb->remaining_time = INTERVAL;
+        node = (NODE *)malloc(sizeof(NODE));
+        node->pcb = (pcb_t *)malloc(sizeof(pcb_t));
+        node->pcb->pid = 1;
+        node->pcb->priority = -1;
+        node->pcb->status = READY;
+        node->pcb->remaining_time = INTERVAL;
     }
     return node->pcb->pid;
 }

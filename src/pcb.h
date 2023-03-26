@@ -1,6 +1,7 @@
 #include <ucontext.h> // getcontext, makecontext, setcontext, swapcontext
 #include <stdio.h>
 #include <stdlib.h>
+// #include "fs/user.h"
 
 #define RUNNING 2
 #define READY 1
@@ -13,6 +14,7 @@ struct pcb {
     int ppid;
     char *argument;
     int status;
+    // file_t *fd_table[MAX_FILES];
     // int osStatus;
     // int w_status;
     // int block_time;

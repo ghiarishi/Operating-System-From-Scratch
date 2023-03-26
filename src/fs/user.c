@@ -1,12 +1,12 @@
-// #include "user.h"
+#include "user.h"
 
 // // begin demo code - delete this later
 // #define MAX_FILES 512
 
-// // global:
+// global:
 // fs_t *fs;
 
-// // inside the pcb:
+// inside the pcb:
 // file_t *fd_table[MAX_FILES];
 
 // void this_would_be_main(int argc, char **argv) {
@@ -45,8 +45,10 @@
 // }
 // // end demo code
 
-// // user function implementation code
-// // todo copy all these into the header
+
+
+// user function implementation code
+// todo copy all these into the header
 // int f_open(const char *fname, int mode) {
 //     file_t *file = fs_open(fs, fname, mode);
 //     // todo: error checking
@@ -73,7 +75,7 @@
 // int f_read(int fd, int n, char *buf) {
 //     file_t *f = fd_table[fd];
 //     // todo error checking
-//     // handle in
+//     // handle stdin
 //     if (f->stdiomode == FIO_STDIN) {
 //         // write to stdout
 //     } else if (f->stdiomode == FIO_STDOUT) {
