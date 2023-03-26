@@ -71,7 +71,7 @@ struct Process* createNewProcess(void (*func)(), char* argv[], int id, int prior
 
     ucontext_t uc;
     getcontext(&uc);
-    sigemptyset(&uc->uc_sigmask);
+    sigemptyset(uc->uc_sigmask);
 
     printf("before setstack");
     setStack(&uc->uc_stack);

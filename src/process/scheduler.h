@@ -33,14 +33,14 @@ struct Process{
     struct Process* next;
 };
 
-struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority);
 void enqueueProcess(struct Process* newProcess);
-struct Process* dequeueProcess(int priority);
-void addtoReadyQ(struct Process* p);
-// static void scheduler(void);
 void testFunc2();
 static void setStack(stack_t *stack);
+struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority);
+struct Process* dequeueProcess(int priority);
+void addtoReadyQ(struct Process* p);
 
+// static void scheduler(void);
 // static void alarmHandler(int signum);
 // static void setAlarmHandler(void);
 // static void setTimer(void);
