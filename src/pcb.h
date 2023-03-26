@@ -6,7 +6,7 @@
 #define READY 1
 #define TERMINATED 0
 
-typedef struct pcb {
+struct pcb {
     ucontext_t context;
     int pid;
     int priority;
@@ -16,10 +16,10 @@ typedef struct pcb {
     // int osStatus;
     // int w_status;
     // int block_time;
-}pcb_t;
+};
 
-pcb_t* createPcb(ucontext_t context, int pid, int ppid, int priority, char* argument){
-    pcb_t* pcb_obj = (pcb_t*) malloc(sizeof(pcb_t));
+struct pcb* createPcb(ucontext_t context, int pid, int ppid, int priority, char* argument){
+    struct pcb * pcb_obj = (struct pcb *) malloc(sizeof(struct pcb));
     pcb_obj->argument = argument;
     pcb_obj->priority = priority;
     pcb_obj->ppid = ppid;
