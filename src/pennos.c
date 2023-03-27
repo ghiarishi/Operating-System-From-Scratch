@@ -1,6 +1,6 @@
 #include "process/scheduler.h"
 #include "process/pcb.h"
-#include "fs/user.h"
+#include "process/user.h"
 #include "process/user_functions.h"
 
 // // global:
@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     initSchedulerContext();
 
     char *argsv[] = {"echo", "hello", "world"};
-    int pidNew = p_spawn(echoFunc, argsv, STDIN_FILENO, STDOUT_FILENO);
+    pid_t pidNew = p_spawn(echoFunc, argsv, STDIN_FILENO, STDOUT_FILENO);
     printf("%d\n", pidNew);
 
     setAlarmHandler();
