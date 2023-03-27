@@ -15,8 +15,9 @@
 #define PRIORITY_MED 0
 #define PRIORITY_LOW 1
 
-static ucontext_t schedulerContext;
-static ucontext_t *activeContext;
+extern ucontext_t schedulerContext;
+extern ucontext_t mainContext;
+extern ucontext_t *activeContext;
 
 // initialize in .c
 extern struct Process *highQhead;

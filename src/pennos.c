@@ -28,11 +28,13 @@ int main(int argc, char** argv) {
     initSchedulerContext();
 
     char *argsv[] = {"echo", "hello", "world"};
-    pid_t pidNew = p_spawn(echoFunc, argsv, STDIN_FILENO, STDOUT_FILENO);
+    pid_t pidNew = p_spawn(sleepFunc, argsv, STDIN_FILENO, STDOUT_FILENO);
     printf("%d\n", pidNew);
 
     setAlarmHandler();
     setTimer();
+
+    swapcontext(&mainContext, &schedulerContext);
 
     fprintf(stderr, "Back in the main context\n");
 

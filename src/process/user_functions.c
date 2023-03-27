@@ -1,5 +1,5 @@
 #include "user_functions.h"
-#include <time.h>
+
 
 
 void echoFunc(int argc, char *argv[]) {
@@ -13,16 +13,15 @@ void echoFunc(int argc, char *argv[]) {
             message = strcat(message, " ");
         }
     }
-
     // Print the message string to stdout
-    printf("%s\n", message);
-    
+    printf("%s \n", message);
 }
 
-
 void sleepFunc(int milliseconds) {
+    milliseconds = 5000;
     clock_t start_time = clock();
+    printf("running sleep! \n");
     while ((clock() - start_time) * 1000 / CLOCKS_PER_SEC < milliseconds) {
         // do nothing
-        }
+    }
 }

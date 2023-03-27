@@ -7,6 +7,10 @@
 
 const int schedulerList[18] = {-1, 0, -1, 0, -1, -1, 0, 1, -1, 1, 0, -1, 0, 1, 0, -1, -1, -1};
 
+struct ucontext_t schedulerContext;
+struct ucontext_t mainContext;
+struct ucontext_t *activeContext = NULL;
+
 struct Process *highQhead = NULL; //extern
 struct Process *highQtail = NULL;
 struct Process *medQhead = NULL;
@@ -22,19 +26,21 @@ struct Process *blockedQtail = NULL;
 void addtoReadyQ(struct Process* p){
 
     // processQueue* q = readyQueue;
-
+    printf("arg of precess is %s \n", p->pcb->argument);
+    
     if(readyQhead == NULL) {
         readyQhead = p;
+        readyQtail = p;
     } 
     else {
         readyQtail->next = p;
+        readyQtail = p;
     } 
-    readyQtail = p;
 }
 
 void scheduler(void){
     
-    printf("Inside scheduler \n");
+    printf("Inside scheduler\n");
 
     static int listPointer = 0;
 
@@ -46,8 +52,9 @@ void scheduler(void){
     int num = schedulerList[listPointer];
     struct Process* p;
 
-    switch (num)
-    {
+
+    // issue here, check if the head is null for each q, only then add to ready q
+    switch (num){
     case PRIORITY_HIGH:
         p = highQhead;
         addtoReadyQ(p);
@@ -64,9 +71,14 @@ void scheduler(void){
     }
 
     listPointer++;
+    
+    if(readyQhead != NULL){
+        printf("updating readyQ \n");
+        activeContext = &readyQhead->pcb->context;
+        setcontext(activeContext);
+    }
 
-    activeContext = &readyQhead->pcb->context;
-    setcontext(activeContext);
+    printf("done scheduler");
     perror("setcontext");
     exit(EXIT_FAILURE);
 }
