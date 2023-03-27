@@ -1,6 +1,7 @@
 #include "process/scheduler.h"
 #include "process/pcb.h"
 #include "fs/user.h"
+#include "process/user_functions.h"
 
 // // global:
 // fs_t *fs;
@@ -14,10 +15,6 @@
 
 // struct Process* highQhead
 
-void testFunc3(){
-    printf("helllloooo inside f");
-}
-
 int main(int argc, char** argv) {
     printf("main\n");
     // if (argc < 2) {
@@ -28,9 +25,18 @@ int main(int argc, char** argv) {
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
     signal(SIGTSTP, SIG_IGN); // Ctrl-Z
 
+    initSchedulerContext();
+
     char *argsv[] = {"echo", "hello", "world"};
-    int pidNew = p_spawn(testFunc3, argsv, STDIN_FILENO, STDOUT_FILENO);
+    int pidNew = p_spawn(echoFunc, argsv, STDIN_FILENO, STDOUT_FILENO);
     printf("%d\n", pidNew);
+
+    setAlarmHandler();
+    setTimer();
+
+    fprintf(stderr, "Back in the main context\n");
+
+    freeStacks();
 
     return 0;
 }

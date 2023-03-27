@@ -19,6 +19,67 @@ struct Process *readyQtail = NULL;
 struct Process *blockedQhead = NULL; 
 struct Process *blockedQtail = NULL;
 
+void addtoReadyQ(struct Process* p){
+
+    // processQueue* q = readyQueue;
+
+    if(readyQhead == NULL) {
+        readyQhead = p;
+    } 
+    else {
+        readyQtail->next = p;
+    } 
+    readyQtail = p;
+}
+
+void scheduler(void){
+    
+    printf("inside scheduler");
+
+    static int listPointer = 0;
+
+    // if at the end, restart from the first element
+    if(listPointer == 18){
+        listPointer = 0;
+    }
+
+    int num = schedulerList[listPointer];
+    struct Process* p;
+
+    switch (num)
+    {
+    case PRIORITY_HIGH:
+        p = highQhead;
+        addtoReadyQ(p);
+        break;     
+    case PRIORITY_LOW:
+        p = lowQhead;
+        addtoReadyQ(p);
+        break;
+    
+    default:
+        p = medQhead;
+        addtoReadyQ(p);
+        break;
+    }
+
+    listPointer++;
+
+    activeContext = &readyQhead->pcb->context;
+    setcontext(activeContext);
+    perror("setcontext");
+    exit(EXIT_FAILURE);
+}
+
+void initSchedulerContext(void){
+    printf("inside initSchedulerContext");
+    getcontext(&schedulerContext);
+    schedulerContext.uc_stack.ss_sp = malloc(SIGSTKSZ);
+    schedulerContext.uc_stack.ss_size = SIGSTKSZ;
+    schedulerContext.uc_link = NULL;
+    makecontext(&schedulerContext, scheduler, 0);
+}
+
 // Function to add a thread to the appropriate priority queue
 void enqueueProcess(struct Process* newProcess) {
     
@@ -54,11 +115,7 @@ void enqueueProcess(struct Process* newProcess) {
     }
 }
 
-void testFunc2(){
-    printf("helllo world");
-}
-
-static void setStack(stack_t *stack){
+void setStack(stack_t *stack){
     void *sp = malloc(SIGSTKSZ);
     // Needed to avoid valgrind errors
     VALGRIND_STACK_REGISTER(sp, sp + SIGSTKSZ);
@@ -67,27 +124,27 @@ static void setStack(stack_t *stack){
 }
 
 struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority) {
-    // Create a new thread and set its ID and priority level
-
-    ucontext_t uc;
-    getcontext(&uc);
+    // Create a new process and set its ID and priority level
+    
+    ucontext_t *uc = (ucontext_t *) malloc(sizeof(ucontext_t));
+    getcontext(uc);
     sigemptyset(&uc->uc_sigmask);
 
     printf("before setstack");
     setStack(&uc->uc_stack);
     uc->uc_link = &schedulerContext;
-    
-    makeContext(&uc, func, 0);
-    
-    struct Process *newProcess = malloc(sizeof(struct Process));
 
+    makecontext(uc, func, 3, argv);
+    
+    struct Process *newProcess = (struct Process*) malloc(sizeof(struct Process));
 
-    newProcess->pcb = createPcb(*uc, id, id, priority, "sleep 5");
+    newProcess->pcb = createPcb(*uc, id, id, priority, "echo hello world");
     printf("Creating new process\n");
-    printf("PID is %d",newProcess->pcb->pid);
+    printf("PID is %d\n", newProcess->pcb->pid);
     enqueueProcess(newProcess);
     return newProcess;
 }
+
 
 struct Process* dequeueProcess(int priority) {
     // struct Process *dequeued = malloc(sizeof(struct Process));
@@ -108,98 +165,33 @@ struct Process* dequeueProcess(int priority) {
     }
 }
 
-void addtoReadyQ(struct Process* p){
-
-    // processQueue* q = readyQueue;
-
-    if(readyQhead == NULL) {
-        readyQhead = p;
-    } 
-    else {
-        readyQtail->next = p;
-    } 
-    readyQtail = p;
+void alarmHandler(int signum) // SIGALRM
+{
+    swapcontext(activeContext, &schedulerContext);
 }
 
-// _______________________________________________________________________________________
+void setAlarmHandler(void)
+{
+    struct sigaction act;
 
-// static void scheduler(void){
-    
-//     static int listPointer = 0;
+    act.sa_handler = alarmHandler;
+    act.sa_flags = SA_RESTART;
+    sigfillset(&act.sa_mask);
 
-//     // if at the end, restart from the first element
-//     if(listPointer == 5){
-//         listPointer = 0;
-//     }
+    sigaction(SIGALRM, &act, NULL);
+}
 
-//     int num = schedulerList[listPointer];
-//     struct Process* p;
+void setTimer(void)
+{
+    struct itimerval it;
 
-//     switch (num)
-//     {
-//     case PRIORITY_HIGH:
-//         p = highQhead;
-//         addtoReadyQ(p);
-//         break;     
-//     case PRIORITY_LOW:
-//         p = lowQhead;
-//         addtoReadyQ(p);
-//         break;
-    
-//     default:
-//         p = medQhead;
-//         addtoReadyQ(p);
-//         break;
-//     }
+    it.it_interval = (struct timeval){.tv_usec = quantum};
+    it.it_value = it.it_interval;
 
-//     listPointer++;
-//     activeContext = readyQhead->pcb->context;
-//     setcontext(activeContext);
-//     perror("setcontext");
-//     exit(EXIT_FAILURE);
-// }
+    setitimer(ITIMER_REAL, &it, NULL);
+}
 
-// static void alarmHandler(int signum) // SIGALRM
-// {
-//     swapcontext(activeContext, &schedulerContext);
-// }
-
-// static void setAlarmHandler(void)
-// {
-//     struct sigaction act;
-
-//     act.sa_handler = alarmHandler;
-//     act.sa_flags = SA_RESTART;
-//     sigfillset(&act.sa_mask);
-
-//     sigaction(SIGALRM, &act, NULL);
-// }
-
-// static void setTimer(void)
-// {
-//     struct itimerval it;
-
-//     it.it_interval = (struct timeval){.tv_usec = quantum * 10};
-//     it.it_value = it.it_interval;
-
-//     setitimer(ITIMER_REAL, &it, NULL);
-// }
-
-// static void freeStacks(void)
-// {
-//     free(schedulerContext.uc_stack.ss_sp);
-// }
-
-// int main(int argc, char** argv) {
-//     printf("main\n");
-
-//     signal(SIGINT, SIG_IGN); // Ctrl-C
-//     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
-//     signal(SIGTSTP, SIG_IGN); // Ctrl-Z
-
-//     struct Process* test_process = createNewProcess(500, -1);
-//     printf("%s\n", test_process->pcb->argument);
-//     free(test_process);
-    
-//     return 0;
-// }
+void freeStacks(void)
+{
+    free(schedulerContext.uc_stack.ss_sp);
+}

@@ -9,12 +9,13 @@
 #include <unistd.h> // read, usleep, write
 #include <valgrind/valgrind.h>
 #include "pcb.h"
+#include "user_functions.h"
 
 #define PRIORITY_HIGH -1
 #define PRIORITY_MED 0
 #define PRIORITY_LOW 1
 
-static ucontext_t *schedulerContext;
+static ucontext_t schedulerContext;
 static ucontext_t *activeContext;
 
 // initialize in .c
@@ -33,17 +34,17 @@ struct Process{
     struct Process* next;
 };
 
-struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority);
-void enqueueProcess(struct Process* newProcess);
-struct Process* dequeueProcess(int priority);
 void addtoReadyQ(struct Process* p);
-// static void scheduler(void);
+void scheduler(void);
+void initSchedulerContext(void);
+void enqueueProcess(struct Process* newProcess);
 void testFunc2();
-static void setStack(stack_t *stack);
-
-// static void alarmHandler(int signum);
-// static void setAlarmHandler(void);
-// static void setTimer(void);
-// static void freeStacks(void);
+void setStack(stack_t *stack);
+struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority);
+struct Process* dequeueProcess(int priority);
+void alarmHandler(int signum);
+void setAlarmHandler(void);
+void setTimer(void);
+void freeStacks(void);
 
 
