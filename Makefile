@@ -2,8 +2,8 @@ TARGETS = pennfat pennos
 CC = clang
 
 # define sources
-SRCS = $(wildcard src/common/**.c) $(wildcard src/fs/**.c) $(wildcard src/process/**.c)
-OSSRCS = src/pennos.c $(SRCS) # src/process/scheduler.c src/process/pcb.c
+SRCS = $(wildcard src/common/**.c) $(wildcard src/fs/**.c)
+OSSRCS = src/pennos.c $(SRCS) $(wildcard src/process/**.c) # src/process/scheduler.c src/process/pcb.c
 FSSRCS = src/pennfat.c $(SRCS) $(wildcard src/pennfat/**.c)
 
 OSOBJS = $(OSSRCS:.c=.o)
