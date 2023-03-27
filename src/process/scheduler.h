@@ -26,8 +26,6 @@ extern struct Process *medQtail;
 extern struct Process *lowQhead; 
 extern struct Process *lowQtail;
 
-// const int schedulerList[6]; // = {-1, 0, -1, -1, 0, 1};
-
 // Define the structure for a Process
 struct Process{
     struct pcb* pcb;

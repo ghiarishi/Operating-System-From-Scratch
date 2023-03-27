@@ -34,7 +34,7 @@ void addtoReadyQ(struct Process* p){
 
 void scheduler(void){
     
-    printf("inside scheduler");
+    printf("Inside scheduler \n");
 
     static int listPointer = 0;
 
@@ -72,7 +72,7 @@ void scheduler(void){
 }
 
 void initSchedulerContext(void){
-    printf("inside initSchedulerContext");
+    printf("Inside initSchedulerContext \n");
     getcontext(&schedulerContext);
     schedulerContext.uc_stack.ss_sp = malloc(SIGSTKSZ);
     schedulerContext.uc_stack.ss_size = SIGSTKSZ;
@@ -130,7 +130,7 @@ struct Process* createNewProcess(void (*func)(), char* argv[], int id, int prior
     getcontext(uc);
     sigemptyset(&uc->uc_sigmask);
 
-    printf("before setstack");
+    printf("Before SetStack \n");
     setStack(&uc->uc_stack);
     uc->uc_link = &schedulerContext;
 
@@ -139,7 +139,7 @@ struct Process* createNewProcess(void (*func)(), char* argv[], int id, int prior
     struct Process *newProcess = (struct Process*) malloc(sizeof(struct Process));
 
     newProcess->pcb = createPcb(*uc, id, id, priority, "echo hello world");
-    printf("Creating new process\n");
+    printf("Creating new process \n");
     printf("PID is %d\n", newProcess->pcb->pid);
     enqueueProcess(newProcess);
     return newProcess;

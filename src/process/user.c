@@ -8,12 +8,12 @@ void testFunc1() {
 
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
-    printf("inside p_spawn");
+    printf("Inside p_spawn \n");
     pid_t pid = getpid();
     struct Process *testProcess = createNewProcess(func, argv, pid, -1);
     pid_t pid_new = testProcess->pcb->pid;
 
-    printf("passed by make context");
+    printf("passed by make context \n");
     return pid_new;
 }
 
