@@ -21,18 +21,19 @@ int main(int argc, char** argv) {
     //     printf("error");
     // } 
     // char *path = argv[1];
-    signal(SIGINT, SIG_IGN); // Ctrl-C
+    // signal(SIGINT, SIG_IGN); // Ctrl-C
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
     signal(SIGTSTP, SIG_IGN); // Ctrl-Z
 
     initSchedulerContext();
 
     char *argsv[] = {"echo", "hello", "world"};
-    pid_t pidNew = p_spawn(sleepFunc, argsv, STDIN_FILENO, STDOUT_FILENO);
-    printf("%d\n", pidNew);
+    pid_t pidNew = p_spawn(echoFunc, argsv, STDIN_FILENO, STDOUT_FILENO);
+    printf("%d \n", pidNew);
 
     setAlarmHandler();
-    setTimer();
+    alarm(5);
+    // setTimer();
 
     swapcontext(&mainContext, &schedulerContext);
 

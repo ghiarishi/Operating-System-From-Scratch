@@ -3,7 +3,7 @@
 #define PRIORITY_HIGH -1
 #define PRIORITY_MED 0
 #define PRIORITY_LOW 1
-#define quantum 10000
+#define quantum 1000
 
 const int schedulerList[18] = {-1, 0, -1, 0, -1, -1, 0, 1, -1, 1, 0, -1, 0, 1, 0, -1, -1, -1};
 
@@ -18,25 +18,10 @@ struct Process *medQtail = NULL;
 struct Process *lowQhead = NULL; 
 struct Process *lowQtail = NULL;
 
-struct Process *readyQhead = NULL; 
-struct Process *readyQtail = NULL;
+// struct Process *readyQhead = NULL; 
+// struct Process *readyQtail = NULL;
 struct Process *blockedQhead = NULL; 
 struct Process *blockedQtail = NULL;
-
-void addtoReadyQ(struct Process* p){
-
-    // processQueue* q = readyQueue;
-    printf("arg of precess is %s \n", p->pcb->argument);
-    
-    if(readyQhead == NULL) {
-        readyQhead = p;
-        readyQtail = p;
-    } 
-    else {
-        readyQtail->next = p;
-        readyQtail = p;
-    } 
-}
 
 void scheduler(void){
     
@@ -50,35 +35,44 @@ void scheduler(void){
     }
 
     int num = schedulerList[listPointer];
-    struct Process* p;
-
 
     // issue here, check if the head is null for each q, only then add to ready q
     switch (num){
     case PRIORITY_HIGH:
-        p = highQhead;
-        addtoReadyQ(p);
+        if (highQhead != NULL){
+            activeContext = &highQhead->pcb->context;
+            highQhead->pcb->status = RUNNING;
+            highQhead = highQhead->next;
+        } else {
+            printf("empty Q\n");
+        }
+        
         break;     
     case PRIORITY_LOW:
-        p = lowQhead;
-        addtoReadyQ(p);
+        if (lowQhead != NULL){
+            activeContext = &lowQhead->pcb->context;
+            lowQhead->pcb->status = RUNNING;
+            lowQhead = lowQhead->next;
+        } else {
+            printf("empty Q\n");
+        }
         break;
     
     default:
-        p = medQhead;
-        addtoReadyQ(p);
+        if (medQhead != NULL){
+            activeContext = &medQhead->pcb->context;
+            medQhead->pcb->status = RUNNING;
+            medQhead = medQhead->next;
+        } else {
+            printf("empty Q\n");
+        }
         break;
     }
 
     listPointer++;
-    
-    if(readyQhead != NULL){
-        printf("updating readyQ \n");
-        activeContext = &readyQhead->pcb->context;
-        setcontext(activeContext);
-    }
 
-    printf("done scheduler");
+    setcontext(activeContext);
+
     perror("setcontext");
     exit(EXIT_FAILURE);
 }
@@ -135,29 +129,6 @@ void setStack(stack_t *stack){
     *stack = (stack_t){.ss_sp = sp, .ss_size = SIGSTKSZ};
 }
 
-struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority) {
-    // Create a new process and set its ID and priority level
-    
-    ucontext_t *uc = (ucontext_t *) malloc(sizeof(ucontext_t));
-    getcontext(uc);
-    sigemptyset(&uc->uc_sigmask);
-
-    printf("Before SetStack \n");
-    setStack(&uc->uc_stack);
-    uc->uc_link = &schedulerContext;
-
-    makecontext(uc, func, 3, argv);
-    
-    struct Process *newProcess = (struct Process*) malloc(sizeof(struct Process));
-
-    newProcess->pcb = createPcb(*uc, id, id, priority, "echo hello world");
-    printf("Creating new process \n");
-    printf("PID is %d\n", newProcess->pcb->pid);
-    enqueueProcess(newProcess);
-    return newProcess;
-}
-
-
 struct Process* dequeueProcess(int priority) {
     // struct Process *dequeued = malloc(sizeof(struct Process));
     struct Process *dequeued = NULL;
@@ -179,7 +150,9 @@ struct Process* dequeueProcess(int priority) {
 
 void alarmHandler(int signum) // SIGALRM
 {
+    printf("inside alarmHandler");
     swapcontext(activeContext, &schedulerContext);
+    
 }
 
 void setAlarmHandler(void)
@@ -206,4 +179,28 @@ void setTimer(void)
 void freeStacks(void)
 {
     free(schedulerContext.uc_stack.ss_sp);
+
+    while(highQhead){
+        struct Process *p = highQhead;
+        if(p->pcb->status == TERMINATED){
+            free(p->pcb->context.uc_stack.ss_sp);
+        }
+        highQhead = highQhead->next;
+    }
+
+    while(medQhead){
+        struct Process *p = medQhead;
+        if(p->pcb->status == TERMINATED){
+            free(p->pcb->context.uc_stack.ss_sp);
+        }
+        medQhead = medQhead->next;
+    }
+
+    while(lowQhead){
+        struct Process *p = lowQhead;
+        if(p->pcb->status == TERMINATED){
+            free(p->pcb->context.uc_stack.ss_sp);
+        }
+        lowQhead = lowQhead->next;
+    }
 }

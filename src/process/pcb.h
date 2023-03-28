@@ -22,5 +22,5 @@ struct pcb {
     // int block_time;
 };
 
-struct pcb *createPcb(ucontext_t context, int pid, int ppid, int priority, char *argument);
+struct pcb *createPcb(ucontext_t context, int pid, int ppid, int priority, int status, char *argument);
 void freePcb(struct pcb *pcb_obj);

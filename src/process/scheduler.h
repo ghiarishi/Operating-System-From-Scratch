@@ -33,7 +33,6 @@ struct Process{
     struct Process* next;
 };
 
-void addtoReadyQ(struct Process* p);
 void scheduler(void);
 void initSchedulerContext(void);
 void enqueueProcess(struct Process* newProcess);
