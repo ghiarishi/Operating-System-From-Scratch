@@ -9,6 +9,9 @@
 #include <unistd.h> // read, usleep, write
 #include <valgrind/valgrind.h>
 #include "pcb.h"
+#include "kernel.h"
+#include "user.h"
+#include "shell.h"
 #include "user_functions.h"
 
 #define PRIORITY_HIGH -1
@@ -39,7 +42,7 @@ void enqueueProcess(struct Process* newProcess);
 void testFunc2();
 void setStack(stack_t *stack);
 struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority);
-struct Process* dequeueProcess(int priority);
+void dequeueProcess(void);
 void alarmHandler(int signum);
 void setAlarmHandler(void);
 void setTimer(void);

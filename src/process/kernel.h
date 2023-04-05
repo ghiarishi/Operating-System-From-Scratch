@@ -2,5 +2,4 @@
 #include "pcb.h"
 #include "scheduler.h"
 
-
-struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority);
+struct pcb* k_process_create(struct pcb *parent, void (*func)(), char* argv[], int id, int priority);

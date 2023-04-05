@@ -13,7 +13,6 @@ void echoFunc(int argc, char *argv[]) {
     }
     // Print the message string to stdout
     printf("%s \n", message);
-    swapcontext(activeContext, &schedulerContext);
 }
 
 void sleepFunc(int milliseconds) {
