@@ -127,7 +127,7 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
     // is the file exclusively locked?
     for (int i = 0; i < fs->opened_count; ++i) {
         file_t *opened = fs->open_files[i];
-        if (opened->entry->blockno != f->entry->blockno) continue;
+        if (opened->entry != f->entry) continue;
         // cannot open the file if:
         // - already open in W/A mode
         // - we want to open it in W/A mode
@@ -152,12 +152,9 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
 
     // if the file was found and we are in write mode and have write permissions, truncate it to 0 bytes
     if (mode == F_WRITE && (f->entry->perm & FAT_WRITE)) {
-        // traverse FAT and set all blocks past first to free
-        if (fs->fat[f->entry->blockno] != FAT_EOF) {
-            uint16_t blockno = fs->fat[f->entry->blockno];
-            fs->fat[f->entry->blockno] = FAT_EOF;
-            fs_freeblk(fs, fs->fat[blockno]);
-        }
+        // traverse FAT and free any alloc'd blocks
+        fs_freeblk(fs, f->entry->blockno);
+        f->entry->blockno = 0;
         f->entry->size = 0;
     }
     return f;
@@ -182,7 +179,7 @@ int fs_close(fs_t *fs, file_t *f) {
             fs->opened_count--;
         }
         // is this the last instance of this file open?
-        if (fs->open_files[i]->entry->blockno == f->entry->blockno) count++;
+        if (fs->open_files[i]->entry == f->entry) count++;
     }
 
     // if this was the last open instance of a deleted file (name[0] == 2), delete it now (name[0] = 1, free blocks)
@@ -236,6 +233,18 @@ ssize_t fs_write(fs_t *fs, file_t *f, const char *str, uint32_t len) {
     // append mode always seeks to EOF before writing
     if (f->mode == F_APPEND) fs_lseek(fs, f, 0, F_SEEK_END);
 
+    // set metadata
+    time(&f->entry->mtime);
+    if (len == 0)  // 0 length writes only change mtime, no additional block allocs
+        return 0;
+
+    // if we are writing any data and the file does not yet have an allocated block, alloc one
+    if (f->entry->blockno == 0) {
+        uint16_t block = fs_link_next_free(fs);
+        if (!block) raise(PETOOFAT);
+        f->entry->blockno = block;
+    }
+
     // if the offset is past EOF, fill in hole with null bytes, one block at a time
     while (f->offset > f->entry->size) {
         uint32_t to_write = fs->block_size - (f->entry->size % fs->block_size);
@@ -252,8 +261,6 @@ ssize_t fs_write(fs_t *fs, file_t *f, const char *str, uint32_t len) {
         f->entry->size = f->offset;
     }
 
-    // set metadata
-    time(&f->entry->mtime);
     return bytes_written;
 }
 
@@ -303,7 +310,7 @@ int fs_unlink(fs_t *fs, const char *fname) {
     // if so, set name[0] to 2; otherwise, set it to 1
     char one = 1;
     for (int i = 0; i < fs->opened_count; ++i) {
-        if (fs->open_files[i]->entry->blockno == f->blockno) {
+        if (strncmp(fs->open_files[i]->entry->name, f->name, FAT_NAME_LEN) == 0) {
             one = 2;
             break;
         }
@@ -452,18 +459,13 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
         bzero(fs_dataoffset(fs, 1, offset), fs->block_size);
     }
 
-    // find the next free block
-    uint16_t block = fs_link_next_free(fs);
-    if (!block) raise_n(PETOOFAT);
-
-    // here is where I will make my file
     // create the file object
     file_t *f = malloc(sizeof(file_t));
     filestat_t *entry = fs_dataoffset(fs, 1, offset);
     strncpy(entry->name, name, FAT_NAME_LEN - 1);
     entry->name[FAT_NAME_LEN - 1] = 0;
     entry->size = 0;
-    entry->blockno = block;
+    entry->blockno = 0;
     entry->type = 1;  // regular file
     entry->perm = FAT_READ | FAT_WRITE;  // read/write
     time(&entry->mtime);
@@ -568,7 +570,7 @@ ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, const void
 uint16_t fs_link_next_free(fs_t *fs) {
     uint16_t block = 1;
     while (block < fs->fat_size / 2) {
-        if (fs->fat[block] == 0) {
+        if (fs->fat[block] == FAT_FREE) {
             fs->fat[block] = FAT_EOF;
             return block;
         }
@@ -593,7 +595,7 @@ uint32_t fs_find(fs_t *fs, const char *fname) {
     do {
         r = fs_read_blk(fs, 1, offset, FAT_NAME_LEN, tempname);
         if (r == -1) return -1;
-        if (tempname[0] == 0) raise(PENOFILE); // end of directory
+        if (tempname[0] == 0) break; // end of directory
         if (strncmp(tempname, fname, FAT_NAME_LEN) == 0) {
             return offset;
         }
@@ -639,10 +641,12 @@ int fs_extendblk(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
 /**
  * Marks all the blocks in the file starting at `blockno` as free in the FAT.
  * @param fs the filesystem
- * @param blockno the block number to start freeing at
+ * @param blockno the block number to start freeing at (does nothing if 0)
  * @return the number of blocks freed
  */
 int fs_freeblk(fs_t *fs, uint16_t blockno) {
+    if (blockno == 0)
+        return 0;
     int freed = 0;
     do {
         uint16_t next_blockno = fs->fat[blockno];

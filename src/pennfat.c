@@ -285,7 +285,7 @@ void cp(char **args) {
     if (fs == NULL)
         cmd_abort("You do not have a filesystem mounted\n");
 
-    char buf[4097];
+    char buf[4096];
     ssize_t bytes_read;
     // local copy
     if (n_args == 3) {
@@ -308,7 +308,6 @@ void cp(char **args) {
                 p_perror("fs_read");
                 break;
             }
-            buf[bytes_read] = 0;
             // then write that chunk to the dest
             if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
                 p_perror("fs_write");
@@ -338,7 +337,6 @@ void cp(char **args) {
                 p_perror("fs_read");
                 break;
             }
-            buf[bytes_read] = 0;
             // then write that chunk to the dest
             if (fs_write(fs, dest, buf, bytes_read) != bytes_read) {
                 p_perror("fs_write");
@@ -368,7 +366,6 @@ void cp(char **args) {
                 p_perror("fs_read");
                 break;
             }
-            buf[bytes_read] = 0;
             // then write that chunk to the dest
             if (write(dest, buf, bytes_read) != bytes_read) {
                 p_perror("fs_write");
