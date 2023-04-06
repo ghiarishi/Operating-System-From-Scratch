@@ -338,7 +338,7 @@ void sig_handler(int signal) {
             } while(current != NULL);
         }
 
-        int finishedIndices[bufferCount];
+        int TERMINATEDIndices[bufferCount];
 
         bufferCount = bufferCount *2;
 
@@ -373,54 +373,55 @@ void sig_handler(int signal) {
                     current -> pcb -> status = STOPPED;
                 }
                 else{
-                    bool currJobFinished = false;
-                    // int n = current -> numChild;
-
-                    // // check all pids in this job, if they match the returned pid, then mark finished
-                    // for(int i = 0; i < n; i++){
-                    //     if(pid == current -> pids[i]){
-                    //         current -> pids_finished[i] = true; //  
-                    //     }
-                    // }
+                    bool currJobTERMINATED = false;
                     
-                    // // check to see if all processes in current job are finished
-                    // for(int i = 0; i < n; i++){
-                    //     if(current -> pids_finished[i] == false){
-                    //         currJobFinished = false;
-                    //         break;
-                    //     }
-                    //     currJobFinished = true;
-                    // }
+                    int n = current -> pcb -> numChild;
 
-                    // ONLY if all processes in this job are finished and its not ALREADY finished in the past, print finished: cmd
-                    if(currJobFinished && current -> pcb -> status == RUNNING){
+                    // check all pids in this job, if they match the returned pid, then mark TERMINATED
+                    for(int i = 0; i < n; i++){
+                        if(pid == current -> pcb -> pids[i]){
+                            current -> pcb -> pidsFinished[i] = true; //  
+                        }
+                    }
+                    
+                    // check to see if all processes in current job are TERMINATED
+                    for(int i = 0; i < n; i++){
+                        if(current -> pcb -> pidsFinished[i] == false){
+                            currJobTERMINATED = false;
+                            break;
+                        }
+                        currJobTERMINATED = true;
+                    }
+
+                    // ONLY if all processes in this job are TERMINATED and its not ALREADY TERMINATED in the past, print TERMINATED: cmd
+                    if(currJobTERMINATED && current -> pcb -> status == RUNNING){
                         if(printflag){
-                            fprintf(stderr, "Finished: %s\n", current->pcb -> argument);
+                            fprintf(stderr, "TERMINATED: %s\n", current->pcb -> argument);
                             printflag=0;
                         }
                         else{
-                            bufferSig[num2] = "Finished: ";
+                            bufferSig[num2] = "TERMINATED: ";
                             bufferSig[num2 + 1] = current -> pcb -> argument; 
                             num2 = num2 + 2;
                             bufferWaiting = 1;
                         }   
-                        current -> pcb -> status = FINISHED;          
-                        finishedIndices[num] = current -> JobNumber;
+                        current -> pcb -> status = TERMINATED;          
+                        TERMINATEDIndices[num] = current->pcb->jobID;
                         num ++;       
                     } 
-                    if(currJobFinished && current -> pcb -> status == STOPPED){
+                    if(currJobTERMINATED && current -> pcb -> status == STOPPED){
                         if(printflag){
-                            fprintf(stderr, "Finished: %s\n", current->pcb -> argument);
+                            fprintf(stderr, "TERMINATED: %s\n", current->pcb -> argument);
                             printflag=0;
                         }
                         else{
-                            bufferSig[num2] = "Finished: ";
+                            bufferSig[num2] = "TERMINATED: ";
                             bufferSig[num2 + 1] = current -> pcb -> argument; 
                             num2 = num2 + 2;
                             bufferWaiting = 1;
                         }   
-                        current -> status = FINISHED;          
-                        finishedIndices[num] = current -> JobNumber;
+                        current -> pcb -> status = TERMINATED;          
+                        TERMINATEDIndices[num] = current -> pcb-> jobID;
                         num ++;       
                     } 
                 }
@@ -428,10 +429,11 @@ void sig_handler(int signal) {
             } while(current != NULL);
         }
 
-        // iterate through the finished job nums and remove them all
+        // iterate through the TERMINATED job nums and remove them all
         for(int i = 0; i < num; i++){
-            head = removeJob(head, finishedIndices[i]);
+            head = removeJob(head, TERMINATEDIndices[i]);
         }
+        
         sigprocmask(SIG_UNBLOCK, &mask, NULL);
     }
 }
@@ -509,11 +511,11 @@ void penn_shredder(char* buffer){
                 changeStatus(head, job_id, 0); // set job to running
                 changeFGBG(head, job_id, 1); // set job to BG 
                 fprintf(stderr,"Running: %s", bgJob -> pcb -> argument);
-                killpg(bgJob -> pgid, SIGCONT);
+                killpg(bgJob -> pcb -> pgid, SIGCONT);
                 free(cmd);
                 return;
             }
-            else if(bgJob->status == RUNNING){
+            else if(bgJob->pcb->status == RUNNING){
                 changeFGBG(head, job_id, 1); // set job to BG 
                 fprintf(stderr,"Running: %s", bgJob -> pcb -> argument);
                 free(cmd);
@@ -541,16 +543,16 @@ void penn_shredder(char* buffer){
                 changeStatus(head, job_id, 0); // set job to running
                 changeFGBG(head, job_id, 0); // set job to FG 
                 fprintf(stderr,"Restarting: %s", fgJob -> pcb -> argument);
-                killpg(fgJob -> pcb -> pgid, SIGCONT);
-                tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
+                killpg(fgJob->pcb->pgid, SIGCONT);
+                tcsetpgrp(STDIN_FILENO, fgJob ->pcb-> pgid);
                 int status;
-                for (int i = 0; i < fgJob -> numChild; i++){
-                    waitpid(fgJob->pids[i], &status, WUNTRACED);   
+                for (int i = 0; i < fgJob->pcb -> numChild; i++){
+                    waitpid(fgJob->pcb->pids[i], &status, WUNTRACED);   
                 }
                 tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
                 if(WIFSTOPPED(status)){ 
                     fprintf(stderr, "Stopped: %s\n", fgJob -> pcb -> argument); 
-                    fgJob -> status = STOPPED; 
+                    fgJob ->pcb -> status = STOPPED; 
                     if (bufferWaiting){
                         //PRINT BUFFER
                         for (int i = 0; i < bufferCount ; i++) {
@@ -562,26 +564,26 @@ void penn_shredder(char* buffer){
                         bufferCount = 0;
                     }
                 }
-                if(fgJob->status != STOPPED){
-                    changeStatus(head, job_id, 2); // set job to finished
-                    head = removeJob(head, fgJob->JobNumber);
+                if(fgJob->pcb->status != STOPPED){
+                    changeStatus(head, job_id, 2); // set job to TERMINATED
+                    head = removeJob(head, fgJob -> pcb -> jobID);
                 }
                 free(cmd);
                 return;
             }
             // not stopped, but running in BG
             else{
-                tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
+                tcsetpgrp(STDIN_FILENO, fgJob-> pcb-> pgid);
                 changeFGBG(head, job_id, 0); // set job to FG 
                 fprintf(stderr, "%s\n", fgJob -> pcb -> argument); 
                 int status;
-                for (int i = 0; i < fgJob -> numChild; i++){
-                    waitpid(fgJob->pids[i], &status, WUNTRACED);   
+                for (int i = 0; i < fgJob->pcb-> numChild; i++){
+                    waitpid(fgJob->pcb->pids[i], &status, WUNTRACED);   
                 }
                 tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
                 if(WIFSTOPPED(status)){ 
-                    fprintf(stderr, "Stopped: %s\n", fgJob -> pcb -> argument); 
-                    fgJob -> status = STOPPED; 
+                    fprintf(stderr, "Stopped: %s\n", fgJob-> pcb-> argument); 
+                    fgJob->pcb-> status = STOPPED; 
                     if (bufferWaiting){
                         //PRINT BUFFER
                         for (int i = 0; i < bufferCount ; i++) {
@@ -592,9 +594,9 @@ void penn_shredder(char* buffer){
                         bufferCount = 0;
                     }
                 }
-                if(fgJob->status != STOPPED){
-                    changeStatus(head, job_id, 2); // set job to finished
-                    head = removeJob(head, fgJob->JobNumber);
+                if(fgJob->pcb->status != STOPPED){
+                    changeStatus(head, job_id, 2); // set job to TERMINATED
+                    head = removeJob(head, fgJob -> pcb -> jobID);
                 }
                 free(cmd);
                 return;
@@ -603,21 +605,21 @@ void penn_shredder(char* buffer){
         else{ // case where no job ID given
             int job_id = getCurrentJob(head);
             struct Process *fgJob = getJob(head, job_id);
-            if (fgJob -> status == STOPPED){
+            if (fgJob->pcb-> status == STOPPED){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 0); // set job to running
                 changeFGBG(head, job_id, 0); // set job to FG 
-                killpg(fgJob -> pgid, SIGCONT);
-                tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
+                killpg(fgJob->pcb->pgid, SIGCONT);
+                tcsetpgrp(STDIN_FILENO, fgJob->pcb -> pgid);
                 fprintf(stderr, "Restarting: %s", fgJob -> pcb -> argument);
                 int status; 
-                for (int i = 0; i < fgJob -> numChild; i++){
-                    waitpid(fgJob->pids[i], &status, WUNTRACED);   
+                for (int i = 0; i < fgJob->pcb -> numChild; i++){
+                    waitpid(fgJob->pcb->pids[i], &status, WUNTRACED);   
                 }
                 tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
                 if(WIFSTOPPED(status)){ 
                     fprintf(stderr, "Stopped: %s\n", fgJob -> pcb -> argument); 
-                    fgJob -> status = STOPPED; 
+                    fgJob->pcb-> status = STOPPED; 
                     if (bufferWaiting){
                         //PRINT BUFFER
                         for (int i = 0; i < bufferCount ; i++) {
@@ -628,26 +630,26 @@ void penn_shredder(char* buffer){
                         bufferCount = 0;
                     }
                  }
-                if(fgJob->status != STOPPED){
-                    changeStatus(head, job_id, 2); // set job to finished
-                    head = removeJob(head, fgJob->JobNumber);
+                if(fgJob->pcb->status != STOPPED){
+                    changeStatus(head, job_id, 2); // set job to TERMINATED
+                    head = removeJob(head, fgJob->pcb->jobID);
                 }
                 free(cmd);
                 return;
             }
             // not stopped, but running in BG
             else{
-                tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
+                tcsetpgrp(STDIN_FILENO, fgJob->pcb-> pgid);
                 changeFGBG(head, job_id, 0); // set job to FG 
                 fprintf(stderr,"%s\n", fgJob -> pcb -> argument); 
                 int status;
-                for (int i = 0; i < fgJob -> numChild; i++){
-                    waitpid(fgJob->pids[i], &status, WUNTRACED);   
+                for (int i = 0; i < fgJob->pcb-> numChild; i++){
+                    waitpid(fgJob->pcb->pids[i], &status, WUNTRACED);   
                 }
                 tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
                 if(WIFSTOPPED(status)){ 
                     fprintf(stderr, "Stopped: %s\n", fgJob -> pcb -> argument); 
-                    fgJob -> status = STOPPED; 
+                    fgJob->pcb-> status = STOPPED; 
                     if (bufferWaiting){
                         //PRINT BUFFER
                         for (int i = 0; i < bufferCount ; i++) {
@@ -658,9 +660,9 @@ void penn_shredder(char* buffer){
                         bufferCount = 0;
                     }
                 }
-                if(fgJob->status != STOPPED){
-                    changeStatus(head, job_id, 2); // set job to finished
-                    head = removeJob(head, fgJob->JobNumber);
+                if(fgJob->pcb->status != STOPPED){
+                    changeStatus(head, job_id, 2); // set job to TERMINATED
+                    head = removeJob(head, fgJob->pcb->jobID);
                 }
                 free(cmd);
                 return;
@@ -684,11 +686,11 @@ void penn_shredder(char* buffer){
             struct Process *current = head;
             int noBg = 0;
             do{
-                if(current -> bgFlag == BG){
-                    fprintf(stderr, "[%d] %s (%s)\n", current -> JobNumber, current->pcb -> argument, statusToStr(current -> status));
+                if(current->pcb -> bgFlag == BG){
+                    fprintf(stderr, "[%d] %s (%s)\n", current->pcb -> jobID, current->pcb -> argument, statusToStr(current->pcb -> status));
                     noBg = 1;
                 }
-                current = current -> next;
+                current = current-> next;
             } while(current != NULL);
             
             if(noBg == 0){
@@ -828,8 +830,8 @@ void penn_shredder(char* buffer){
                     new_job = createJob(group_pid, BG, n, buffer);
                 }
                 // do this for every process in the job
-                new_job -> pids[i] = pid; 
-                new_job -> pids_finished[i] = false;                
+                new_job->pcb -> pids[i] = pid; 
+                new_job->pcb -> pidsFinished[i] = false;                
             }
             else{ // same for FG
                 // for the first process in the job, add everything
@@ -837,8 +839,8 @@ void penn_shredder(char* buffer){
                     new_job = createJob(group_pid, FG, n, buffer);
                 }
                 // do this for every process in the job
-                new_job -> pids[i] = pid;
-                new_job -> pids_finished[i] = false;     
+                new_job->pcb -> pids[i] = pid;
+                new_job->pcb -> pidsFinished[i] = false;     
             }
         }        
     }
@@ -852,9 +854,9 @@ void penn_shredder(char* buffer){
             waitpid(-group_pid, &status, WUNTRACED);   
         }
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
-        if (WIFSTOPPED(status) && new_job -> status == RUNNING){
+        if (WIFSTOPPED(status) && new_job->pcb -> status == RUNNING){
             fprintf(stderr, "\nStopped: %s", new_job-> pcb -> argument); 
-            new_job -> status = STOPPED; 
+            new_job->pcb -> status = STOPPED; 
             head = addJob(head, new_job);
             
         }
@@ -924,7 +926,7 @@ int main(int argc, char** argv) {
         // Reading I/P here but polling here
         // POLLING 
         int count = 0;
-        int finishedIndices[count];
+        int TERMINATEDIndices[count];
         int status;
         int num = 0;
         
@@ -955,9 +957,9 @@ int main(int argc, char** argv) {
                 }
                 current = head;
                 do{ 
-                    if (WIFSTOPPED(status) && current -> status == RUNNING){
+                    if (WIFSTOPPED(status) && current->pcb -> status == RUNNING){
                         printf("Stopped: %s\n", current -> pcb -> argument); 
-                        current -> status = STOPPED; 
+                        current->pcb -> status = STOPPED; 
                         if (bufferWaiting){
                         //PRINT BUFFER
                         for (int i = 0; i < bufferCount ; i++) {
@@ -969,31 +971,31 @@ int main(int argc, char** argv) {
                         }
                     }
                     else{
-                        bool currJobFinished = false;
-                        int n = current -> numChild;
+                        bool currJobTERMINATED = false;
+                        int n = current->pcb -> numChild;
 
-                        // check all pids in this job, if they match the returned pid, then mark finished
+                        // check all pids in this job, if they match the returned pid, then mark TERMINATED
                         for(int i = 0; i < n; i++){
-                            if(pid == current -> pids[i]){
-                                current -> pids_finished[i] = true; 
+                            if(pid == current->pcb -> pids[i]){
+                                current->pcb -> pidsFinished[i] = true; 
                             }
                         }
                         
-                        // check to see if all processes in current job are finished
+                        // check to see if all processes in current job are TERMINATED
                         for(int i = 0; i < n; i++){
-                            if(current -> pids_finished[i] == false){
-                                currJobFinished = false;
+                            if(current->pcb -> pidsFinished[i] == false){
+                                currJobTERMINATED = false;
                                 break;
                             }
-                            currJobFinished = true;
+                            currJobTERMINATED = true;
                         }
 
-                        // ONLY if all processes in this job are finished and its not ALREADY finished in the past, print finished: cmd
-                        if(currJobFinished && current -> status == RUNNING){
+                        // ONLY if all processes in this job are TERMINATED and its not ALREADY TERMINATED in the past, print TERMINATED: cmd
+                        if(currJobTERMINATED && current->pcb -> status == RUNNING){
                             char *command = current -> pcb -> argument;
-                            printf("Finished: %s\n", command);
-                            current -> status = FINISHED;          
-                            finishedIndices[num] = current -> JobNumber;
+                            printf("TERMINATED: %s\n", command);
+                            current->pcb -> status = TERMINATED;          
+                            TERMINATEDIndices[num] = current->pcb -> jobID;
                             num ++;       
                             if (bufferWaiting){
                                 //PRINT BUFFER
@@ -1019,9 +1021,9 @@ int main(int argc, char** argv) {
                 }while(current != NULL);
             }
 
-            // iterate through the finished job nums and remove them all
+            // iterate through the TERMINATED job nums and remove them all
             for(int i = 0; i < num; i++){
-                head = removeJob(head, finishedIndices[i]);
+                head = removeJob(head, TERMINATEDIndices[i]);
             }
 
             // Exit iteration if only new line given

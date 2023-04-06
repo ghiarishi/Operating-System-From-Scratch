@@ -15,17 +15,21 @@
 struct pcb {
     ucontext_t context;
     int jobID;
+    int numChild;
     int pid;
+    int pgid;
     int priority;
     char *argument;
     int status;
     int bgFlag;
+    int *pids;                      // list of all pids in the job
+    int *pidsFinished;             // boolean array list that checks every pid is finished
     // file_t *fd_table[MAX_FILES];
     // int w_status;
 };
 
 char* strCopy(char* src, char* dest);
 
-struct pcb *createPcb(ucontext_t context, int pid, int ppid, int priority, int status, char *argument);
+struct pcb *createPcb(ucontext_t context, int pid, int pgid, int ppid, int priority, int status, char *argument);
 
 void freePcb(struct pcb *pcb_obj);
