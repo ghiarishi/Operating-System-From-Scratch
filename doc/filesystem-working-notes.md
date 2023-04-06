@@ -63,3 +63,7 @@ necessary rather than the FAT API.
 Each process, on creation, should set entries `PSTDIN_FILENO` and `PSTDOUT_FILENO` in its PCB's fd table to file structs
 with the correct flag set. This allows for later redirecting stdin/stdout by overwriting the entries in the fd table
 with file structs linked to files on the FAT filesystem.
+
+## Standalone
+
+The standalone completes the demo plan with no "definitely/indirectly/possibly lost" memory leaks.
