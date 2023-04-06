@@ -720,11 +720,13 @@ void penn_shredder(char* buffer){
     }
 
     // for loop to execute the commands line by line
-    struct Process *new_job = NULL; // create a new job each time penn shredder is run
+    struct Process *newProcess = NULL; // create a new job each time penn shredder is run
 
     for (int i = 0; i < n; ++i) { // n processes within one command line 1
-    
-        int pid = fork(); // create child process thats copy of the parent
+
+        // P SPAWN
+        int pid = p_spawn(cmd->commands[0][0], cmd -> commands[0], cmd -> stdin_file, cmd -> stdout_file); 
+        // int pid = fork(); // create child process thats copy of the parent
         curr_pid = pid;
 
         if (pid == -1) {
@@ -827,20 +829,20 @@ void penn_shredder(char* buffer){
             if(IS_BG == 1){
                 // for the first process in the job, add everything
                 if(i == 0){ 
-                    new_job = createJob(group_pid, BG, n, buffer);
+                    newProcess = createJob(group_pid, BG, n, buffer);
                 }
                 // do this for every process in the job
-                new_job->pcb -> pids[i] = pid; 
-                new_job->pcb -> pidsFinished[i] = false;                
+                newProcess->pcb -> pids[i] = pid; 
+                newProcess->pcb -> pidsFinished[i] = false;                
             }
             else{ // same for FG
                 // for the first process in the job, add everything
                 if(i == 0){ 
-                    new_job = createJob(group_pid, FG, n, buffer);
+                    newProcess = createJob(group_pid, FG, n, buffer);
                 }
                 // do this for every process in the job
-                new_job->pcb -> pids[i] = pid;
-                new_job->pcb -> pidsFinished[i] = false;     
+                newProcess->pcb -> pids[i] = pid;
+                newProcess->pcb -> pidsFinished[i] = false;     
             }
         }        
     }
@@ -854,14 +856,14 @@ void penn_shredder(char* buffer){
             waitpid(-group_pid, &status, WUNTRACED);   
         }
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
-        if (WIFSTOPPED(status) && new_job->pcb -> status == RUNNING){
-            fprintf(stderr, "\nStopped: %s", new_job-> pcb -> argument); 
-            new_job->pcb -> status = STOPPED; 
-            head = addJob(head, new_job);
+        if (WIFSTOPPED(status) && newProcess->pcb -> status == RUNNING){
+            fprintf(stderr, "\nStopped: %s", newProcess-> pcb -> argument); 
+            newProcess->pcb -> status = STOPPED; 
+            head = addJob(head, newProcess);
             
         }
         else{
-            freeOneJob(new_job);
+            freeOneJob(newProcess);
         }
         tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
         //print bufferSig here IF not empty
@@ -879,13 +881,13 @@ void penn_shredder(char* buffer){
 
     // add the background job ALWAYS
     if(IS_BG){
-        head = addJob(head, new_job);
+        head = addJob(head, newProcess);
     }
     free(cmd);
     return;
 }
 
-int main(int argc, char** argv) {  
+void *penn_shell(int argc, char** argv) {  
     if(argc != 1 && argc != 2 && argc != 3) {  // penn shell args: check validity
         freeAllJobs(head);
         exit(EXIT_FAILURE);
@@ -1078,6 +1080,5 @@ int main(int argc, char** argv) {
     }   
     freeAllJobs(current);
     freeAllJobs(head);
-    free(bufferSig);
-    return 0;    
+    free(bufferSig);  
 }  

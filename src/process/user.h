@@ -6,6 +6,7 @@
 #include "kernel.h"
 
 extern struct Process *activeProcess;
+int pidCounter;
 
 #define PROMPT "$"
 #define BUFFERSIZE 4096

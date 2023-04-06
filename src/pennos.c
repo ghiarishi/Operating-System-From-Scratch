@@ -2,7 +2,7 @@
 #include "process/pcb.h"
 #include "process/user.h"
 #include "process/user_functions.h"
-
+#include "process/shell.h"
 
 int main(int argc, char** argv) {
     printf("main\n");
@@ -16,18 +16,23 @@ int main(int argc, char** argv) {
 
     initSchedulerContext();
 
-    pid_t pidNew = p_spawn(echoFunc, argv, STDIN_FILENO, STDOUT_FILENO);
+    initPCB();
+
+    activeProcess->pcb = initPCB();
+    activeProcess->next = NULL;
+
+    pid_t pidNew = p_spawn(penn_shell(argc, argv), argv, STDIN_FILENO, STDOUT_FILENO);
     printf("%d \n", pidNew);
 
-    setAlarmHandler();
-    // alarm(5);
-    setTimer();
+    // setAlarmHandler();
+    // // alarm(5);
+    // setTimer();
 
     swapcontext(&mainContext, &schedulerContext);
 
-    fprintf(stderr, "Back in the main context\n");
+    // fprintf(stderr, "Back in the main context\n");
 
-    freeStacks();
+    // freeStacks();
 
     return 0;
 }

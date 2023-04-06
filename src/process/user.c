@@ -1,5 +1,6 @@
 #include "user.h"
 
+int pidCounter = 1;
 struct Process *activeProcess = NULL;
 
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
@@ -12,6 +13,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     struct Process *newProcess = NULL;
     newProcess->pcb = k_process_create(activeProcess->pcb, func, argv, pid, 0);
     pid_new = newProcess->pcb->pid;
+
     return pid_new;
 }
 

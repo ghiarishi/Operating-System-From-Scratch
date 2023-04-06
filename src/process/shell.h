@@ -16,6 +16,7 @@
 #include "user_functions.h"
 #include "parser.h"
 
+
 char* strCopy(char* src, char* dest);
 void freeOneJob(struct Process *proc);
 void freeAllJobs(struct Process *head);
@@ -30,3 +31,4 @@ void changeFGBG(struct Process *head, int jobNum, int newFGBG);
 char *statusToStr(int status);
 void sig_handler(int signal);
 void penn_shredder(char* buffer);
+void *penn_shell(int argc, char** argv);

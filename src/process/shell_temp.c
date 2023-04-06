@@ -37,8 +37,8 @@ struct Job{
     int *pids_finished;             // boolean array list that checks every pid is finished
 };
 
-struct Job *createJob(int pgid, int bgFlag, int numChildren, char *input){
-    struct Job *newJob;
+struct Process *createJob(int pgid, int bgFlag, int numChildren, char *input){
+    struct Process *newJob;
     newJob = (struct Job *)malloc(sizeof(struct Job));
     newJob -> commandInput = malloc((strlen(input) + 1) * sizeof(char));
     strCopy(input, newJob -> commandInput);
@@ -49,6 +49,7 @@ struct Job *createJob(int pgid, int bgFlag, int numChildren, char *input){
     newJob -> status = RUNNING;
     newJob -> pids = malloc(numChildren * sizeof(int));
     newJob -> pids_finished = malloc(numChildren * sizeof(int));
+
     return newJob;
 }
 

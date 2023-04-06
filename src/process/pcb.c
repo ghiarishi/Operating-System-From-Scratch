@@ -11,7 +11,21 @@ char* strCopy(char* src, char* dest) {
     return dest;
 }
 
-struct pcb *createPcb(ucontext_t context, int pid, int pgid, int ppid, int priority, int status, char *input) {
+struct pcb *initPCB() {
+    struct pcb *pcb_obj = (struct pcb *) malloc(sizeof(struct pcb));
+    pcb_obj->argument = NULL;
+    pcb_obj->priority = -1;
+    pcb_obj->numChild = 1;
+    pcb_obj->pid = pidCounter;
+    pcb_obj->pgid = pidCounter;
+    pcb_obj->context = activeContext;
+    pcb_obj->status = READY;
+    pcb_obj->pids = malloc(pcb_obj->numChild * sizeof(int));
+    pcb_obj->pidsFinished = malloc(pcb_obj->numChild * sizeof(int));
+    return pcb_obj;
+}
+
+struct pcb *createPcb(ucontext_t context, int pid, int pgid, int priority, int status, char *input) {
     struct pcb *pcb_obj = (struct pcb *) malloc(sizeof(struct pcb));
     pcb_obj->argument = malloc((strlen(input) + 1) * sizeof(char));
     strCopy(input, pcb_obj->argument);

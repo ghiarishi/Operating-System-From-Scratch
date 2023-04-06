@@ -3,6 +3,7 @@
 #include <ucontext.h> // getcontext, makecontext, setcontext, swapcontext
 #include <stdio.h>
 #include <stdlib.h>
+#include "user.h"
 // #include "fs/user.h"
 
 #define STOPPED 3
@@ -30,6 +31,8 @@ struct pcb {
 
 char* strCopy(char* src, char* dest);
 
-struct pcb *createPcb(ucontext_t context, int pid, int pgid, int ppid, int priority, int status, char *argument);
+struct pcb *initPCB();
+
+struct pcb *createPcb(ucontext_t context, int pid, int pgid, int priority, int status, char *argument);
 
 void freePcb(struct pcb *pcb_obj);
