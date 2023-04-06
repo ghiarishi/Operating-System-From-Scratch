@@ -5,6 +5,7 @@
 #include <stdlib.h>
 // #include "fs/user.h"
 
+#define STOPPED 3
 #define RUNNING 2
 #define READY 1
 #define TERMINATED 0
@@ -13,15 +14,14 @@
 
 struct pcb {
     ucontext_t context;
+    int jobID;
     int pid;
     int priority;
     char *argument;
     int status;
     int bgFlag;
     // file_t *fd_table[MAX_FILES];
-    // int osStatus;
     // int w_status;
-    // int block_time;
 };
 
 char* strCopy(char* src, char* dest);

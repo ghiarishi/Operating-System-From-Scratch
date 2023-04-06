@@ -26,15 +26,3 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 // void p_exit(void){
 
 // }
-
-// k_process_create(Pcb *parent){
-
-// }
-
-// k_process_kill(Pcb *process, int signal){
-
-// }
-
-// k_process_cleanup(Pcb *process){
-
-// }

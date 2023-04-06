@@ -1,3 +1,5 @@
+PROMPT='"$ "'
+
 TARGETS = pennfat pennos
 CC = clang
 

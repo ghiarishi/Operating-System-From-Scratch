@@ -10,6 +10,7 @@ const int schedulerList[18] = {-1, 0, -1, 0, -1, -1, 0, 1, -1, 1, 0, -1, 0, 1, 0
 struct ucontext_t schedulerContext;
 struct ucontext_t mainContext;
 struct ucontext_t *activeContext = NULL;
+int alarmFlag = 1;
 
 struct Process *highQhead = NULL; //extern
 struct Process *highQtail = NULL;
@@ -27,6 +28,12 @@ void scheduler(void){
     
     printf("Inside scheduler\n");
 
+    if (activeProcess->pcb->status == RUNNING && !activeProcess->pcb->context.uc_link) {
+        
+        printf("process terminated");
+        k_process_cleanup(activeProcess);
+    }
+
     static int listPointer = 0;
 
     // if at the end, restart from the first element
@@ -35,14 +42,6 @@ void scheduler(void){
     }
 
     int num = schedulerList[listPointer];
-
-    if (activeProcess->pcb->status == RUNNING && !activeProcess->pcb->context.uc_link) {
-        // Update the process status to terminated
-        changeStatus(activeProcess, 0);
-        dequeueProcess();
-        activeProcess = NULL;
-        activeContext = NULL;
-    }
 
     // issue here, check if the head is null for each q, only then add to ready q
     switch (num){
@@ -67,7 +66,7 @@ void scheduler(void){
             lowQtail->next = lowQhead;
             lowQtail = lowQhead;
             lowQhead = lowQhead->next;
-        } else {
+        } else {                  
             printf("empty Q\n");
         }
         break;
@@ -106,50 +105,15 @@ void initSchedulerContext(void){
     makecontext(&schedulerContext, scheduler, 0);
 }
 
-// Function to add a thread to the appropriate priority queue
-void enqueueProcess(struct Process* newProcess) {
-    
-    // Determine the appropriate priority queue based on the ProcessnewProcess's priority level
-    switch(newProcess->pcb->priority) {
-        case PRIORITY_HIGH:
-            if(highQhead == NULL){
-                highQhead = newProcess;
-            }
-            else{
-                highQtail->next = newProcess;
-            }    
-            highQtail = newProcess;
-            break;
-        case PRIORITY_LOW:
-            if(lowQhead == NULL){
-                lowQhead = newProcess;
-            }
-            else{
-                lowQtail->next = newProcess;
-            }   
-            lowQtail = newProcess;
-            break;
-        default:
-            if(medQhead == NULL){
-                medQhead = newProcess;
-            }
-            else{
-                medQtail->next = newProcess;
-            }   
-            medQtail = newProcess;
-            break;
-    }
-}
-
 void alarmHandler(int signum) // SIGALRM
 {
     printf("inside alarmHandler");
+    alarmFlag = 0;
     swapcontext(activeContext, &schedulerContext);
     
 }
 
-void setAlarmHandler(void)
-{
+void setAlarmHandler(void) {
     struct sigaction act;
 
     act.sa_handler = alarmHandler;
@@ -159,54 +123,11 @@ void setAlarmHandler(void)
     sigaction(SIGALRM, &act, NULL);
 }
 
-void setTimer(void)
-{
+void setTimer(void) {
     struct itimerval it;
 
     it.it_interval = (struct timeval){.tv_usec = quantum};
     it.it_value = it.it_interval;
 
     setitimer(ITIMER_REAL, &it, NULL);
-}
-
-void dequeueProcess(void)
-{
-    while(highQhead->next != NULL){
-        struct Process* p = highQhead;
-        if(p->next->pcb->status == TERMINATED){
-            struct Process* removed = p->next;
-            struct Process* newNext = removed->next;
-            p->next = newNext;
-            removed->next = NULL;
-            free(p->pcb->context.uc_stack.ss_sp);
-            freeOneProcess(p);
-        }
-        highQhead = highQhead->next;
-    }
-
-    while(medQhead->next != NULL){
-        struct Process* p = medQhead;
-        if(p->next->pcb->status == TERMINATED){
-            struct Process* removed = p->next;
-            struct Process* newNext = removed->next;
-            p->next = newNext;
-            removed->next = NULL;
-            free(p->pcb->context.uc_stack.ss_sp);
-            freeOneProcess(p);
-        }
-        medQhead = medQhead->next;
-    }
-
-    while(lowQhead->next != NULL){
-        struct Process* p = lowQhead;
-        if(p->next->pcb->status == TERMINATED){
-            struct Process* removed = p->next;
-            struct Process* newNext = removed->next;
-            p->next = newNext;
-            removed->next = NULL;
-            free(p->pcb->context.uc_stack.ss_sp);
-            freeOneProcess(p);
-        }
-        lowQhead = lowQhead->next;
-    }
 }

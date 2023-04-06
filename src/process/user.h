@@ -4,7 +4,6 @@
 #include "scheduler.h"
 #include "pcb.h"
 #include "kernel.h"
-#include "user_functions.h"
 
 extern struct Process *activeProcess;
 

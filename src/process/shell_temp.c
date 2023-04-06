@@ -1,5 +1,3 @@
-#include "shell.h"
-
 #define INPUT_SIZE 4096
 #define FG 0
 #define BG 1

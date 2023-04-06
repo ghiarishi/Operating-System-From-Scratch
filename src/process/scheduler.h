@@ -38,11 +38,9 @@ struct Process{
 
 void scheduler(void);
 void initSchedulerContext(void);
-void enqueueProcess(struct Process* newProcess);
 void testFunc2();
 void setStack(stack_t *stack);
 struct Process* createNewProcess(void (*func)(), char* argv[], int id, int priority);
-void dequeueProcess(void);
 void alarmHandler(int signum);
 void setAlarmHandler(void);
 void setTimer(void);

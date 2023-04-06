@@ -3,3 +3,4 @@
 #include "scheduler.h"
 
 struct pcb* k_process_create(struct pcb *parent, void (*func)(), char* argv[], int id, int priority);
+void k_process_cleanup(struct Process *process);
