@@ -16,12 +16,12 @@ int main(int argc, char** argv) {
 
     initSchedulerContext();
 
-    initPCB();
+    // initPCB();
 
     activeProcess->pcb = initPCB();
     activeProcess->next = NULL;
 
-    pid_t pidNew = p_spawn(penn_shell(argc, argv), argv, STDIN_FILENO, STDOUT_FILENO);
+    pid_t pidNew = p_spawn(pennShell, argv, STDIN_FILENO, STDOUT_FILENO);
     printf("%d \n", pidNew);
 
     // setAlarmHandler();

@@ -44,6 +44,6 @@ struct Process* createNewProcess(void (*func)(), char* argv[], int id, int prior
 void alarmHandler(int signum);
 void setAlarmHandler(void);
 void setTimer(void);
-void freeStacks(void);
+void freeStacks(struct pcb *p);
 
 

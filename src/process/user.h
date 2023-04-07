@@ -4,6 +4,7 @@
 #include "scheduler.h"
 #include "pcb.h"
 #include "kernel.h"
+#include "parser.h"
 
 extern struct Process *activeProcess;
 int pidCounter;

@@ -31,7 +31,8 @@ void scheduler(void){
     if (activeProcess->pcb->status == RUNNING && !activeProcess->pcb->context.uc_link) {
         
         printf("process terminated");
-        k_process_cleanup(activeProcess);
+        dequeue(activeProcess);
+        k_process_cleanup(activeProcess -> pcb);
     }
 
     static int listPointer = 0;
@@ -130,4 +131,8 @@ void setTimer(void) {
     it.it_value = it.it_interval;
 
     setitimer(ITIMER_REAL, &it, NULL);
+}
+
+void freeStacks(struct pcb *p){
+    free(p->context.uc_stack.ss_sp);
 }

@@ -18,7 +18,6 @@ struct pcb *initPCB() {
     pcb_obj->numChild = 1;
     pcb_obj->pid = pidCounter;
     pcb_obj->pgid = pidCounter;
-    pcb_obj->context = activeContext;
     pcb_obj->status = READY;
     pcb_obj->pids = malloc(pcb_obj->numChild * sizeof(int));
     pcb_obj->pidsFinished = malloc(pcb_obj->numChild * sizeof(int));

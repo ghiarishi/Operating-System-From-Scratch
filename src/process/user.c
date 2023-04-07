@@ -11,8 +11,18 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     pid_t pid = getpid();
 
     struct Process *newProcess = NULL;
-    newProcess->pcb = k_process_create(activeProcess->pcb, func, argv, pid, 0);
+    newProcess->pcb = k_process_create(activeProcess->pcb);
     pid_new = newProcess->pcb->pid;
+
+    struct parsed_command *cmd;
+    parse_command(argv, &cmd);
+
+    if(func == "penn_shell"){
+        makecontext(&newProcess->pcb->context, func, 0, argv);
+    } else {
+        makecontext(&newProcess->pcb->context, func, cmd->num_commands, cmd->commands[0]);
+    }
+    enqueue(newProcess);
 
     return pid_new;
 }
