@@ -4,52 +4,6 @@
 
 #define INPUT_SIZE 4096 // good programming practice
 
-
-
-// void pennShell(){
-    
-// ==== main "shell" impl ====
-/**
- * Main loop: prompt, read, execute.
- */
-
-    // fprintf(stderr, PROMPT);
-    // char **args = readline_tok();
-
-    // if there are no args (all WS), return and restart the loop
-    // if (args[0] == NULL) {
-    //     free_tok(args);
-    //     return;
-    // }
-
-    // // otherwise, run the command
-    // if (!strcmp(args[0], "mkfs"))
-    //     mkfs(args);
-    // else if (!strcmp(args[0], "mount"))
-    //     mount(args);
-    // else if (!strcmp(args[0], "umount"))
-    //     umount(args);
-    // else if (!strcmp(args[0], "touch"))
-    //     touch(args);
-    // else if (!strcmp(args[0], "mv"))
-    //     mv(args);
-    // else if (!strcmp(args[0], "rm"))
-    //     rm(args);
-    // else if (!strcmp(args[0], "cat"))
-    //     cat(args);
-    // else if (!strcmp(args[0], "cp"))
-    //     cp(args);
-    // else if (!strcmp(args[0], "ls"))
-    //     ls(args);
-    // else if (!strcmp(args[0], "chmod"))
-    //     chmod(args);
-    // else
-    //     fprintf(stderr, "Unrecognized command: %s\n", args[0]);
-
-    // and clean up
-    // free_tok(args);
-// }
-
 int pid; // process ID
 int ctrl_c = 0; // flag to check if ctrl c has been pressed
 int flag_spaces = 0; // flag to note if the input buffer is all spaces and/or tabs
