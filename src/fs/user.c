@@ -1,7 +1,7 @@
 #include "user.h"
 
 // begin demo code - delete this later
-#define MAX_FILES 512
+// #define MAX_FILES 512
 
 // global:
 // fs_t *fs;
@@ -93,6 +93,7 @@
 //         // write to stdout
 //     } else if (f->stdiomode == FIO_STDIN) {
 //         // todo error, can't write to stdin
+//         return -1
 //     } else {
 //         return fs_write(fs, f, str, n);
 //     }

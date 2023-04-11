@@ -3,6 +3,53 @@
 #define FALSE 0
 
 #define INPUT_SIZE 4096 // good programming practice
+
+
+
+// void pennShell(){
+    
+// ==== main "shell" impl ====
+/**
+ * Main loop: prompt, read, execute.
+ */
+
+    // fprintf(stderr, PROMPT);
+    // char **args = readline_tok();
+
+    // if there are no args (all WS), return and restart the loop
+    // if (args[0] == NULL) {
+    //     free_tok(args);
+    //     return;
+    // }
+
+    // // otherwise, run the command
+    // if (!strcmp(args[0], "mkfs"))
+    //     mkfs(args);
+    // else if (!strcmp(args[0], "mount"))
+    //     mount(args);
+    // else if (!strcmp(args[0], "umount"))
+    //     umount(args);
+    // else if (!strcmp(args[0], "touch"))
+    //     touch(args);
+    // else if (!strcmp(args[0], "mv"))
+    //     mv(args);
+    // else if (!strcmp(args[0], "rm"))
+    //     rm(args);
+    // else if (!strcmp(args[0], "cat"))
+    //     cat(args);
+    // else if (!strcmp(args[0], "cp"))
+    //     cp(args);
+    // else if (!strcmp(args[0], "ls"))
+    //     ls(args);
+    // else if (!strcmp(args[0], "chmod"))
+    //     chmod(args);
+    // else
+    //     fprintf(stderr, "Unrecognized command: %s\n", args[0]);
+
+    // and clean up
+    // free_tok(args);
+// }
+
 int pid; // process ID
 int ctrl_c = 0; // flag to check if ctrl c has been pressed
 int flag_spaces = 0; // flag to note if the input buffer is all spaces and/or tabs
@@ -53,6 +100,7 @@ struct Process *addJob(struct Process *head, struct Process *newProcess){
     // if there are no Processes in the LL yet, create one, assign #1
     if (head == NULL){ 
         head = newProcess; 
+        printf("Making pennshell the head of high q\n");
         newProcess -> pcb -> jobID = 1;
         return head;
     }
@@ -100,15 +148,19 @@ struct Process *addJob(struct Process *head, struct Process *newProcess){
 // Function to add a thread to the appropriate priority queue
 void enqueue(struct Process* newProcess) {
     // Determine the appropriate priority queue based on the ProcessnewProcess's priority level
+    printf("Inside enqueue\n");
     switch(newProcess->pcb->priority) {
         case PRIORITY_HIGH:
-            addJob(highQhead, newProcess);
+            printf("Inside HighQ!\n");
+            highQhead = addJob(highQhead, newProcess);
             break;
         case PRIORITY_LOW:
-            addJob(lowQhead, newProcess);
+            printf("Inside LowQ!\n");
+            lowQhead = addJob(lowQhead, newProcess);
             break;
         default:
-            addJob(medQhead, newProcess);
+            printf("Inside MedQ!\n");
+            medQhead = addJob(medQhead, newProcess);
             break;
     }
 }
@@ -143,18 +195,19 @@ struct Process *removeJob(struct Process *head, int jobNum){
 void dequeue(struct Process *proc){
     switch(proc->pcb->priority) {
         case PRIORITY_HIGH:
-            removeProcess(highQhead, proc->pcb->jobID);
+            removeJob(highQhead, proc->pcb->jobID);
             break;
         case PRIORITY_LOW:
-            removeProcess(lowQhead, proc->pcb->jobID);
+            removeJob(lowQhead, proc->pcb->jobID);
             break;
         default:
-            removeProcess(medQhead, proc->pcb->jobID);
+            removeJob(medQhead, proc->pcb->jobID);
             break;
     }
 }
 
 void pennShell(){
+    printf("Inside penn shell \n");
     timeout = 0;
 
     // run the two signals
@@ -171,10 +224,14 @@ void pennShell(){
         
         // WRITE AND READ 
         fflush(stdout);
-        int write4 = write(STDERR_FILENO, PROMPT, sizeof(PROMPT));
-        if (write4 == -1) {
+
+        // int f_write(int fd, const char *str, int n);
+
+
+        int write1 = write(STDERR_FILENO, PROMPT, sizeof(PROMPT));
+        if (write1 == -1) {
             perror("write");
-            exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE); // replace with p_exit
         }
 
         char buffer[INPUT_SIZE];
@@ -242,7 +299,11 @@ void pennShell(){
         struct parsed_command *cmd; 
         parse_command(buffer, &cmd);
 
-        pid = p_spawn(cmd->commands[0][0], cmd -> commands[0], cmd -> stdin_file, cmd -> stdout_file ); // create child process thats copy of the parent
+        if (strcmp(cmd->commands[0][0], "sleep") == 0){
+            pid = p_spawn(*sleepFunc, cmd -> commands[0], 0, 1);
+        }
+
+        // pid = p_spawn(cmd->commands[0][0], cmd -> commands[0], cmd -> stdin_file, cmd -> stdout_file ); // create child process thats copy of the parent
 
         if (pid == -1) {
             perror("fork");
@@ -252,10 +313,6 @@ void pennShell(){
         }
         
         if (pid) { // child process has PID 0 (returned from the fork process), while the parent will get the actual PID of child
-            #ifdef EC_NOKILL
-            // mandatory additional credit code
-            alarm(timeout);
-            #endif     
   
             //setcontext
             printf("In child rn yo \n");

@@ -7,9 +7,8 @@
 #include "parser.h"
 
 extern struct Process *activeProcess;
-int pidCounter;
 
 #define PROMPT "$"
 #define BUFFERSIZE 4096
 
-pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd);
+pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1);

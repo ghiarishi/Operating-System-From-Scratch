@@ -19,8 +19,6 @@ struct Process *medQtail = NULL;
 struct Process *lowQhead = NULL; 
 struct Process *lowQtail = NULL;
 
-// struct Process *readyQhead = NULL; 
-// struct Process *readyQtail = NULL;
 struct Process *blockedQhead = NULL; 
 struct Process *blockedQtail = NULL;
 
@@ -29,7 +27,6 @@ void scheduler(void){
     printf("Inside scheduler\n");
 
     if (activeProcess->pcb->status == RUNNING && !activeProcess->pcb->context.uc_link) {
-        
         printf("process terminated");
         dequeue(activeProcess);
         k_process_cleanup(activeProcess -> pcb);
@@ -51,11 +48,11 @@ void scheduler(void){
             activeProcess = highQhead;
             activeContext = &highQhead->pcb->context;
             highQhead->pcb->status = RUNNING;
-            highQtail->next = highQhead;
-            highQtail = highQhead;
-            highQhead = highQhead->next;
+            
+            // highQhead = highQhead->next;
+            // highQtail->next = activeProcess;
         } else {
-            printf("empty Q\n");
+            printf("empty high Q\n");
         }
         
         break;     
@@ -68,7 +65,7 @@ void scheduler(void){
             lowQtail = lowQhead;
             lowQhead = lowQhead->next;
         } else {                  
-            printf("empty Q\n");
+            printf("empty low Q\n");
         }
         break;
     
@@ -81,7 +78,7 @@ void scheduler(void){
             medQtail = medQhead;
             medQhead = medQhead->next;
         } else {
-            printf("empty Q\n");
+            printf("empty med Q\n");
         }
         break;
     }
@@ -92,9 +89,8 @@ void scheduler(void){
         setcontext(activeContext);
     }
 
-    perror("setcontext");
-    exit(EXIT_FAILURE);
-    
+    // // perror("PennOS Passed? ");
+    // exit(EXIT_FAILURE);
 }
 
 void initSchedulerContext(void){
@@ -106,12 +102,11 @@ void initSchedulerContext(void){
     makecontext(&schedulerContext, scheduler, 0);
 }
 
-void alarmHandler(int signum) // SIGALRM
-{
+// SIGALRM
+void alarmHandler(int signum){
     printf("inside alarmHandler");
     alarmFlag = 0;
     swapcontext(activeContext, &schedulerContext);
-    
 }
 
 void setAlarmHandler(void) {

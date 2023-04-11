@@ -16,19 +16,20 @@ int main(int argc, char** argv) {
 
     initSchedulerContext();
 
-    // initPCB();
-
+    activeProcess = (struct Process*) malloc(sizeof(struct Process));
     activeProcess->pcb = initPCB();
     activeProcess->next = NULL;
 
     pid_t pidNew = p_spawn(pennShell, argv, STDIN_FILENO, STDOUT_FILENO);
-    printf("%d \n", pidNew);
-
+    printf(" WOOHOO %d \n", pidNew);
+    // pennShell();
+    setcontext(&schedulerContext);
     // setAlarmHandler();
     // // alarm(5);
     // setTimer();
 
-    swapcontext(&mainContext, &schedulerContext);
+    // swapcontext(&mainContext, &schedulerContext);
+    
 
     // fprintf(stderr, "Back in the main context\n");
 

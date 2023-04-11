@@ -15,8 +15,8 @@ void echo(int argc, char *argv[]) {
     printf("%s \n", message);
 }
 
-void sleep(int milliseconds) {
-    milliseconds = 12000;
+void sleepFunc() {
+    int milliseconds = 12000;
     clock_t start_time = clock();
     printf("running sleep! \n");
     while ((clock() - start_time) * 1000 / CLOCKS_PER_SEC < milliseconds) {

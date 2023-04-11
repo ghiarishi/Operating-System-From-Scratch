@@ -13,6 +13,10 @@
 #define FG 0
 #define BG 1
 
+#define MAX_FILES 512
+
+extern int pidCounter;
+
 struct pcb {
     ucontext_t context;
     int jobID;
@@ -20,7 +24,7 @@ struct pcb {
     int pid;
     int pgid;
     int priority;
-    char *argument;
+    // char *argument;
     int status;
     int bgFlag;
     int *pids;                      // list of all pids in the job
@@ -33,6 +37,6 @@ char* strCopy(char* src, char* dest);
 
 struct pcb *initPCB();
 
-struct pcb *createPcb(ucontext_t context, int pid, int pgid, int priority, int status, char *argument);
+struct pcb *createPcb(ucontext_t context, int pid, int pgid, int priority, int status);
 
 void freePcb(struct pcb *pcb_obj);

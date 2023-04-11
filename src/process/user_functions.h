@@ -11,7 +11,7 @@
 #include "scheduler.h"
 
 void echoFunc(int argc, char *argv[]);
-void sleepFunc(int milliseconds);
+void sleepFunc();
 void busy_wait(void);
 void lsFunc();
 void touchFunc(const char* filename);
