@@ -64,6 +64,15 @@ Each process, on creation, should set entries `PSTDIN_FILENO` and `PSTDOUT_FILEN
 with the correct flag set. This allows for later redirecting stdin/stdout by overwriting the entries in the fd table
 with file structs linked to files on the FAT filesystem.
 
+## File Locking Mechanism
+
+In order to prevent multiple writers/conflicting read-writes, the PennFAT filesystem grants exclusive access to any
+process that opens a file in a writing mode, and shared access to processes opening a file in read mode. To accomplish
+this, the filesystem keeps a record of what files have been opened and in what mode; if a call to `fs_open()` would
+violate the locking semantics, the syscall fails with an error.
+
+This record is a `file_t *` array that utilizes array doubling to grow dynamically (initially sized at 4).
+
 ## Standalone
 
 The standalone completes the demo plan with no "definitely/indirectly/possibly lost" memory leaks.
