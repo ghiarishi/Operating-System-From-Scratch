@@ -6,9 +6,9 @@
 #include "kernel.h"
 #include "parser.h"
 
-extern struct Process *activeProcess;
+extern Process *activeProcess;
 
-#define PROMPT "$"
+#define PROMPT "$ "
 #define BUFFERSIZE 4096
 
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1);

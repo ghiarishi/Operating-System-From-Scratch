@@ -24,30 +24,30 @@ char* strCopy(char* src, char* dest) {
 }
 
 // clear all the mallocs to prevent memory leaks
-void freeOneJob(struct Process *proc){
+void freeOneJob(Process *proc){
     // free(proc->pcb->argument);
     free(proc->pcb);
     free(proc);
 }
 
 // call freeOneJob for every job in order to clear the entire LL memory
-void freeAllJobs(struct Process *head) {
+void freeAllJobs(Process *head) {
     // if the head is null, nothing to clear
     if (head == NULL) {
         return;
     }
 
     // iterate through LL, call freeOneJob
-    struct Process *current = head;
+    Process *current = head;
         while (current != NULL) {
-            struct Process *removed = current;
+            Process *removed = current;
             current = current->next;
             freeOneJob(removed);
     }
 }
 
 // input parameters: head of LL, newJob we want to add to LL
-struct Process *addJob(struct Process *head, struct Process *newProcess){
+Process *addJob(Process *head, Process *newProcess){
 
     // if there are no Processes in the LL yet, create one, assign #1
     if (head == NULL){ 
@@ -70,7 +70,7 @@ struct Process *addJob(struct Process *head, struct Process *newProcess){
         return newProcess;
     }
 
-    struct Process *current = head -> next;
+    Process *current = head -> next;
 
     // check if the difference in Process numbers through the LL continues to be 1
     while (current -> next != NULL && current -> next -> pcb -> jobID - current -> pcb -> jobID == 1){
@@ -97,7 +97,7 @@ struct Process *addJob(struct Process *head, struct Process *newProcess){
 
 // SCHEDULER WAALA
 // Function to add a thread to the appropriate priority queue
-void enqueue(struct Process* newProcess) {
+void enqueue(Process* newProcess) {
     // Determine the appropriate priority queue based on the ProcessnewProcess's priority level
     switch(newProcess->pcb->priority) {
         case PRIORITY_HIGH:
@@ -113,22 +113,22 @@ void enqueue(struct Process* newProcess) {
 }
 
 // Removes a job give a specifc job number.
-struct Process *removeJob(struct Process *head, int jobNum){
+Process *removeJob(Process *head, int jobNum){
 
     // if first job, set the new head to the next job and free head
     if (jobNum == 1){
-        struct Process *newHead = head -> next;
+        Process *newHead = head -> next;
         freeOneJob(head);
         return newHead;
     }
 
     // iterate through all jobs until job of interest is reached
-    struct Process *current= head;
+    Process *current= head;
     while (current -> next != NULL){
         // if the next job is the one, replace next with the one after that
         if (current -> next -> pcb -> jobID == jobNum){
-            struct Process *removed = current -> next;
-            struct Process *newNext = removed -> next;
+            Process *removed = current -> next;
+            Process *newNext = removed -> next;
             current -> next = newNext;
             removed -> next = NULL;
             freeOneJob(removed);
@@ -139,7 +139,7 @@ struct Process *removeJob(struct Process *head, int jobNum){
     return head;
 }
 
-void dequeue(struct Process *proc){
+void dequeue(Process *proc){
     switch(proc->pcb->priority) {
         case PRIORITY_HIGH:
             removeProcess(highQhead, proc->pcb->jobID);
@@ -153,12 +153,12 @@ void dequeue(struct Process *proc){
     }
 }
 
-struct Process *getJob(struct Process *head, int jobNum){
+Process *getJob(Process *head, int jobNum){
     if (jobNum == 1){
         return head;
     }
     // iterate through all jobs until job of interest is reached
-    struct Process *current = head;
+    Process *current = head;
     while (current -> next != NULL){
         current = current -> next;
         // if the next job is the one, replace next with the one after that
@@ -171,14 +171,14 @@ struct Process *getJob(struct Process *head, int jobNum){
     exit(EXIT_FAILURE);
 }
 
-int getCurrentJob(struct Process *head){
+int getCurrentJob(Process *head){
     if(head -> next == NULL){
         return head -> pcb -> jobID;
     }
     int bgNum = 0;
     int stpNum = 0;
     // iterate through all jobs until job of interest is reached
-    struct Process *current = head;
+    Process *current = head;
     do{
         // if the next job is the one, replace next with the one after that
         if(current ->pcb->status == STOPPED){
@@ -202,7 +202,7 @@ int getCurrentJob(struct Process *head){
     }
 }
 
-void changeStatus(struct Process *head, int jobNum, int newStatus){
+void changeStatus(Process *head, int jobNum, int newStatus){
 
     if (jobNum == 1){
         if(newStatus == 0){
@@ -220,7 +220,7 @@ void changeStatus(struct Process *head, int jobNum, int newStatus){
     }
 
     // iterate through all jobs until job of interest is reached
-    struct Process *current = head;
+    Process *current = head;
     while (current -> next != NULL){
         current = current -> next;
         // if the next job is the one, replace next with the one after that
@@ -241,7 +241,7 @@ void changeStatus(struct Process *head, int jobNum, int newStatus){
     }
 }
 
-void changeFGBG(struct Process *head, int jobNum, int newFGBG){
+void changeFGBG(Process *head, int jobNum, int newFGBG){
     if (jobNum == 1){
         if(newFGBG == 0){
             head -> pcb->bgFlag = FG;
@@ -251,7 +251,7 @@ void changeFGBG(struct Process *head, int jobNum, int newFGBG){
         } 
     }
     // iterate through all jobs until job of interest is reached
-    struct Process *current = head;
+    Process *current = head;
     while (current -> next != NULL){
         current = current -> next;
         if (current -> pcb->jobID == jobNum){
@@ -280,7 +280,7 @@ char *statusToStr(int status){
     }
 }
 
-struct Process *head = NULL;
+Process *head = NULL;
 
 /// @brief 
 /// @param signal 
@@ -326,7 +326,7 @@ void sig_handler(int signal) {
             printflag = 1; //no other process running in FG
         }
 
-        struct Process *current = NULL;
+        Process *current = NULL;
         int bufferCount = 0;
 
         // count the number of jobs in the LL
@@ -485,7 +485,7 @@ void penn_shredder(char* buffer){
         // case where JID is given
         if(cmd -> commands[0][1] != NULL){
             int job_id = atoi(cmd -> commands[0][1]);
-            struct Process *bgJob = getJob(head, job_id);
+            Process *bgJob = getJob(head, job_id);
             if (bgJob -> pcb -> status == STOPPED){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 0); // set job to running
@@ -505,7 +505,7 @@ void penn_shredder(char* buffer){
         else{
             // case where no job ID given
             int job_id = getCurrentJob(head);
-            struct Process *bgJob = getJob(head, job_id);
+            Process *bgJob = getJob(head, job_id);
             if (bgJob -> pcb -> status == STOPPED){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 0); // set job to running
@@ -537,7 +537,7 @@ void penn_shredder(char* buffer){
         // case where JID is given
         if(cmd -> commands[0][1] != NULL){
             int job_id = atoi(cmd -> commands[0][1]);
-            struct Process *fgJob = getJob(head, job_id);
+            Process *fgJob = getJob(head, job_id);
             if (fgJob -> pcb -> status == STOPPED){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 0); // set job to running
@@ -604,7 +604,7 @@ void penn_shredder(char* buffer){
         }
         else{ // case where no job ID given
             int job_id = getCurrentJob(head);
-            struct Process *fgJob = getJob(head, job_id);
+            Process *fgJob = getJob(head, job_id);
             if (fgJob->pcb-> status == STOPPED){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 0); // set job to running
@@ -683,7 +683,7 @@ void penn_shredder(char* buffer){
             return;
         } 
         else {
-            struct Process *current = head;
+            Process *current = head;
             int noBg = 0;
             do{
                 if(current->pcb -> bgFlag == BG){
@@ -720,7 +720,7 @@ void penn_shredder(char* buffer){
     }
 
     // for loop to execute the commands line by line
-    struct Process *newProcess = NULL; // create a new job each time penn shredder is run
+    Process *newProcess = NULL; // create a new job each time penn shredder is run
 
     for (int i = 0; i < n; ++i) { // n processes within one command line 1
 
@@ -921,7 +921,7 @@ void penn_shell(int argc, char** argv) {
     par_pgid = getpgid(0);
 
     // create a jobs linked list 
-    struct Process *current = NULL;
+    Process *current = NULL;
 
     while (1) {
         // Interactive Section (Penn Shredder: Normal)

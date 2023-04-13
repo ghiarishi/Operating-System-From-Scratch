@@ -7,5 +7,5 @@
 #include "user.h"
 
 struct pcb* k_process_create(struct pcb *parent);
-// struct Process *p;
+// Process *p;
 void k_process_cleanup(struct pcb *p);

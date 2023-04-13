@@ -5,7 +5,7 @@
 #include "process/shell.h"
 
 int main(int argc, char** argv) {
-    printf("main\n");
+    printf("main \n");
     // if (argc < 2) {
     //     printf("error");
     // } 
@@ -16,20 +16,20 @@ int main(int argc, char** argv) {
 
     initSchedulerContext();
 
-    activeProcess = (struct Process*) malloc(sizeof(struct Process));
+    activeProcess = (Process*) malloc(sizeof(Process));
     activeProcess->pcb = initPCB();
     activeProcess->next = NULL;
 
     pid_t pidNew = p_spawn(pennShell, argv, STDIN_FILENO, STDOUT_FILENO);
-    printf(" WOOHOO %d \n", pidNew);
+    printf("printing pid %d\n", pidNew);
+    // activeProcess->pcb->pid = pidNew;
     // pennShell();
-    setcontext(&schedulerContext);
-    // setAlarmHandler();
-    // // alarm(5);
-    // setTimer();
-
-    // swapcontext(&mainContext, &schedulerContext);
     
+    setAlarmHandler();
+    // alarm(5);
+    setTimer();
+
+    setcontext(&schedulerContext);
 
     // fprintf(stderr, "Back in the main context\n");
 

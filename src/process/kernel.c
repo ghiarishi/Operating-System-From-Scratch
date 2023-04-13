@@ -11,7 +11,7 @@ void setStack(stack_t *stack){
 struct pcb* k_process_create(struct pcb *parent) {
     // Create a new process and set its ID and priority level
     
-    printf("Inside k_proc_create \n");
+    // printf("Inside k_proc_create \n");
 
     ucontext_t *uc = (ucontext_t*) malloc(sizeof(ucontext_t));
     getcontext(uc);
@@ -20,18 +20,14 @@ struct pcb* k_process_create(struct pcb *parent) {
     setStack(&uc->uc_stack);
     uc->uc_link = &schedulerContext;
     
-    struct Process *newProcess = (struct Process*) malloc(sizeof(struct Process));
+    Process *newProcess = (Process*) malloc(sizeof(Process));
                                                             
-    // if(func == (void(*)())&pennShell){
-    //     newProcess->pcb = createPcb(*uc, pidCounter, parent->pid, 0, READY);
-    // }
-    // else{
-    newProcess->pcb = createPcb(*uc, pidCounter, parent->pid, -1, READY);
-    pidCounter++;
-    // }
+ 
+    newProcess->pcb = createPcb(*uc, pidCounter, parent->pid, 0, READY);
     
-    printf("Creating new process \n");
-    printf("PID is %d\n", newProcess->pcb->pid);
+    pidCounter++;
+    // printf("Creating new process \n");
+    // printf("PID is %d\n", newProcess->pcb->pid);
 
     return newProcess->pcb;
 }

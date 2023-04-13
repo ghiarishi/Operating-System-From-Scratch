@@ -1,22 +1,32 @@
 #include "user_functions.h"
 
-void echo(int argc, char *argv[]) {
-    int i;
+void echoFunc() {
+    // int i;
     char *message = "";
+    // printf("%d \n", argc);
+    
+    // printf("%s \n", argv[1]);
+
     // Concatenate all arguments into a single message string
-    printf("running echo!");
-    for (i = 1; i < argc; i++) {
-        message = strcat(message, argv[i]);
-        if (i < argc - 1) {
-            message = strcat(message, " ");
-        }
-    }
+    printf("inside echoFunc() \n");
+    // for (i = 1; i < argc; i++) {
+    //     // printf("%s", argv[i]);
+    //     // fflush
+    //     message = strcat(message, argv[i]);
+    //     if (i < argc - 1) {
+    //         message = strcat(message, " ");
+    //     }
+    // }
     // Print the message string to stdout
     printf("%s \n", message);
 }
 
-void sleepFunc() {
-    int milliseconds = 12000;
+void sleepFunc(char *argv[]) {
+
+    // printf("%d \n", argc);
+    printf("%s \n", argv[1]);
+    
+    int milliseconds = 3000;
     clock_t start_time = clock();
     printf("running sleep! \n");
     while ((clock() - start_time) * 1000 / CLOCKS_PER_SEC < milliseconds) {

@@ -12,7 +12,7 @@ struct pcb *initPCB() {
     pcb_obj->status = READY;
     pcb_obj->pids = malloc(pcb_obj->numChild * sizeof(int));
     pcb_obj->pidsFinished = malloc(pcb_obj->numChild * sizeof(int));
-    printf("inside initPCB \n");
+    // printf("inside initPCB \n");
 
     // bzero(fd_table, sizeof(file_t *) * MAX_FILES);
     // file_t *special_stdin_file = malloc(sizeof(file_t));

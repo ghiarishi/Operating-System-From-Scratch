@@ -1,7 +1,7 @@
 #include "user.h"
 // int pidCounter = 1;
 
-struct Process *activeProcess = NULL;
+Process *activeProcess = NULL;
 
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
@@ -10,22 +10,25 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     
     // pid_t pid = getpid();
 
-    struct Process *newProcess = (struct Process*) malloc(sizeof(struct Process)); //NULL;
+    Process *newProcess = (Process*) malloc(sizeof(Process)); //NULL;
     newProcess->pcb = k_process_create(activeProcess->pcb);
     pid_new = newProcess->pcb->pid;
 
     struct parsed_command *cmd;
     parse_command(*argv, &cmd);
 
+    printf("%c\n", *argv[]);
+
     if(func == (void(*)())&pennShell){
+        newProcess->pcb->priority = -1;
         makecontext(&newProcess->pcb->context, func, 0, argv);
         
-        printf("making pennshell context \n");
+        // printf("making pennshell context \n");
     } 
     else {
         makecontext(&newProcess->pcb->context, func, cmd->num_commands, cmd->commands[0]);
     }
-    printf("enqueuing now!\n");
+    // printf("enqueuing now!\n");
     enqueue(newProcess);
 
     return pid_new;
@@ -41,7 +44,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 // }
 
 // pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
-//     struct Process *p;
+//     Process *p;
 
 //     // Find the child process with the specified pid
 //     // p = findProcessByPid(pid);

@@ -13,6 +13,7 @@
 #include "user.h"
 #include "shell.h"
 #include "user_functions.h"
+#include "dependencies.h"
 
 #define PRIORITY_HIGH -1
 #define PRIORITY_MED 0
@@ -22,19 +23,7 @@ extern ucontext_t schedulerContext;
 extern ucontext_t mainContext;
 extern ucontext_t *activeContext;
 
-// initialize in .c
-extern struct Process *highQhead;
-extern struct Process *highQtail;
-extern struct Process *medQhead;
-extern struct Process *medQtail;
-extern struct Process *lowQhead; 
-extern struct Process *lowQtail;
 
-// Define the structure for a Process
-struct Process{
-    struct pcb* pcb;
-    struct Process* next;
-};
 
 void scheduler(void);
 void initSchedulerContext(void);
