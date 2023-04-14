@@ -15,44 +15,52 @@ void setTimerAlarmHandler(void) {
     sigaction(SIGALRM, &act, NULL);
 }
 
-// void setIntSignalHandler(void) {
+// void signalHandler(int signum) {
+
+//     switch
+// }
+
+// void setSignalHandler(void) {
+
+//     struct sigaction sa_alarm;
+
+//     sa_alarm.sa_handler = alarmHandler;
+//     sa_alarm.sa_flags = SA_RESTART;
+//     sigfillset(&sa_alarm.sa_mask);
+
+//     sigaction(SIGALRM, &sa_alarm, NULL);
+
 //     struct sigaction sa_int;
 
-//     sa_int.sa_handler = sigintHandler;
+//     sa_int.sa_handler = signalHandler;
 //     sa_int.sa_flags = SA_RESTART;
 //     sigfillset(&sa_int.sa_mask);
 
 //     sigaction(SIGINT, &sa_int, NULL);
-// }
 
-// void setTermSignalHandler(void) {
 //     struct sigaction sa_term;
 
-//     sa_term.sa_handler = sigtermHandler;
+//     sa_term.sa_handler = signalHandler;
 //     sa_term.sa_flags = SA_RESTART;
 //     sigfillset(&sa_term.sa_mask);
 
-//     sigaction(SIGTERM, &sa_term, NULL);
-// }
+//     sigaction(S_SIGTERM, &sa_term, NULL);
 
-// void setContSignalHandler(void) {
 //     struct sigaction sa_cont;
 
-//     sa_cont.sa_handler = sigcontHandler;
+//     sa_cont.sa_handler = signalHandler;
 //     sa_cont.sa_flags = SA_RESTART;
 //     sigfillset(&sa_cont.sa_mask);
 
-//     sigaction(SIGALRM, &sa_cont, NULL);
-// }
+//     sigaction(S_SIGCONT, &sa_cont, NULL);
 
-// void setStopSignalmHandler(void) {
 //     struct sigaction sa_stop;
 
-//     sa_stop.sa_handler = sigstopHandler;
+//     sa_stop.sa_handler = signalHandler;
 //     sa_stop.sa_flags = SA_RESTART;
 //     sigfillset(&sa_cont.sa_mask);
 
-//     sigaction(SIGALRM, &sa_cont, NULL);
+//     sigaction(S_SIGTSTOP, &sa_stop, NULL);
 // }
 
 int main(int argc, char** argv) {

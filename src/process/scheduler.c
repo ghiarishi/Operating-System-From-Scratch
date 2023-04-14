@@ -25,7 +25,12 @@ Process *blockedQtail = NULL;
 
 void terminateProcess(void){
     
-    printf("TIME TO DEQUEUE");
+    printf("TIME TO DEQUEUE\n");
+    activeProcess->pcb->status = TERMINATED;
+    dequeue(activeProcess);
+    setcontext(&schedulerContext);
+
+    // raise(S_SIGTERM);
 }
 
 void scheduler(void){
@@ -33,11 +38,6 @@ void scheduler(void){
     // printf("Inside scheduler\n");
 
     static int listPointer = 0;
-
-    if(activeProcess->pcb->status == RUNNING && !activeProcess->pcb->context.uc_link){
-        activeProcess->pcb->status = TERMINATED;
-        printf("TIME TO DEQUEUE!");
-    }
 
     // if at the end, restart from the first element
     if(listPointer == 18){

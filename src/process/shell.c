@@ -26,28 +26,71 @@ void sigint_handler(int signal) {
     ctrl_c = 0; // reset the flag for another iteration of the while loop
 }
 
-// // clear all the mallocs to prevent memory leaks
-// void freeOneJob(Process *proc){
-//     free(proc->pcb->argument);
-//     free(proc->pcb);
-//     free(proc);
-// }
+// clear all the mallocs to prevent memory leaks
+void freeOneJob(Process **proc){
+    free((*proc)->pcb->argument);
+    free((*proc)->pcb);
+    free(*proc);
+}
 
-// // call freeOneJob for every job in order to clear the entire LL memory
-// void freeAllJobs(Process *head) {
-//     // if the head is null, nothing to clear
-//     if (head == NULL) {
-//         return;
-//     }
+// call freeOneJob for every job in order to clear the entire LL memory
+void freeAllJobs(Process **head) {
+    // if the head is null, nothing to clear
+    if (*head == NULL) {
+        return;
+    }
 
-//     // iterate through LL, call freeOneJob
-//     Process *current = head;
-//         while (current != NULL) {
-//             Process *removed = current;
-//             current = current->next;
-//             freeOneJob(removed);
-//     }
-// }
+    // iterate through LL, call freeOneJob
+    Process *current = *head;
+        while (current != NULL) {
+            Process *removed = current;
+            current = current->next;
+            freeOneJob(removed);
+    }
+}
+
+// Removes a job give a specifc job number.
+void removeJob(Process **head, int jobNum){
+
+    // if first job, set the new head to the next job and free head
+    if (jobNum == 1){
+        *head = (*head) -> next;
+        printf("get dQd bro \n");
+        freeOneJob(head);
+        return;
+    }
+
+    // iterate through all jobs until job of interest is reached
+    Process *current = *head;
+    while (current -> next != NULL){
+        // if the next job is the one, replace next with the one after that
+        if (current -> next -> pcb -> jobID == jobNum){
+            Process *removed = current -> next;
+            Process *newNext = removed -> next;
+            // if else for stopped or terminated, act differently for both
+            current -> next = newNext;
+            removed -> next = NULL; 
+            freeOneJob(removed);
+            return;
+        }
+        current = current -> next;
+    }
+    return;
+}
+
+void dequeue(Process *proc){
+    switch(proc->pcb->priority) {
+        case PRIORITY_HIGH:
+            removeJob(&highQhead, proc->pcb->jobID);
+            break;
+        case PRIORITY_LOW:
+            removeJob(&lowQhead, proc->pcb->jobID);
+            break;
+        default:
+            removeJob(&medQhead, proc->pcb->jobID);
+            break;
+    }
+}
 
 // input parameters: head of LL, newJob we want to add to LL
 void addJob(Process **head, Process **tail, Process *newProcess){
@@ -128,47 +171,6 @@ void enqueue( Process* newProcess) {
         default:
             // printf("Inside MedQ!\n");
             addJob(&medQhead, &medQtail, newProcess);
-            break;
-    }
-}
-
-// Removes a job give a specifc job number.
-Process *removeJob(Process *head, int jobNum){
-
-    // if first job, set the new head to the next job and free head
-    if (jobNum == 1){
-        Process *newHead = head -> next;
-        // freeOneJob(head);
-        return newHead;
-    }
-
-    // iterate through all jobs until job of interest is reached
-    Process *current= head;
-    while (current -> next != NULL){
-        // if the next job is the one, replace next with the one after that
-        if (current -> next -> pcb -> jobID == jobNum){
-            Process *removed = current -> next;
-            Process *newNext = removed -> next;
-            current -> next = newNext;
-            removed -> next = NULL;
-            // freeOneJob(removed);
-            return head;
-        }
-        current = current -> next;
-    }
-    return head;
-}
-
-void dequeue(Process *proc){
-    switch(proc->pcb->priority) {
-        case PRIORITY_HIGH:
-            removeJob(highQhead, proc->pcb->jobID);
-            break;
-        case PRIORITY_LOW:
-            removeJob(lowQhead, proc->pcb->jobID);
-            break;
-        default:
-            removeJob(medQhead, proc->pcb->jobID);
             break;
     }
 }

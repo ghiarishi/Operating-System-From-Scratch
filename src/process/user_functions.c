@@ -8,21 +8,10 @@ void echoFunc(int argc, char *argv[]) {
     
 }
 
-void sleepFunc(char *argv[], int ticksLeft) {
-
+void sleepFunc(char *argv[]) {
     int OGticksLeft = ticksLeft;
     printf("Inside sleepFunc(), ticks left at beginning =  %d \n", ticksLeft);
     
-    // int milliseconds = 1000*atoi(argv[1]);
-    clock_t start_time = clock();
-    printf("running sleep! \n");
-    while ((clock() - start_time) * 1000 / 100 < OGticksLeft) {
-        ticksLeft = OGticksLeft - (clock() - start_time) * 1000 / 100;
-        printf("ticks left = %d\n", ticksLeft);
-    }
-
-    // changeStatus(activeProcess, activeProcess->pcb->jobID, 0);  
-    // dequeue(activeProcess);
 }
 
 void busy_wait(void) {

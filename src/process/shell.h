@@ -22,12 +22,12 @@ void sigint_handler(int signal);
 void pennShell();
 
 // char* strCopy(char* src, char* dest);
-// void freeOneJob(Process *proc);
-// void freeAllJobs(Process *head);
-void addJob( Process **head, Process **tail,  Process *newProcess);
+void freeOneJob(Process **proc);
+void freeAllJobs(Process **head);
+void addJob(Process **head, Process **tail, Process *newProcess);
 void enqueue(Process* newProcess);
-Process *removeJob( Process *head, int jobNum);
-void dequeue( Process *proc);
+void removeJob(Process **head, int jobNum);
+void dequeue(Process *proc);
 // Process *getJob(Process *head, int jobNum);
 // int getCurrentJob(Process *head);
 // void changeStatus(Process *head, int jobNum, int newStatus);
@@ -36,3 +36,5 @@ void dequeue( Process *proc);
 // void sig_handler(int signal);
 // void penn_shredder(char* buffer);
 // void penn_shell(int argc, char** argv);
+
+// input parameters: head of LL, newJob we want to add to LL
