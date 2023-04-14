@@ -143,12 +143,7 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
     f->mode = mode;
     f->stdiomode = FIO_NONE;
     // record that we opened the file in fs
-    if (fs->opened_count == fs->opened_size) {
-        fs->opened_size *= 2;
-        fs->open_files = realloc(fs->open_files, sizeof(file_t *) * fs->opened_size);
-    }
-    fs->open_files[fs->opened_count] = f;
-    fs->opened_count++;
+    fs_trackopen(fs, f);
 
     // if the file was found and we are in write mode and have write permissions, truncate it to 0 bytes
     if (mode == F_WRITE && (f->entry->perm & FAT_WRITE)) {
@@ -168,19 +163,7 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
  * @throw PEINVAL the file's entry is invalid
  */
 int fs_close(fs_t *fs, file_t *f) {
-    unsigned count = 0;
-    for (int i = 0; i < fs->opened_count; ++i) {
-        // remove it from the fs' list of open files by swapping it with the last open file and decreasing size
-        if (fs->open_files[i] == f) {
-            // this will segfault if f is not actually open but just don't do that
-            file_t *temp = fs->open_files[fs->opened_count - 1];
-            fs->open_files[fs->opened_count - 1] = f;
-            fs->open_files[i] = temp;
-            fs->opened_count--;
-        }
-        // is this the last instance of this file open?
-        if (fs->open_files[i]->entry == f->entry) count++;
-    }
+    unsigned count = fs_trackclose(fs, f);;
 
     // if this was the last open instance of a deleted file (name[0] == 2), delete it now (name[0] = 1, free blocks)
     if (!count && f->entry->name[0] == 2) {
@@ -676,4 +659,54 @@ void *fs_dataoffset(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
         blk_base_no = next_block;
     }
     return fs->data + fs->fat_size + fs->block_size * (blk_base_no - 1) + offset;
+}
+
+/**
+ * Track a reference to a new opened file. Called when a file is opened using fs_open *or* when a file is cloned
+ * (e.g. through p_spawn).
+ * @param fs the filesystem
+ * @param f the opened file
+ * @return -1 on error, 0 otherwise
+ */
+int fs_trackopen(fs_t *fs, file_t *f) {
+    // don't track stdin/stdout opens
+    if (f->stdiomode != FIO_NONE)
+        return 0;
+    if (fs->opened_count == fs->opened_size) {
+        fs->opened_size *= 2;
+        file_t **new_open = realloc(fs->open_files, sizeof(file_t *) * fs->opened_size);
+        if (new_open == NULL) {
+            raise(PENOMEM);
+        }
+        fs->open_files = new_open;
+    }
+    fs->open_files[fs->opened_count] = f;
+    fs->opened_count++;
+    return 0;
+}
+
+/**
+ * Track that the reference to an open file will no longer be used.
+ * @param fs the filesystem
+ * @param f the file that is being closed
+ * @return the number of times this file is still open in the filesystem after this instance is closed
+ */
+int fs_trackclose(fs_t *fs, file_t *f) {
+    // don't track stdin/stdout opens/closes
+    if (f->stdiomode != FIO_NONE)
+        return 1;
+    int count = 0;
+    for (int i = 0; i < fs->opened_count; ++i) {
+        // remove it from the fs' list of open files by swapping it with the last open file and decreasing size
+        if (fs->open_files[i] == f) {
+            // this will segfault if f is not actually open but just don't do that
+            file_t *temp = fs->open_files[fs->opened_count - 1];
+            fs->open_files[fs->opened_count - 1] = f;
+            fs->open_files[i] = temp;
+            fs->opened_count--;
+        }
+        // is this the last instance of this file open?
+        if (fs->open_files[i]->entry == f->entry) count++;
+    }
+    return count;
 }

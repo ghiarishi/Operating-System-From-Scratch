@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "user.h"
-// #include "fs/user.h"
+#include "../fs/user.h"
 
 #define STOPPED 3
 #define RUNNING 2
@@ -29,7 +29,7 @@ struct pcb {
     int bgFlag;
     int *pids;                      // list of all pids in the job
     int *pidsFinished;             // boolean array list that checks every pid is finished
-    // file_t *fd_table[MAX_FILES];
+    file_t *fd_table[MAX_FILES];
     // int w_status;
 };
 

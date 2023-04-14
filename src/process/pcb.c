@@ -25,6 +25,15 @@ struct pcb *createPcb(ucontext_t context, int pid, int ppid, int priority, int s
     pcb_obj->pids = malloc(pcb_obj->numChild * sizeof(int));
     pcb_obj->pidsFinished = malloc(pcb_obj->numChild * sizeof(int));
     // pcb_obj -> childArgs = NULL;
+    // set up fd table and stdio
+    bzero(pcb_obj->fd_table, sizeof(file_t *) * MAX_FILES);
+    file_t *special_stdin_file = malloc(sizeof(file_t));
+    special_stdin_file->stdiomode = FIO_STDIN;
+    file_t *special_stdout_file = malloc(sizeof(file_t));
+    special_stdout_file->stdiomode = FIO_STDOUT;
+    pcb_obj->fd_table[PSTDIN_FILENO] = special_stdin_file;
+    pcb_obj->fd_table[PSTDOUT_FILENO] = special_stdout_file;
+
     return pcb_obj;
 }
 

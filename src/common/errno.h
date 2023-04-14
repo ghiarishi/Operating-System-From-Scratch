@@ -13,6 +13,7 @@ extern int ERRNO;
 // prefixed with PE to differentiate from E in <errno.h>
 // each of these should be added to p_perror() after defining here
 // ==== generic ====
+#define PENOMEM 12  // out of memory
 #define PEINVAL 22  // generic invalid argument given to syscall
 
 // ==== filesystem ====
@@ -28,6 +29,7 @@ extern int ERRNO;
 #define PEFNAME 1009   // the filename is invalid
 
 #define PETOOMANYF 1101 // you have too many files open already
+#define PESTDIO 1102    // tried to read from stdout or write to stdin
 
 // ==== functions ====
 void p_perror(const char *prefix);
