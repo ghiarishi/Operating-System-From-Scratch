@@ -6,7 +6,7 @@
 extern int ERRNO;
 
 // helpers to set errno and return special codes (-1, NULL, etc)
-#define raise(code) do {ERRNO = code; return -1;} while(0)
+#define p_raise(code) do {ERRNO = code; return -1;} while(0)
 #define raise_n(code) do {ERRNO = code; return NULL;} while(0)
 
 // ==== error codes ====

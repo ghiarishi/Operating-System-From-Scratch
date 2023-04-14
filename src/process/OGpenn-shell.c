@@ -14,6 +14,8 @@
 #define STOPPED 1
 #define FINISHED 2
 
+#define PROMPT "$ "
+
 char **bufferSig;
 
 int async = 0;

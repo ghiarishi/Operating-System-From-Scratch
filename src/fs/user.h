@@ -7,6 +7,7 @@
 #define PSTDOUT_FILENO 1
 
 extern fs_t *fs;
+extern Process *activeProcess;
 
 int f_open(const char *fname, int mode);
 int f_close(int fd);

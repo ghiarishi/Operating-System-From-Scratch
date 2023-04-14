@@ -30,7 +30,7 @@ void terminateProcess(void){
     dequeue(activeProcess);
     setcontext(&schedulerContext);
 
-    // raise(S_SIGTERM);
+    // p_raise(S_SIGTERM);
 }
 
 void scheduler(void){

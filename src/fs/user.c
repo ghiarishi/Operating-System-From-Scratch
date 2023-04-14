@@ -1,7 +1,7 @@
 #include "user.h"
 #include "../process/pcb.h"  // included here to avoid circular dependency
 
-extern Process *activeProcess;
+Process *activeProcess;
 
 // begin demo code - delete this later
 
@@ -12,7 +12,7 @@ extern Process *activeProcess;
 // file_t *fd_table[MAX_FILES];
 
 // void this_would_be_main(int argc, char **argv) {
-//     if (argc < 2) {} // raise some error
+//     if (argc < 2) {} // p_raise some error
 //     char *path = argv[1];
 //     fs = fs_mount(path);
 //     if (fs == NULL) {
@@ -85,10 +85,10 @@ ssize_t f_read(int fd, int n, char *buf) {
         // read from host stdin
         ssize_t host_retval = read(STDIN_FILENO, buf, n);
         if (host_retval == -1)
-            raise(PEHOSTIO);
+            p_raise(PEHOSTIO);
         return host_retval;
     } else if (f->stdiomode == FIO_STDOUT) {
-        raise(PESTDIO);
+        p_raise(PESTDIO);
     } else {
         return fs_read(fs, f, n, buf);
     }
@@ -103,10 +103,10 @@ ssize_t f_write(int fd, const char *str, int n) {
         // write to host stdout
         ssize_t host_retval = write(STDOUT_FILENO, str, n);
         if (host_retval == -1)
-            raise(PEHOSTIO);
+            p_raise(PEHOSTIO);
         return host_retval;
     } else if (f->stdiomode == FIO_STDIN) {
-        raise(PESTDIO);
+        p_raise(PESTDIO);
     } else {
         return fs_write(fs, f, str, n);
     }
