@@ -9,7 +9,7 @@ static const int quantum = 100000;
 const int schedulerList[18] = {-1, 0, -1, 0 -1, -1, 0, 1, -1, 1, 0, -1, 0, 1, 0, -1, -1, -1};
 
 struct ucontext_t schedulerContext;
-struct ucontext_t mainContext;
+struct ucontext_t terminateContext;
 struct ucontext_t *activeContext = NULL;
 int emptyQflag = 1;
 
@@ -23,13 +23,22 @@ Process *lowQtail = NULL;
 Process *blockedQhead = NULL; 
 Process *blockedQtail = NULL;
 
+void terminateProcess(void){
+    
+    printf("TIME TO DEQUEUE");
+}
+
 void scheduler(void){
     
     // printf("Inside scheduler\n");
 
     static int listPointer = 0;
 
-    // printf("%d\n", listPointer);
+    if(activeProcess->pcb->status == RUNNING && !activeProcess->pcb->context.uc_link){
+        activeProcess->pcb->status = TERMINATED;
+        printf("TIME TO DEQUEUE!");
+    }
+
     // if at the end, restart from the first element
     if(listPointer == 18){
         listPointer = 0;
@@ -56,9 +65,6 @@ void scheduler(void){
             listPointer++;
             // printf("setting the context in high Q\n");
             setcontext(activeContext);
-        } 
-        else {
-            printf("empty high Q\n");
         }
         
         break;     
@@ -74,12 +80,11 @@ void scheduler(void){
                 lowQtail->next = NULL;
                 lowQhead = lowQhead->next;
             }
+
+
             emptyQflag = 0;
             listPointer++;
             setcontext(activeContext);
-        } 
-        else {                  
-            // printf("empty low Q\n");
         }
         break;
     
@@ -95,6 +100,7 @@ void scheduler(void){
                 medQtail->next = NULL;
                 medQhead = medQhead->next;
             }
+
             emptyQflag = 0;            
             listPointer++;
             setcontext(activeContext);
@@ -110,20 +116,26 @@ void scheduler(void){
         printf("All heads nulls\n");
         // run idle process here
     }
-    else{
+    if(!emptyQflag){
         listPointer++;
         setcontext(&schedulerContext);
     }
 
 }
 
-void initSchedulerContext(void){
-    printf("Inside initSchedulerContext \n");
+void initContext(void){
+    
     getcontext(&schedulerContext);
     schedulerContext.uc_stack.ss_sp = malloc(SIGSTKSZ);
     schedulerContext.uc_stack.ss_size = SIGSTKSZ;
     schedulerContext.uc_link = NULL;
     makecontext(&schedulerContext, scheduler, 0);
+
+    getcontext(&terminateContext);
+    terminateContext.uc_stack.ss_sp = malloc(SIGSTKSZ);
+    terminateContext.uc_stack.ss_size = SIGSTKSZ;
+    terminateContext.uc_link = NULL;
+    makecontext(&terminateContext, terminateProcess, 0);
 }
 
 // SIGALRM
@@ -132,16 +144,6 @@ void alarmHandler(int signum){
         // printf("SWAPPING CONTEXT \n");
         swapcontext(activeContext, &schedulerContext);
     }
-}
-
-void setAlarmHandler(void) {
-    struct sigaction act;
-
-    act.sa_handler = alarmHandler;
-    act.sa_flags = SA_RESTART;
-    sigfillset(&act.sa_mask);
-
-    sigaction(SIGALRM, &act, NULL);
 }
 
 void setTimer(void) {

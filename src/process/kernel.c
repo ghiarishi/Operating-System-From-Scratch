@@ -18,7 +18,7 @@ struct pcb* k_process_create(struct pcb *parent) {
     sigemptyset(&uc->uc_sigmask);
 
     setStack(&uc->uc_stack);
-    uc->uc_link = &schedulerContext;
+    uc->uc_link = &terminateContext;
     
     Process *newProcess = (Process*) malloc(sizeof(Process));
                                                             
@@ -32,7 +32,9 @@ struct pcb* k_process_create(struct pcb *parent) {
     return newProcess->pcb;
 }
 
-// k_process_kill(Pcb *process, int signal)
+// k_process_kill(Pcb *process, int signal){
+    
+// }   
 
 void k_process_cleanup(struct pcb *p) { 
     freeStacks(p);

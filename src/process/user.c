@@ -1,11 +1,22 @@
 #include "user.h"
-// int pidCounter = 1;
+int pidCounter = 1;
 
 Process *activeProcess = NULL;
 
+char* concat(int argc, char *argv[]) {
+    char *cmd_line = malloc(MAX_CMD_LENGTH * sizeof(char));
+    memset(cmd_line, 0, MAX_CMD_LENGTH);
+
+    for (int i = 0; i < argc; i++) {
+        strcat(cmd_line, argv[i]);
+        strcat(cmd_line, " ");
+    }
+    return cmd_line;
+}
+
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
-    printf("Inside p_spawn \n");
+    // printf("Inside p_spawn \n");
     pid_t pid_new;
     
     // pid_t pid = getpid();
@@ -14,10 +25,20 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     newProcess->pcb = k_process_create(activeProcess->pcb);
     pid_new = newProcess->pcb->pid;
 
-    struct parsed_command *cmd;
-    parse_command(*argv, &cmd);
+    int argc = 0;
+    int i = 0;
+    while(argv[i] != NULL){
+        argc++;
+        i ++;
+    }
 
-    printf("%c\n", *argv[]);
+    struct parsed_command *cmd;
+    parse_command(concat(argc, argv), &cmd);
+
+    newProcess->pcb->argument = malloc((strlen(concat(argc, argv))+1) * sizeof(char));
+    newProcess->pcb->argument = concat(argc, argv);
+
+    // printf("The arguments for new Process %c\n", *cmd->commands[0][1]);
 
     if(func == (void(*)())&pennShell){
         newProcess->pcb->priority = -1;
@@ -25,14 +46,21 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         
         // printf("making pennshell context \n");
     } 
-    else {
-        makecontext(&newProcess->pcb->context, func, cmd->num_commands, cmd->commands[0]);
+    else if(func == (void(*)())&sleepFunc){
+        int ticksLeft = 10*atoi(cmd->commands[0][1]);
+        printf("num ticks left = %d \n", ticksLeft);
+        makecontext(&newProcess->pcb->context, func, 2, cmd->commands[0], ticksLeft);
+    }
+    else if(func == (void(*)())&echoFunc){
+        makecontext(&newProcess->pcb->context, func, 2, argc, cmd->commands[0]);
     }
     // printf("enqueuing now!\n");
     enqueue(newProcess);
 
     return pid_new;
 }
+
+
 
 // pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 //     // parent p_spwans child. Child runs. OS tracks child. Child complete/stopped. 

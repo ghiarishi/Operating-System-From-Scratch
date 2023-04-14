@@ -4,8 +4,59 @@
 #include "process/user_functions.h"
 #include "process/shell.h"
 
+void setTimerAlarmHandler(void) {
+    
+    struct sigaction act;
+
+    act.sa_handler = alarmHandler;
+    act.sa_flags = SA_RESTART;
+    sigfillset(&act.sa_mask);
+
+    sigaction(SIGALRM, &act, NULL);
+}
+
+// void setIntSignalHandler(void) {
+//     struct sigaction sa_int;
+
+//     sa_int.sa_handler = sigintHandler;
+//     sa_int.sa_flags = SA_RESTART;
+//     sigfillset(&sa_int.sa_mask);
+
+//     sigaction(SIGINT, &sa_int, NULL);
+// }
+
+// void setTermSignalHandler(void) {
+//     struct sigaction sa_term;
+
+//     sa_term.sa_handler = sigtermHandler;
+//     sa_term.sa_flags = SA_RESTART;
+//     sigfillset(&sa_term.sa_mask);
+
+//     sigaction(SIGTERM, &sa_term, NULL);
+// }
+
+// void setContSignalHandler(void) {
+//     struct sigaction sa_cont;
+
+//     sa_cont.sa_handler = sigcontHandler;
+//     sa_cont.sa_flags = SA_RESTART;
+//     sigfillset(&sa_cont.sa_mask);
+
+//     sigaction(SIGALRM, &sa_cont, NULL);
+// }
+
+// void setStopSignalmHandler(void) {
+//     struct sigaction sa_stop;
+
+//     sa_stop.sa_handler = sigstopHandler;
+//     sa_stop.sa_flags = SA_RESTART;
+//     sigfillset(&sa_cont.sa_mask);
+
+//     sigaction(SIGALRM, &sa_cont, NULL);
+// }
+
 int main(int argc, char** argv) {
-    printf("main \n");
+    fflush(stdin);
     // if (argc < 2) {
     //     printf("error");
     // } 
@@ -14,7 +65,7 @@ int main(int argc, char** argv) {
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
     signal(SIGTSTP, SIG_IGN); // Ctrl-Z
 
-    initSchedulerContext();
+    initContext();
 
     activeProcess = (Process*) malloc(sizeof(Process));
     activeProcess->pcb = initPCB();
@@ -25,7 +76,7 @@ int main(int argc, char** argv) {
     // activeProcess->pcb->pid = pidNew;
     // pennShell();
     
-    setAlarmHandler();
+    setTimerAlarmHandler();
     // alarm(5);
     setTimer();
 

@@ -22,9 +22,9 @@ struct pcb {
     int jobID;
     int numChild;
     int pid;
-    int pgid;
+    int ppid;
     int priority;
-    // char *argument;
+    char *argument;
     int status;
     int bgFlag;
     int *pids;                      // list of all pids in the job
@@ -37,6 +37,6 @@ char* strCopy(char* src, char* dest);
 
 struct pcb *initPCB();
 
-struct pcb *createPcb(ucontext_t context, int pid, int pgid, int priority, int status);
+struct pcb *createPcb(ucontext_t context, int pid, int ppid, int priority, int status);
 
 void freePcb(struct pcb *pcb_obj);

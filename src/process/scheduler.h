@@ -20,13 +20,12 @@
 #define PRIORITY_LOW 1
 
 extern ucontext_t schedulerContext;
-extern ucontext_t mainContext;
 extern ucontext_t *activeContext;
+extern ucontext_t terminateContext;
 
-
-
+void terminateProcess(void);
 void scheduler(void);
-void initSchedulerContext(void);
+void initContext(void);
 void testFunc2();
 void setStack(stack_t *stack);
 void alarmHandler(int signum);

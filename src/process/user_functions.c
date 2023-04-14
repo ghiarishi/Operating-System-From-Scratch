@@ -1,36 +1,24 @@
 #include "user_functions.h"
 
-void echoFunc() {
-    // int i;
-    char *message = "";
-    // printf("%d \n", argc);
-    
-    // printf("%s \n", argv[1]);
-
-    // Concatenate all arguments into a single message string
+void echoFunc(int argc, char *argv[]) {
     printf("inside echoFunc() \n");
-    // for (i = 1; i < argc; i++) {
-    //     // printf("%s", argv[i]);
-    //     // fflush
-    //     message = strcat(message, argv[i]);
-    //     if (i < argc - 1) {
-    //         message = strcat(message, " ");
-    //     }
-    // }
-    // Print the message string to stdout
-    printf("%s \n", message);
+    for (int i = 1; i < argc; i++) {
+        printf("%s ", argv[i]);
+    }
+    
 }
 
-void sleepFunc(char *argv[]) {
+void sleepFunc(char *argv[], int ticksLeft) {
 
-    // printf("%d \n", argc);
-    printf("%s \n", argv[1]);
+    int OGticksLeft = ticksLeft;
+    printf("Inside sleepFunc(), ticks left at beginning =  %d \n", ticksLeft);
     
-    int milliseconds = 3000;
+    // int milliseconds = 1000*atoi(argv[1]);
     clock_t start_time = clock();
     printf("running sleep! \n");
-    while ((clock() - start_time) * 1000 / CLOCKS_PER_SEC < milliseconds) {
-        // do nothing
+    while ((clock() - start_time) * 1000 / 100 < OGticksLeft) {
+        ticksLeft = OGticksLeft - (clock() - start_time) * 1000 / 100;
+        printf("ticks left = %d\n", ticksLeft);
     }
 
     // changeStatus(activeProcess, activeProcess->pcb->jobID, 0);  
