@@ -30,7 +30,7 @@ struct pcb {
     int *childPids;                      // list of all pids in the job
     int *childPidsFinished;             // boolean array list that checks every pid is finished
     int sleep_time_remaining;
-    // file_t *fd_table[MAX_FILES];
+    file_t *fd_table[MAX_FILES];
     // int w_status;
 };
 
