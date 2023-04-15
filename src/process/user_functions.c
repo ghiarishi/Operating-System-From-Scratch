@@ -33,8 +33,6 @@ void busy_wait(void) {
 void touch(int argc, char* argv[]) {
     if (argc < 2)
         cmd_abort("Usage: touch FILE ...\n");
-    if (fs == NULL)
-        cmd_abort("You do not have a filesystem mounted\n");
     // open each file, then write 0 bytes to end and close
     for (int i = 1; i < argc; ++i) {
         int fd = f_open(argv[i], F_APPEND);

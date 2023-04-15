@@ -5,6 +5,9 @@
 #include "process/shell.h"
 #include "fs/user.h"
 
+// global fs - you can move this if needed
+fs_t *fs;
+
 void setTimerAlarmHandler(void) {
     
     struct sigaction act;

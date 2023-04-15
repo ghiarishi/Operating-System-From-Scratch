@@ -1,7 +1,6 @@
 #include "user.h"
 #include "../process/pcb.h"  // included here to avoid circular dependency
 
-Process *activeProcess;
 
 // begin demo code - delete this later
 

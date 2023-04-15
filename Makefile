@@ -6,7 +6,7 @@ CC = clang
 # define sources
 SRCS = $(wildcard src/common/**.c) $(wildcard src/fs/**.c)
 OSSRCS = src/pennos.c $(SRCS) $(wildcard src/process/**.c) # src/process/scheduler.c src/process/pcb.c
-FSSRCS = src/pennfat.c $(SRCS) $(wildcard src/pennfat/**.c)
+FSSRCS = src/pennfat.c $(wildcard src/common/**.c) src/fs/fat.c $(wildcard src/pennfat/**.c)
 
 OSOBJS = $(OSSRCS:.c=.o)
 FSOBJS = $(FSSRCS:.c=.o)
