@@ -18,16 +18,25 @@
 #include "dependencies.h"
 // #include "../pennfat/pennfat_utils.h"
 
+struct Job{
+    int pgid;                       // job ID
+    int JobNumber;                  // Counter for current job number since first job begins from 1
+    int bgFlag;                     // FG = 0 and BG = 1
+    struct Job *next;               // pointer to next job
+    char *commandInput;             // Input command by user (only to be used when printing updated status)
+    int status;                     // tell whether its running or stopped
+    int numChild;                   // Indicating the number of piped children process in PGID
+    int *pids;                      // list of all pids in the job
+    int *pids_finished;             // boolean array list that checks every pid is finished
+};
+
 void sigint_handler(int signal);
 void pennShell();
-
-// char* strCopy(char* src, char* dest);
-void freeOneJob(Process **proc);
-void freeAllJobs(Process **head);
-void addJob(Process **head, Process **tail, Process *newProcess);
-void enqueue(Process* newProcess);
-void removeJob(Process **head, int jobNum);
-void dequeue(Process *proc);
+struct Job *createJob(int pgid, int bgFlag, int numChildren, char *input);
+void freeOneJob(struct Job *Job);
+void freeAllJobs(struct Job *head);
+struct Job *addJob(struct Job *head, struct Job *newJob);
+struct Job *removeJob(struct Job *head, int jobNum);
 // Process *getJob(Process *head, int jobNum);
 // int getCurrentJob(Process *head);
 // void changeStatus(Process *head, int jobNum, int newStatus);

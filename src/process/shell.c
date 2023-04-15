@@ -26,153 +26,120 @@ void sigint_handler(int signal) {
     ctrl_c = 0; // reset the flag for another iteration of the while loop
 }
 
+struct Job *createJob(int pgid, int bgFlag, int numChildren, char *input){
+    struct Job *newJob;
+    newJob = (struct Job *)malloc(sizeof(struct Job));
+    newJob -> commandInput = malloc((strlen(input) + 1) * sizeof(char));
+    strcpy(input, newJob -> commandInput);
+    newJob -> next = NULL;
+    newJob -> numChild = numChildren;
+    newJob -> bgFlag = bgFlag;
+    newJob -> pgid = pgid;
+    newJob -> status = RUNNING;
+    newJob -> pids = malloc(numChildren * sizeof(int));
+    newJob -> pids_finished = malloc(numChildren * sizeof(int));
+    return newJob;
+}
+
 // clear all the mallocs to prevent memory leaks
-void freeOneJob(Process **proc){
-    free((*proc)->pcb->argument);
-    free((*proc)->pcb);
-    free(*proc);
+void freeOneJob(struct Job *Job){
+    free(Job -> commandInput);
+    free(Job -> pids);
+    free(Job -> pids_finished);
+    free(Job);
 }
 
 // call freeOneJob for every job in order to clear the entire LL memory
-void freeAllJobs(Process **head) {
+void freeAllJobs(struct Job *head) {
     // if the head is null, nothing to clear
-    if (*head == NULL) {
+    if (head == NULL) {
         return;
     }
 
     // iterate through LL, call freeOneJob
-    Process *current = *head;
+    struct Job * current = head;
         while (current != NULL) {
-            Process *removed = current;
-            current = current->next;
-            freeOneJob(removed);
-    }
-}
-
-// Removes a job give a specifc job number.
-void removeJob(Process **head, int jobNum){
-
-    // if first job, set the new head to the next job and free head
-    if (jobNum == 1){
-        *head = (*head) -> next;
-        printf("get dQd bro \n");
-        freeOneJob(head);
-        return;
-    }
-
-    // iterate through all jobs until job of interest is reached
-    Process *current = *head;
-    while (current -> next != NULL){
-        // if the next job is the one, replace next with the one after that
-        if (current -> next -> pcb -> jobID == jobNum){
-            Process *removed = current -> next;
-            Process *newNext = removed -> next;
-            // if else for stopped or terminated, act differently for both
-            current -> next = newNext;
-            removed -> next = NULL; 
-            freeOneJob(removed);
-            return;
-        }
-        current = current -> next;
-    }
-    return;
-}
-
-void dequeue(Process *proc){
-    switch(proc->pcb->priority) {
-        case PRIORITY_HIGH:
-            removeJob(&highQhead, proc->pcb->jobID);
-            break;
-        case PRIORITY_LOW:
-            removeJob(&lowQhead, proc->pcb->jobID);
-            break;
-        default:
-            removeJob(&medQhead, proc->pcb->jobID);
-            break;
+            struct Job* removal = current;
+            current = current -> next;
+            freeOneJob(removal);
     }
 }
 
 // input parameters: head of LL, newJob we want to add to LL
-void addJob(Process **head, Process **tail, Process *newProcess){
+struct Job *addJob(struct Job *head, struct Job *newJob){
 
-    // if there are no Processes in the LL yet, create one, assign #1
-    if (*head == NULL){ 
-        *head = newProcess; 
-        *tail = newProcess;
-        // printf("%d\n", newProcess->pcb->pid);
-        // printf("Making pennshell the head of high q\n");
-        newProcess -> pcb -> jobID = 1;
-        return;
+    // if there are no jobs in the LL yet, create one, assign #1
+    if (head == NULL){ 
+        head = newJob; 
+        newJob -> JobNumber = 1;
+        return head;
     }
     
-    // If there is only one Process currently, this will be Process #2
-    if ((*head)->next == NULL){
-        (*head) -> next = newProcess;
-        *tail = (*head)->next;
-        newProcess -> pcb -> jobID = 2;
-        return;
+    // If there is only one job currently, this will be job #2
+    if (head -> next == NULL){
+        head -> next = newJob;
+        newJob -> JobNumber = 2;
+        return head;
     }
 
-    // if Process #1 has been removed, the head will point to a Process with a number greater than 1. So add the new Process as Process #1. 
-    if ((*head) -> pcb -> jobID > 1) { 
-        newProcess -> pcb -> jobID = 1;
-        newProcess -> next = *head;
-        return;
+    // if job #1 has been removed, the head will point to a job with a number greater than 1. So add the new job as job #1. 
+    if (head -> JobNumber > 1) { 
+        newJob -> JobNumber = 1;
+        newJob -> next = head;
+        return newJob;
     }
 
-    Process *current = (*head) -> next;
+    struct Job *current = head -> next;
 
-    // check if the difference in Process numbers through the LL continues to be 1
-    while (current -> next != NULL && current -> next -> pcb -> jobID - current -> pcb -> jobID == 1){
+    // check if the difference in job numbers through the LL continues to be 1
+    while (current -> next != NULL && current -> next -> JobNumber - current -> JobNumber == 1){
         current = current -> next;
     }
 
-    // Adding the Process to the end of the linked list since the last Process points to null
+    // Adding the Job to the end of the linked list since the last job points to null
     if (current -> next == NULL){
-        newProcess -> pcb -> jobID = current -> pcb -> jobID + 1;
-        current -> next = newProcess;
-        *tail = current->next;
-        newProcess -> next = NULL;
-        return;
+        newJob -> JobNumber = current -> JobNumber + 1;
+        current -> next = newJob;
+        newJob -> next = NULL;
+        return head;
     }
 
     // if there is a gap in job numbers, fill in that gap and link both ends of the new job
-    if (current -> next -> pcb -> jobID - current -> pcb -> jobID > 1){
-        newProcess -> pcb -> jobID = current -> pcb -> jobID + 1;
-        current -> next = newProcess;
-        *tail = current->next;
-        newProcess -> next = current -> next;
-        return;
+    if (current -> next -> JobNumber - current -> JobNumber > 1){
+        newJob -> JobNumber = current -> JobNumber + 1;
+        current -> next = newJob;
+        newJob -> next = current -> next;
+        return head;
     }
+    return head;
 }
 
-// SCHEDULER WAALA
-// Function to add a thread to the appropriate priority queue
-void enqueue( Process* newProcess) {
-    // Determine the appropriate priority queue based on the ProcessnewProcess's priority level
-    // printf("Inside enqueue\n");
-    switch(newProcess->pcb->priority) {
-        case PRIORITY_HIGH:
-            printf("Inside HighEnQ!\n");
-            addJob(&highQhead, &highQtail, newProcess);
-            
-            printf("hello \n");
+// Removes a job give a specifc job number.
+struct Job *removeJob(struct Job *head, int jobNum){
 
-            if(highQhead == NULL){
-               printf("NULL HQH\n"); 
-            }
-            
-            printf("%d\n", highQhead->pcb->pid);
-            break;
-        case PRIORITY_LOW:
-            // printf("Inside LowQ!\n");
-            addJob(&lowQhead, &lowQtail, newProcess);
-            break;
-        default:
-            // printf("Inside MedQ!\n");
-            addJob(&medQhead, &medQtail, newProcess);
-            break;
+    // if first job, set the new head to the next job and free head
+    if (jobNum == 1){
+        struct Job *newHead = head -> next;
+        freeOneJob(head);
+        return newHead;
     }
+
+    // iterate through all jobs until job of interest is reached
+    struct Job *current= head;
+    while (current -> next != NULL){
+
+        // if the next job is the one, replace next with the one after that
+        if (current -> next -> JobNumber == jobNum){
+            struct Job *removed = current -> next;
+            struct Job *newNext = removed -> next;
+            current -> next = newNext;
+            removed -> next = NULL;
+            freeOneJob(removed);
+            return head;
+        }
+        current = current -> next;
+    }
+    return head;
 }
 
 void pennShell(){
@@ -268,8 +235,6 @@ void pennShell(){
         else if (strcmp(cmd->commands[0][0], "echo") == 0){
             pid = p_spawn(*echoFunc, cmd -> commands[0], 0, 1);
         }
-
-        // pid = p_spawn(cmd->commands[s0][0], cmd -> commands[0], cmd -> stdin_file, cmd -> stdout_file ); // create child process thats copy of the parent
 
     //     if (pid == -1) {
     //         perror("fork");

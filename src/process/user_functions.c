@@ -1,7 +1,7 @@
 #include "user_functions.h"
 
 void echoFunc(int argc, char *argv[]) {
-    printf("inside echoFunc() \n");
+    // printf("inside echoFunc() \n");
     for (int i = 1; i < argc; i++) {
         printf("%s ", argv[i]);
     }
@@ -9,8 +9,13 @@ void echoFunc(int argc, char *argv[]) {
 }
 
 void sleepFunc(char *argv[]) {
-    int OGticksLeft = ticksLeft;
-    printf("Inside sleepFunc(), ticks left at beginning =  %d \n", ticksLeft);
+    // int OGticksLeft = ticksLeft;
+    dequeue(activeProcess);
+    int ticksLeft = 10*atoi(argv[1]);
+    activeProcess->pcb->sleep_time_remaining = ticksLeft;
+    enqueueBlocked(activeProcess);
+    
+    swapcontext(activeContext, &schedulerContext);
     
 }
 

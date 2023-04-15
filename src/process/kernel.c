@@ -36,9 +36,9 @@ struct pcb* k_process_create(struct pcb *parent) {
     
 // }   
 
-void k_process_cleanup(struct pcb *p) { 
-    freeStacks(p);
-    freePcb(p);  
-    activeProcess = NULL; //current process becomes null
-    activeContext = NULL; //current context becomes null
-}
+// void k_process_cleanup(struct pcb *p) { 
+//     freeStacks(p);
+//     freePcb(p);  
+//     activeProcess = NULL; //current process becomes null
+//     activeContext = NULL; //current context becomes null
+// }

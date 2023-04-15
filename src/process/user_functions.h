@@ -12,7 +12,7 @@
 #include "dependencies.h"
 
 void echoFunc(int argc, char *argv[]);
-void sleepFunc(char *argv[], int ticksLeft);
+void sleepFunc(char *argv[]);
 void busy_wait(void);
 // void lsFunc();
 // void touchFunc(const char* filename);

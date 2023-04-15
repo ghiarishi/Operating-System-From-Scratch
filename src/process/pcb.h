@@ -27,8 +27,9 @@ struct pcb {
     char *argument;
     int status;
     int bgFlag;
-    int *pids;                      // list of all pids in the job
-    int *pidsFinished;             // boolean array list that checks every pid is finished
+    int *childPids;                      // list of all pids in the job
+    int *childPidsFinished;             // boolean array list that checks every pid is finished
+    int sleep_time_remaining;
     // file_t *fd_table[MAX_FILES];
     // int w_status;
 };

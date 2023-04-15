@@ -47,13 +47,12 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         // printf("making pennshell context \n");
     } 
     else if(func == (void(*)())&sleepFunc){
-        int ticksLeft = 10*atoi(cmd->commands[0][1]);
-        printf("num ticks left = %d \n", ticksLeft);
-        makecontext(&newProcess->pcb->context, func, 2, cmd->commands[0], ticksLeft);
+        makecontext(&newProcess->pcb->context, func, 2, cmd->commands[0]);
     }
     else if(func == (void(*)())&echoFunc){
         makecontext(&newProcess->pcb->context, func, 2, argc, cmd->commands[0]);
     }
+    printf("newProcess->pid: %d\n", newProcess->pcb->pid);
     // printf("enqueuing now!\n");
     enqueue(newProcess);
 

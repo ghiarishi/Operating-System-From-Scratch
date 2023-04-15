@@ -64,7 +64,6 @@ void setTimerAlarmHandler(void) {
 // }
 
 int main(int argc, char** argv) {
-    fflush(stdin);
     // if (argc < 2) {
     //     printf("error");
     // } 
@@ -81,8 +80,6 @@ int main(int argc, char** argv) {
 
     pid_t pidNew = p_spawn(pennShell, argv, STDIN_FILENO, STDOUT_FILENO);
     printf("printing pid %d\n", pidNew);
-    // activeProcess->pcb->pid = pidNew;
-    // pennShell();
     
     setTimerAlarmHandler();
     // alarm(5);

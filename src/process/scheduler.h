@@ -26,10 +26,11 @@ extern ucontext_t terminateContext;
 void terminateProcess(void);
 void scheduler(void);
 void initContext(void);
-void testFunc2();
-void setStack(stack_t *stack);
+void enqueueBlocked(Process* newProcess);
+void enqueue(Process* newProcess);
+void dequeueBlocked(Process* newProcess);
+void dequeue(Process* newProcess);
 void alarmHandler(int signum);
-void setAlarmHandler(void);
 void setTimer(void);
 void freeStacks(struct pcb *p);
 

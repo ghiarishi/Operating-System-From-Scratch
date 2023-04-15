@@ -4,8 +4,6 @@
 #define PRIORITY_MED 0
 #define PRIORITY_LOW 1
 
-static const int quantum = 100000;
-
 const int schedulerList[18] = {-1, 0, -1, 0 -1, -1, 0, 1, -1, 1, 0, -1, 0, 1, 0, -1, -1, -1};
 
 struct ucontext_t schedulerContext;
@@ -28,9 +26,8 @@ void terminateProcess(void){
     printf("TIME TO DEQUEUE\n");
     activeProcess->pcb->status = TERMINATED;
     dequeue(activeProcess);
+    free(activeProcess);
     setcontext(&schedulerContext);
-
-    // raise(S_SIGTERM);
 }
 
 void scheduler(void){
@@ -84,6 +81,7 @@ void scheduler(void){
 
             emptyQflag = 0;
             listPointer++;
+            // printf("setting the context in low Q\n");
             setcontext(activeContext);
         }
         break;
@@ -103,12 +101,10 @@ void scheduler(void){
 
             emptyQflag = 0;            
             listPointer++;
+            // printf("setting the context in med Q\n");
             setcontext(activeContext);
         } 
-        else {
-            // printf("empty med Q\n");
-        }
-        break;
+
     }
 
     if(highQhead == NULL && medQhead == NULL && lowQhead == NULL){
@@ -121,6 +117,170 @@ void scheduler(void){
         setcontext(&schedulerContext);
     }
 
+}
+
+void enqueueBlocked(Process* newProcess){
+    printf("Inside enqueue sleep!\n");
+    if (blockedQhead == NULL) {
+        blockedQhead = newProcess;
+        blockedQtail = newProcess;
+    }
+    else {
+        blockedQtail->next = newProcess;
+        blockedQtail = newProcess;
+    }
+}
+
+// SCHEDULER WAALA
+// Function to add a thread to the appropriate priority queue
+void enqueue(Process* newProcess) {
+    // Determine the appropriate priority queue based on the ProcessnewProcess's priority level
+
+    printf("Inside enqueue\n");
+    
+    switch(newProcess->pcb->priority) {
+        case PRIORITY_HIGH:
+            if (highQhead == NULL) {
+                highQhead = newProcess;
+                highQtail = newProcess;
+            }
+            else {
+                highQtail->next = newProcess;
+                highQtail = newProcess;
+            }
+            break;
+        case PRIORITY_LOW:
+            if (lowQhead == NULL) {
+                lowQhead = newProcess;
+                lowQtail = newProcess;
+            }
+            else {
+                lowQtail->next = newProcess;
+                lowQtail = newProcess;
+            }
+            break;
+        default:
+            if (medQhead == NULL) {
+                medQhead = newProcess;
+                medQtail = newProcess;
+            }
+            else {
+                medQtail->next = newProcess;
+                medQtail = newProcess;
+            }
+    }
+}
+
+void dequeueBlocked(Process* newProcess){
+    printf("Inside dnqueue sleep!\n");
+
+    // if first job, set the new head to the next job and free head
+    if (blockedQhead->pcb->pid == newProcess->pcb->pid){
+        blockedQhead = blockedQhead->next;
+        printf("get dQd bro blocked\n");
+        // freeOneJob(head);
+        return;
+    }
+
+    // iterate through all jobs until job of interest is reached
+    Process *current = blockedQhead;
+    while (current -> next != NULL){
+
+        // if the next job is the one, replace next with the one after that
+        if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+            Process *removed = current -> next;
+            Process *newNext = removed -> next;
+
+            // if else for stopped or terminated, act differently for both
+            current -> next = newNext;
+            removed -> next = NULL; 
+            // freeOneJob(&removed);
+            return;
+        }
+        current = current -> next;
+    }
+}
+
+
+void dequeue(Process* newProcess){
+
+    Process *current = NULL;
+    switch(newProcess->pcb->priority) {
+        case PRIORITY_HIGH:
+            // if first job, set the new head to the next job and free head
+            if (highQhead->pcb->pid == newProcess->pcb->pid){
+                highQhead = highQhead->next;
+                printf("get dQd bro \n");
+                // freeOneJob(head);
+                return;
+            }
+
+            // iterate through all jobs until job of interest is reached
+            current = highQhead;
+            while (current -> next != NULL){
+                // if the next job is the one, replace next with the one after that
+                if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+                    Process *removed = current -> next;
+                    Process *newNext = removed -> next;
+                    // if else for stopped or terminated, act differently for both
+                    current -> next = newNext;
+                    removed -> next = NULL; 
+                    // freeOneJob(&removed);
+                    return;
+                }
+                current = current -> next;
+            }
+            break;
+        case PRIORITY_LOW:
+            // if first job, set the new head to the next job and free head
+            if (lowQhead->pcb->pid == newProcess->pcb->pid){
+                lowQhead = lowQhead->next;
+                printf("get dQd bro \n");
+                // freeOneJob(head);
+                return;
+            }
+
+            // iterate through all jobs until job of interest is reached
+            current = lowQhead;
+            while (current -> next != NULL){
+                // if the next job is the one, replace next with the one after that
+                if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+                    Process *removed = current -> next;
+                    Process *newNext = removed -> next;
+                    // if else for stopped or terminated, act differently for both
+                    current -> next = newNext;
+                    removed -> next = NULL; 
+                    // freeOneJob(&removed);
+                    return;
+                }
+                current = current -> next;
+            }
+            break;
+        default:
+            // if first job, set the new head to the next job and free head
+            if (medQhead->pcb->pid == newProcess->pcb->pid){
+                medQhead = medQhead->next;
+                printf("get dQd bro \n");
+                // freeOneJob(head);
+                return;
+            }
+
+            // iterate through all jobs until job of interest is reached
+            current = medQhead;
+            while (current -> next != NULL){
+                // if the next job is the one, replace next with the one after that
+                if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+                    Process *removed = current -> next;
+                    Process *newNext = removed -> next;
+                    // if else for stopped or terminated, act differently for both
+                    current -> next = newNext;
+                    removed -> next = NULL; 
+                    // freeOneJob(&removed);
+                    return;
+                }
+                current = current -> next;
+            }
+    }
 }
 
 void initContext(void){
@@ -141,7 +301,16 @@ void initContext(void){
 // SIGALRM
 void alarmHandler(int signum){
     if(!emptyQflag){
-        // printf("SWAPPING CONTEXT \n");
+
+        Process *temp = blockedQhead;
+        while(temp != NULL) {
+            temp->pcb->sleep_time_remaining--;
+            if(temp->pcb->sleep_time_remaining == 0){
+                dequeueBlocked(temp);
+                enqueue(temp);
+            }
+            temp = temp->next;
+        }
         swapcontext(activeContext, &schedulerContext);
     }
 }
