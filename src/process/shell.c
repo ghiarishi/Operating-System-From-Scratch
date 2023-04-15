@@ -159,18 +159,17 @@ void pennShell(){
     while (1) {
         
         // WRITE AND READ 
-        int write1 = write(STDERR_FILENO, PROMPT, sizeof(PROMPT));
+        int write1 = f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         if (write1 == -1) {
-            perror("write");
+            p_perror("f_write");
             exit(EXIT_FAILURE); // replace with p_exit
         }
 
         char buffer[INPUT_SIZE];
 
-        int numBytes = read(STDIN_FILENO, buffer, INPUT_SIZE);
+        int numBytes = f_read(PSTDIN_FILENO, INPUT_SIZE, buffer);
         if (numBytes == -1) {
-            perror("read");
-            fflush(stdin);
+            p_perror("f_read");
             exit(EXIT_FAILURE);
         }
 
@@ -185,19 +184,17 @@ void pennShell(){
         // if no input or there is input but the last char of the buffer isn't newline, its CTRL D
         if (numBytes == 0 || (numBytes != 0 && buffer[numBytes - 1] != '\n')) {
             if (numBytes == 0) { // in this case, just return a new line (avoids the # sign on the same line)
-                int write7 = write(STDERR_FILENO, "\n", strlen("\n"));
+                int write7 = f_write(PSTDOUT_FILENO, "\n", strlen("\n"));
                 if (write7 == -1) {
-                    perror("write");
-                    fflush(stdin);
+                    p_perror("f_write");
                     exit(EXIT_FAILURE);
                 }  
                 break; // either ways, just shut the code
             }
             else{ // normal case
-                int write6 = write(STDERR_FILENO, "\n", strlen("\n"));
+                int write6 = f_write(PSTDIN_FILENO, "\n", strlen("\n"));
                 if (write6 == -1) {
-                    perror("write");
-                    fflush(stdin);
+                    p_perror("f_write");
                     exit(EXIT_FAILURE);
                 }  
             }
@@ -229,11 +226,11 @@ void pennShell(){
         parse_command(buffer, &cmd);
 
         if (strcmp(cmd->commands[0][0], "sleep") == 0){
-            pid = p_spawn(*sleepFunc, cmd -> commands[0], 0, 1);
+            pid = p_spawn(sleepFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
         }
 
         else if (strcmp(cmd->commands[0][0], "echo") == 0){
-            pid = p_spawn(*echoFunc, cmd -> commands[0], 0, 1);
+            pid = p_spawn(echoFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
         }
 
     //     if (pid == -1) {

@@ -92,7 +92,7 @@ fs_t *fs_mount(const char *path) {
 int fs_unmount(fs_t *fs) {
     // unlink the memory and free the heap-alloced entry
     munmap(fs->fat, fs->fat_size);
-    if (close(fs->host_fd) == -1) raise(PEHOSTFS);
+    if (close(fs->host_fd) == -1) p_raise(PEHOSTFS);
     free(fs->open_files);
     free(fs);
     return 0;
@@ -143,12 +143,7 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
     f->mode = mode;
     f->stdiomode = FIO_NONE;
     // record that we opened the file in fs
-    if (fs->opened_count == fs->opened_size) {
-        fs->opened_size *= 2;
-        fs->open_files = realloc(fs->open_files, sizeof(file_t *) * fs->opened_size);
-    }
-    fs->open_files[fs->opened_count] = f;
-    fs->opened_count++;
+    fs_trackopen(fs, f);
 
     // if the file was found and we are in write mode and have write permissions, truncate it to 0 bytes
     if (mode == F_WRITE && (f->entry->perm & FAT_WRITE)) {
@@ -168,19 +163,7 @@ file_t *fs_open(fs_t *fs, const char *name, int mode) {
  * @throw PEINVAL the file's entry is invalid
  */
 int fs_close(fs_t *fs, file_t *f) {
-    unsigned count = 0;
-    for (int i = 0; i < fs->opened_count; ++i) {
-        // remove it from the fs' list of open files by swapping it with the last open file and decreasing size
-        if (fs->open_files[i] == f) {
-            // this will segfault if f is not actually open but just don't do that
-            file_t *temp = fs->open_files[fs->opened_count - 1];
-            fs->open_files[fs->opened_count - 1] = f;
-            fs->open_files[i] = temp;
-            fs->opened_count--;
-        }
-        // is this the last instance of this file open?
-        if (fs->open_files[i]->entry == f->entry) count++;
-    }
+    unsigned count = fs_trackclose(fs, f);;
 
     // if this was the last open instance of a deleted file (name[0] == 2), delete it now (name[0] = 1, free blocks)
     if (!count && f->entry->name[0] == 2) {
@@ -204,7 +187,7 @@ int fs_close(fs_t *fs, file_t *f) {
  * @throw PEHOSTIO failed to read from host filesystem
  */
 ssize_t fs_read(fs_t *fs, file_t *f, uint32_t len, char *buf) {
-    if (!(f->entry->perm & FAT_READ)) raise(PEFPERM);
+    if (!(f->entry->perm & FAT_READ)) p_raise(PEFPERM);
     // only read until EOF
     if (f->offset > f->entry->size) return 0;
     if (f->offset + len > f->entry->size)
@@ -228,8 +211,8 @@ ssize_t fs_read(fs_t *fs, file_t *f, uint32_t len, char *buf) {
  * @throw PETOOFAT filesystem is full
  */
 ssize_t fs_write(fs_t *fs, file_t *f, const char *str, uint32_t len) {
-    if (!(f->mode == F_WRITE || f->mode == F_APPEND)) raise(PEFMODE);
-    if (!(f->entry->perm & FAT_WRITE)) raise(PEFPERM);
+    if (!(f->mode == F_WRITE || f->mode == F_APPEND)) p_raise(PEFMODE);
+    if (!(f->entry->perm & FAT_WRITE)) p_raise(PEFPERM);
     // append mode always seeks to EOF before writing
     if (f->mode == F_APPEND) fs_lseek(fs, f, 0, F_SEEK_END);
 
@@ -241,7 +224,7 @@ ssize_t fs_write(fs_t *fs, file_t *f, const char *str, uint32_t len) {
     // if we are writing any data and the file does not yet have an allocated block, alloc one
     if (f->entry->blockno == 0) {
         uint16_t block = fs_link_next_free(fs);
-        if (!block) raise(PETOOFAT);
+        if (!block) p_raise(PETOOFAT);
         f->entry->blockno = block;
     }
 
@@ -287,7 +270,7 @@ uint32_t fs_lseek(fs_t *fs, file_t *f, int offset, int whence) {
             f->offset = f->entry->size + offset;
             break;
         default:
-            raise(PEINVAL);
+            p_raise(PEINVAL);
     }
     return f->offset;
 }
@@ -405,10 +388,10 @@ int fs_rename(fs_t *fs, const char *oldname, const char *newname) {
     // is the new name valid?
     int namelen = strlen(newname); // NOLINT(cppcoreguidelines-narrowing-conversions)
     char letter;
-    if (!namelen || namelen > 31) raise(PEFNAME);
+    if (!namelen || namelen > 31) p_raise(PEFNAME);
     for (int i = 0; i < namelen; ++i) {
         letter = newname[i];
-        if (!(isalnum(letter) || letter == '-' || letter == '_' || letter == '.')) raise(PEFNAME);
+        if (!(isalnum(letter) || letter == '-' || letter == '_' || letter == '.')) p_raise(PEFNAME);
     }
     // delete a file named *newname* if it exists
     if (fs_unlink(fs, newname) == -1) {
@@ -496,7 +479,7 @@ file_t *fs_makefile(fs_t *fs, const char *name, int mode) {
  * @throw PEHOSTIO failed to read from host filesystem
  */
 ssize_t fs_read_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, uint32_t len, void *buf) {
-    if (blk_base_no >= fs->fat_size / 2 || blk_base_no == 0) raise(PEINVAL);
+    if (blk_base_no >= fs->fat_size / 2 || blk_base_no == 0) p_raise(PEINVAL);
     // seek to the right offset
     while (offset >= fs->block_size) {
         uint16_t next_block = fs->fat[blk_base_no];
@@ -505,13 +488,13 @@ ssize_t fs_read_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, uint32_t le
         blk_base_no = next_block;
     }
     // seek to the right spot on host
-    if (lseek(fs->host_fd, fs->fat_size + fs->block_size * (blk_base_no - 1) + offset, SEEK_SET) == -1) raise(PEHOSTIO);
+    if (lseek(fs->host_fd, fs->fat_size + fs->block_size * (blk_base_no - 1) + offset, SEEK_SET) == -1) p_raise(PEHOSTIO);
     // do we need to split the read?
     ssize_t bytes_read, r;
     if (offset + len > fs->block_size) {
         // read as much as we can from this block, then recursive call to read from the next
         bytes_read = read(fs->host_fd, buf, fs->block_size - offset);
-        if (bytes_read == -1) raise(PEHOSTIO);
+        if (bytes_read == -1) p_raise(PEHOSTIO);
         uint16_t next_block = fs->fat[blk_base_no];
         if (next_block == FAT_EOF) return bytes_read;
         r = fs_read_blk(fs, next_block, 0, len - bytes_read, buf + bytes_read);
@@ -520,7 +503,7 @@ ssize_t fs_read_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, uint32_t le
     } else {
         // read the requested length from the block
         bytes_read = read(fs->host_fd, buf, len);
-        if (bytes_read == -1) raise(PEHOSTIO);
+        if (bytes_read == -1) p_raise(PEHOSTIO);
         return bytes_read;
     }
 }
@@ -539,7 +522,7 @@ ssize_t fs_read_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, uint32_t le
  * @throw PETOOFAT filesystem is full
  */
 ssize_t fs_write_blk(fs_t *fs, uint16_t blk_base_no, uint32_t offset, const void *str, uint32_t len) {
-    if (blk_base_no >= fs->fat_size / 2 || blk_base_no == 0) raise(PEINVAL);
+    if (blk_base_no >= fs->fat_size / 2 || blk_base_no == 0) p_raise(PEINVAL);
     // seek to the right spot on host
     int blkno = fs_extendblk(fs, blk_base_no, offset);
     if (blkno == -1) return -1;
@@ -601,7 +584,7 @@ uint32_t fs_find(fs_t *fs, const char *fname) {
         }
         offset += FAT_FILE_SIZE;
     } while (r);
-    raise(PENOFILE);
+    p_raise(PENOFILE);
 }
 
 /**
@@ -629,7 +612,7 @@ int fs_extendblk(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
         if (next_block == FAT_EOF) {
             // alloc a new block and link it
             next_block = fs_link_next_free(fs);
-            if (!next_block) raise(PETOOFAT);
+            if (!next_block) p_raise(PETOOFAT);
             fs->fat[blk_base_no] = next_block;
         }
         offset -= fs->block_size;
@@ -676,4 +659,54 @@ void *fs_dataoffset(fs_t *fs, uint16_t blk_base_no, uint32_t offset) {
         blk_base_no = next_block;
     }
     return fs->data + fs->fat_size + fs->block_size * (blk_base_no - 1) + offset;
+}
+
+/**
+ * Track a reference to a new opened file. Called when a file is opened using fs_open *or* when a file is cloned
+ * (e.g. through p_spawn).
+ * @param fs the filesystem
+ * @param f the opened file
+ * @return -1 on error, 0 otherwise
+ */
+int fs_trackopen(fs_t *fs, file_t *f) {
+    // don't track stdin/stdout opens
+    if (f->stdiomode != FIO_NONE)
+        return 0;
+    if (fs->opened_count == fs->opened_size) {
+        fs->opened_size *= 2;
+        file_t **new_open = realloc(fs->open_files, sizeof(file_t *) * fs->opened_size);
+        if (new_open == NULL) {
+            p_raise(PENOMEM);
+        }
+        fs->open_files = new_open;
+    }
+    fs->open_files[fs->opened_count] = f;
+    fs->opened_count++;
+    return 0;
+}
+
+/**
+ * Track that the reference to an open file will no longer be used.
+ * @param fs the filesystem
+ * @param f the file that is being closed
+ * @return the number of times this file is still open in the filesystem after this instance is closed
+ */
+int fs_trackclose(fs_t *fs, file_t *f) {
+    // don't track stdin/stdout opens/closes
+    if (f->stdiomode != FIO_NONE)
+        return 1;
+    int count = 0;
+    for (int i = 0; i < fs->opened_count; ++i) {
+        // remove it from the fs' list of open files by swapping it with the last open file and decreasing size
+        if (fs->open_files[i] == f) {
+            // this will segfault if f is not actually open but just don't do that
+            file_t *temp = fs->open_files[fs->opened_count - 1];
+            fs->open_files[fs->opened_count - 1] = f;
+            fs->open_files[i] = temp;
+            fs->opened_count--;
+        }
+        // is this the last instance of this file open?
+        if (fs->open_files[i]->entry == f->entry) count++;
+    }
+    return count;
 }

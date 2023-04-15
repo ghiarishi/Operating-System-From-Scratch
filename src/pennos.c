@@ -3,6 +3,7 @@
 #include "process/user.h"
 #include "process/user_functions.h"
 #include "process/shell.h"
+#include "fs/user.h"
 
 void setTimerAlarmHandler(void) {
     
@@ -64,10 +65,12 @@ void setTimerAlarmHandler(void) {
 // }
 
 int main(int argc, char** argv) {
-    // if (argc < 2) {
-    //     printf("error");
-    // } 
-    // char *path = argv[1];
+    // fflush(stdin);
+    //  if (argc < 2) {
+    //      printf("error");
+    //  }
+    //  char *path = argv[1];
+    // fs = fs_mount(path);
     // signal(SIGINT, SIG_IGN); // Ctrl-C
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
     signal(SIGTSTP, SIG_IGN); // Ctrl-Z

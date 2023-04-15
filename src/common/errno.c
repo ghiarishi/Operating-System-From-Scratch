@@ -11,6 +11,9 @@ void p_perror(const char *prefix) {
     char *msg;
     switch (ERRNO) {
         // general
+        case PENOMEM:
+            msg = "out of memory";
+            break;
         case PEINVAL:
             msg = "invalid argument";
             break;
@@ -44,6 +47,9 @@ void p_perror(const char *prefix) {
             break;
         case PETOOMANYF:
             msg = "too many open files";
+            break;
+        case PESTDIO:
+            msg = "cannot read from stdout or write to stdin";
             break;
             // default
         default:

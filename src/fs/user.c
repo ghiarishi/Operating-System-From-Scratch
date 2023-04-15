@@ -1,7 +1,9 @@
 #include "user.h"
+#include "../process/pcb.h"  // included here to avoid circular dependency
+
+Process *activeProcess;
 
 // begin demo code - delete this later
-// #define MAX_FILES 512
 
 // global:
 // fs_t *fs;
@@ -10,7 +12,7 @@
 // file_t *fd_table[MAX_FILES];
 
 // void this_would_be_main(int argc, char **argv) {
-//     if (argc < 2) {} // raise some error
+//     if (argc < 2) {} // p_raise some error
 //     char *path = argv[1];
 //     fs = fs_mount(path);
 //     if (fs == NULL) {
@@ -44,57 +46,88 @@
 
 
 
-// // user function implementation code
-// // todo copy all these into the header
-// int f_open(const char *fname, int mode) {
-//     file_t *file = fs_open(fs, fname, mode);
-//     // todo: error checking
-//     for (int i = 0; i < MAX_FILES; ++i) {
-//         if (fd_table[i] == NULL) {
-//             fd_table[i] = file;
-//             return i;
-//         }
-//     }
+// user function implementation code
+int f_open(const char *fname, int mode) {
+    file_t *file = fs_open(fs, fname, mode);
+    // error checking
+    if (file == NULL)
+        return -1;
 
-//     // return -1 some with some error code
-//     ERRNO = PETOOMANYF;
-//     return -1;
-// }
+    for (int i = 0; i < MAX_FILES; ++i) {
+        if (activeProcess->pcb->fd_table[i] == NULL) {
+            activeProcess->pcb->fd_table[i] = file;
+            return i;
+        }
+    }
 
-// int f_close(int fd) {
-//     file_t *f = fd_table[fd];
-//     int retval = fs_close(fs, f);
-//     // todo error checking
-//     fd_table[fd] = NULL;
-//     return retval;
-// }
+    // return -1 some with some error code
+    ERRNO = PETOOMANYF;
+    return -1;
+}
 
-// int f_read(int fd, int n, char *buf) {
-//     file_t *f = fd_table[fd];
-//     // todo error checking
-//     // handle stdin
-//     if (f->stdiomode == FIO_STDIN) {
-//         // write to stdout
-//     } else if (f->stdiomode == FIO_STDOUT) {
-//         // todo error, can't read from stdout
-//     } else {
-//         return fs_read(fs, f, n, buf);
-//     }
-// }
+int f_close(int fd) {
+    file_t *f = activeProcess->pcb->fd_table[fd];
+    int retval;
+    if (f->stdiomode == FIO_NONE) {
+        retval = fs_close(fs, f);
+    } else {
+        free(f);
+        retval = 0;
+    }
+    activeProcess->pcb->fd_table[fd] = NULL;
+    return retval;
+}
+
+ssize_t f_read(int fd, int n, char *buf) {
+    file_t *f = activeProcess->pcb->fd_table[fd];
+    // handle stdin
+    if (f->stdiomode == FIO_STDIN) {
+        // read from host stdin
+        ssize_t host_retval = read(STDIN_FILENO, buf, n);
+        if (host_retval == -1)
+            p_raise(PEHOSTIO);
+        return host_retval;
+    } else if (f->stdiomode == FIO_STDOUT) {
+        p_raise(PESTDIO);
+    } else {
+        return fs_read(fs, f, n, buf);
+    }
+}
 
 
-// int f_write(int fd, const char *str, int n) {
-//     // get the file_t * to give to the fs_* method
-//     file_t *f = fd_table[fd];
-//     // todo error checking
+ssize_t f_write(int fd, const char *str, int n) {
+    // get the file_t * to give to the fs_* method
+    file_t *f = activeProcess->pcb->fd_table[fd];
+    // handle stdout
+    if (f->stdiomode == FIO_STDOUT) {
+        // write to host stdout
+        ssize_t host_retval = write(STDOUT_FILENO, str, n);
+        if (host_retval == -1)
+            p_raise(PEHOSTIO);
+        return host_retval;
+    } else if (f->stdiomode == FIO_STDIN) {
+        p_raise(PESTDIO);
+    } else {
+        return fs_write(fs, f, str, n);
+    }
+}
 
-//     // handle stdout
-//     if (f->stdiomode == FIO_STDOUT) {
-//         // write to stdout
-//     } else if (f->stdiomode == FIO_STDIN) {
-//         // todo error, can't write to stdin
-//         return -1
-//     } else {
-//         return fs_write(fs, f, str, n);
-//     }
-// }
+int f_unlink(const char *fname) {
+    return fs_unlink(fs, fname);
+}
+
+uint32_t f_lseek(int fd, int offset, int whence) {
+    // get the file_t * to give to the fs_* method
+    file_t *f = activeProcess->pcb->fd_table[fd];
+    if (f->stdiomode != FIO_NONE)
+        return 0;
+    return fs_lseek(fs, f, offset, whence);
+}
+
+filestat_t **f_ls(const char *fname) {
+    return fs_ls(fs, fname);
+}
+
+void f_freels(filestat_t **stat) {
+    fs_freels(stat);
+}

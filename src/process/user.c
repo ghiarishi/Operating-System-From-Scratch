@@ -14,16 +14,33 @@ char* concat(int argc, char *argv[]) {
     return cmd_line;
 }
 
+// demo code showing high-level redirection logic
+//void foo() {
+//    int infd = f_open("...", F_READ);
+//    int outfd = f_open("...", F_WRITE);
+//    p_spawn(NULL, NULL, infd, outfd);
+//    f_close(infd);
+//    f_close(outfd);
+//}
+
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     // printf("Inside p_spawn \n");
     pid_t pid_new;
-    
+
     // pid_t pid = getpid();
 
     Process *newProcess = (Process*) malloc(sizeof(Process)); //NULL;
     newProcess->pcb = k_process_create(activeProcess->pcb);
     pid_new = newProcess->pcb->pid;
+
+    // set up child fd table based on fd0/fd1
+    // file_t *in_f = activeProcess->pcb->fd_table[fd0];
+    // file_t *out_f = activeProcess->pcb->fd_table[fd1];
+    // memcpy(newProcess->pcb->fd_table[PSTDIN_FILENO], in_f, sizeof(file_t));
+    // memcpy(newProcess->pcb->fd_table[PSTDOUT_FILENO], out_f, sizeof(file_t));
+    // fs_trackopen(fs, newProcess->pcb->fd_table[PSTDIN_FILENO]);
+    // fs_trackopen(fs, newProcess->pcb->fd_table[PSTDOUT_FILENO]);
 
     int argc = 0;
     int i = 0;
@@ -43,9 +60,9 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     if(func == (void(*)())&pennShell){
         newProcess->pcb->priority = -1;
         makecontext(&newProcess->pcb->context, func, 0, argv);
-        
+
         // printf("making pennshell context \n");
-    } 
+    }
     else if(func == (void(*)())&sleepFunc){
         makecontext(&newProcess->pcb->context, func, 2, cmd->commands[0]);
     }
@@ -58,6 +75,12 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     return pid_new;
 }
+
+// void p_sleep(unsigned int ticks){
+//     // sleep 
+//     printf("inside p_sleep, hello \n");
+
+// }
 
 
 
@@ -98,11 +121,6 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 //     return p->pid;
 // }
 
-void p_sleep(unsigned int ticks){
-    // sleep 
-    printf("inside p_sleep, hello \n");
-
-}
 
 // int p_kill(pid_t pid, int sig){
 //     //Killing should free all memory locations. Remove it from all queues. 

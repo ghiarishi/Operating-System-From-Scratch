@@ -93,3 +93,5 @@ void fs_freels(filestat_t **stat);
 int fs_extendblk(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
 int fs_freeblk(fs_t *fs, uint16_t blk_base_no);
 void *fs_dataoffset(fs_t *fs, uint16_t blk_base_no, uint32_t offset);
+int fs_trackopen(fs_t *fs, file_t* f);
+int fs_trackclose(fs_t *fs, file_t* f);

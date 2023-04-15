@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "user.h"
-// #include "fs/user.h"
+#include "../fs/user.h"
 
 #define STOPPED 3
 #define RUNNING 2
