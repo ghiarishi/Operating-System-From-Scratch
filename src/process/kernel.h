@@ -5,7 +5,9 @@
 #include "scheduler.h"
 #include "shell.h"
 #include "user.h"
+#include "dependencies.h"
 
 struct pcb* k_process_create(struct pcb *parent);
 // Process *p;
 void k_process_cleanup(struct pcb *p);
+Process *findProcessByPid(int pid);

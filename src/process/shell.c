@@ -5,25 +5,86 @@
 #define TRUE 1
 #define FALSE 0
 
-int pid; // process ID
 int ctrl_c = 0; // flag to check if ctrl c has been pressed
 int flag_spaces = 0; // flag to note if the input buffer is all spaces and/or tabs
 int timeout; // timeout arg to penn shredder, for extra credit to use alarm(timeout)
+int IS_BG = 0;
+int curr_pid = 0;
+int par_pgid  = 0;
+int bufferWaiting = 0;
+int bufferCount;
 
-void sigint_handler(int signal) {
-    int write2 = write(STDERR_FILENO, "\n", sizeof("\n"));
-    if (write2 == -1) {
-        perror("write");
-        exit(EXIT_FAILURE);
-    }
-    if(!ctrl_c) { // basically, print the prompt when there is nothing written, DONT print the prompt when there is another command! 
-        int write3 = write(STDERR_FILENO, PROMPT, sizeof(PROMPT));
-        if (write3 == -1) {
-            perror("write");
-            exit(EXIT_FAILURE);
+void setTimer(void) {
+    struct itimerval it;
+
+    it.it_interval = (struct timeval){.tv_usec = quantum};
+    it.it_value = it.it_interval;
+
+    setitimer(ITIMER_REAL, &it, NULL);
+}
+
+void sigint_termHandler(int signal) {
+    // ignore for bg processes
+    if(signal == SIGINT){
+        if(curr_pid != 0 && !IS_BG){
+            kill(curr_pid, SIGKILL);
         }
     }
-    ctrl_c = 0; // reset the flag for another iteration of the while loop
+}
+
+void sigcontHandler(int signal){
+
+}
+
+void sigtstpHandler(int signal){
+    if(signal == SIGTSTP){
+        if(curr_pid != 0 && !IS_BG){
+            kill(curr_pid, SIGTSTP);
+        }
+    }
+}
+
+void setSignalHandler(void){
+
+    struct sigaction sa_alarm;
+
+    sa_alarm.sa_handler = alarmHandler;
+    sa_alarm.sa_flags = SA_RESTART;
+    sigfillset(&sa_alarm.sa_mask);
+
+    sigaction(SIGALRM, &sa_alarm, NULL);
+
+    struct sigaction sa_int;
+
+    sa_int.sa_handler = sigint_termHandler;
+    sa_int.sa_flags = SA_RESTART;
+    sigfillset(&sa_int.sa_mask);
+
+    sigaction(SIGINT, &sa_int, NULL);
+
+    struct sigaction sa_term;
+
+    sa_term.sa_handler = sigint_termHandler;
+    sa_term.sa_flags = SA_RESTART;
+    sigfillset(&sa_term.sa_mask);
+
+    sigaction(SIGTERM, &sa_term, NULL);
+
+    struct sigaction sa_cont;
+
+    sa_cont.sa_handler = sigcontHandler;
+    sa_cont.sa_flags = SA_RESTART;
+    sigfillset(&sa_cont.sa_mask);
+
+    sigaction(SIGCONT, &sa_cont, NULL);
+
+    struct sigaction sa_stop;
+
+    sa_stop.sa_handler = sigtstpHandler;
+    sa_stop.sa_flags = SA_RESTART;
+    sigfillset(&sa_cont.sa_mask);
+
+    sigaction(SIGTSTP, &sa_stop, NULL);
 }
 
 struct Job *createJob(int pgid, int bgFlag, int numChildren, char *input){
@@ -152,10 +213,11 @@ void pennShell(){
     //     exit(EXIT_FAILURE);
     // } 
     
-    if(signal(SIGINT, sigint_handler) == SIG_ERR){
-        perror("signal ctrl");
-        exit(EXIT_FAILURE);
-    }
+    // if(signal(SIGINT, sigint_handler) == SIG_ERR){
+    //     perror("signal ctrl");
+    //     exit(EXIT_FAILURE);
+    // }
+
     while (1) {
         
         // WRITE AND READ 
@@ -226,11 +288,11 @@ void pennShell(){
         parse_command(buffer, &cmd);
 
         if (strcmp(cmd->commands[0][0], "sleep") == 0){
-            pid = p_spawn(sleepFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+            curr_pid = p_spawn(sleepFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
         }
 
         else if (strcmp(cmd->commands[0][0], "echo") == 0){
-            pid = p_spawn(echoFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+            curr_pid = p_spawn(echoFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
         }
 
     //     if (pid == -1) {

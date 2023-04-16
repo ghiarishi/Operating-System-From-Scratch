@@ -31,7 +31,7 @@ struct pcb {
     int *childPidsFinished;             // boolean array list that checks every pid is finished
     int sleep_time_remaining;
     file_t *fd_table[MAX_FILES];
-    // int w_status;
+    int wStatus;
 };
 
 char* strCopy(char* src, char* dest);

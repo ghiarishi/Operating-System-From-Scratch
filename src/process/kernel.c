@@ -42,3 +42,29 @@ struct pcb* k_process_create(struct pcb *parent) {
 //     activeProcess = NULL; //current process becomes null
 //     activeContext = NULL; //current context becomes null
 // }
+
+Process *findProcessByPid(int pid){
+
+    Process *temp = highQhead;
+    while(temp != NULL){
+        if(temp->pcb->pid == pid){
+            return temp;
+        }
+    }
+
+    temp = medQhead;
+    while(temp != NULL){
+        if(temp->pcb->pid == pid){
+            return temp;
+        }
+    }
+
+    temp = lowQhead;
+    while(temp != NULL){
+        if(temp->pcb->pid == pid){
+            return temp;
+        }
+    }
+
+    return temp;
+}

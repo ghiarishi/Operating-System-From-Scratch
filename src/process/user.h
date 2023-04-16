@@ -5,7 +5,6 @@
 #include <ucontext.h>
 #include "scheduler.h"
 #include "pcb.h"
-#include "kernel.h"
 #include "parser.h"
 
 #define MAX_CMD_LENGTH 1000

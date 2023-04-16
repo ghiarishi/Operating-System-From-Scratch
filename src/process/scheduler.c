@@ -304,24 +304,17 @@ void alarmHandler(int signum){
 
         Process *temp = blockedQhead;
         while(temp != NULL) {
-            temp->pcb->sleep_time_remaining--;
-            if(temp->pcb->sleep_time_remaining == 0){
-                dequeueBlocked(temp);
-                enqueue(temp);
+            if(temp->pcb->sleep_time_remaining > 0){
+                temp->pcb->sleep_time_remaining--;
+                if(temp->pcb->sleep_time_remaining == 0){
+                    dequeueBlocked(temp);
+                    enqueue(temp);
+                }
             }
             temp = temp->next;
         }
         swapcontext(activeContext, &schedulerContext);
     }
-}
-
-void setTimer(void) {
-    struct itimerval it;
-
-    it.it_interval = (struct timeval){.tv_usec = quantum};
-    it.it_value = it.it_interval;
-
-    setitimer(ITIMER_REAL, &it, NULL);
 }
 
 void freeStacks(struct pcb *p){

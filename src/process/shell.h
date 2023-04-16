@@ -30,7 +30,11 @@ struct Job{
     int *pids_finished;             // boolean array list that checks every pid is finished
 };
 
-void sigint_handler(int signal);
+void sigintHandler(int signal);
+void sigtermHandler(int signal);
+void sigcontHandler(int signal);
+void sigtstpHandler(int signal);
+void setSignalHandler(void);
 void pennShell();
 struct Job *createJob(int pgid, int bgFlag, int numChildren, char *input);
 void freeOneJob(struct Job *Job);
