@@ -1,17 +1,23 @@
 #include "shell.h"
 
-struct Job *createJob(int pgid, int bgFlag, int numChildren, char *input){
+char **bufferSig;
+int async = 0;
+int IS_BG = 0;
+int pgid = 0;
+int curr_pid = 0;
+int par_pid = 0;
+int bufferWaiting = 0;
+int bufferCount = 0;
+
+struct Job *createJob(int pid, int bgFlag, int numChildren, char *input){
     struct Job *newJob;
     newJob = (struct Job *)malloc(sizeof(struct Job));
     newJob -> commandInput = malloc((strlen(input) + 1) * sizeof(char));
     strcpy(input, newJob -> commandInput);
     newJob -> next = NULL;
-    newJob -> numChild = numChildren;
     newJob -> bgFlag = bgFlag;
-    newJob -> pgid = pgid;
+    newJob -> myPid = pid;
     newJob -> status = RUNNING;
-    newJob -> pids = malloc(numChildren * sizeof(int));
-    newJob -> pids_finished = malloc(numChildren * sizeof(int));
     return newJob;
 }
 
@@ -24,7 +30,7 @@ void setTimer(void) {
     setitimer(ITIMER_REAL, &it, NULL);
 }
 
-void sigint_termHandler(int signal) {
+void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
         if(curr_pid != 0 && !IS_BG){
@@ -73,7 +79,7 @@ void setSignalHandler(void){
 
     struct sigaction sa_int;
 
-    sa_int.sa_handler = sigint_termHandler;
+    sa_int.sa_handler = sigIntTermHandler;
     sa_int.sa_flags = SA_RESTART;
     sigfillset(&sa_int.sa_mask);
 
@@ -81,7 +87,7 @@ void setSignalHandler(void){
 
     struct sigaction sa_term;
 
-    sa_term.sa_handler = sigint_termHandler;
+    sa_term.sa_handler = sigIntTermHandler;
     sa_term.sa_flags = SA_RESTART;
     sigfillset(&sa_term.sa_mask);
 
@@ -107,8 +113,6 @@ void setSignalHandler(void){
 // clear all the mallocs to prevent memory leaks
 void freeOneJob(struct Job *Job){
     free(Job -> commandInput);
-    free(Job -> pids);
-    free(Job -> pids_finished);
     free(Job);
 }
 
@@ -256,13 +260,13 @@ int getCurrentJob(struct Job *head){
 
 void changeStatus(struct Job *head, int jobNum, int newStatus){
     if (jobNum == 1){
-        if(newStatus == 0){
+        if(newStatus == 2){
             head -> status = RUNNING;
         }
-        else if (newStatus == 1){
+        else if (newStatus == 3){
             head -> status = STOPPED;
         }
-        else{
+        else if(newStatus == 0){
             head->status = TERMINATED;
         }
     }
@@ -272,13 +276,13 @@ void changeStatus(struct Job *head, int jobNum, int newStatus){
         current = current -> next;
         // if the next job is the one, replace next with the one after that
         if (current -> JobNumber == jobNum){
-            if(newStatus == 0){
+            if(newStatus == 2){
                 current -> status = RUNNING;
             }
-            else if (newStatus == 1){
+            else if (newStatus == 3){
                 current -> status = STOPPED;
             }
-            else{
+            else if (newStatus == 0){
                 current->status = TERMINATED;
             }
         }
@@ -310,20 +314,23 @@ void changeFGBG(struct Job *head, int jobNum, int newFGBG){
 }
 
 char *statusToStr(int status){
-    if(status == 0){
+    if(status == 2){
         return "running";
     }
-    else if(status == 1){
+    else if(status == 3){
         return "stopped";
     }
-    else{
+    else if(status == 0){
         return "finished";
+    }
+    else{
+        return "ready";
     }
 }
 
 struct Job *head = NULL;
 
-void penn_shredder(char* buffer){
+void pennShredder(char* buffer){
     IS_BG = 0;
     int numBytes = strlen(buffer);
 
@@ -586,164 +593,47 @@ void penn_shredder(char* buffer){
     //     }
     // }
     
-    int n = cmd -> num_commands;
-    int group_pid = 0;    
+    int n = cmd -> num_commands;  
     if (cmd -> is_background){
         IS_BG = 1; 
         printf("Running: ");
         print_parsed_command(cmd);    
     }
-    
-    int fd[n - 1][2]; // Create file descriptors for all pipes
-    
-    int pid_list[n]; // To store a list of all child PIDs
 
-    int status; 
+    int status = 0; 
 
-    for (int i = 0; i < n-1; ++i) {
-        pipe(fd[i]); //Create the pipes
+    if (strcmp(cmd->commands[0][0], "sleep") == 0){
+        curr_pid = p_spawn(sleepFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    }
+
+    else if (strcmp(cmd->commands[0][0], "echo") == 0){
+        curr_pid = p_spawn(echoFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     }
 
     // for loop to execute the commands line by line
     struct Job *new_job = NULL; // create a new job each time penn shredder is run
 
-    for (int i = 0; i < n; ++i) { // n processes within one command line 1
-    
-        int pid = fork(); // create child process thats copy of the parent
-        curr_pid = pid;
-
-        if (pid == -1) {
-            free(cmd);
-            perror("fork"); //if error in forking
-            exit(EXIT_FAILURE);
-        }
-        if (pid == 0) { // child process has PID 0 (returned from the fork process), while the parent will get the actual PID of child
-            //Input redirection
-            if (cmd -> stdin_file != NULL){
-                //open file in read mode
-                int fin = open(cmd -> stdin_file, O_RDONLY);
-                if (fin < 0){
-                    perror("open");
-                    exit(EXIT_FAILURE);
-                }
-                if (dup2(fin, STDIN_FILENO) < 0){ // read from fin instead of stdin file no
-                    perror("dup2");
-                    exit(EXIT_FAILURE);
-                }
-                close(fin);
-            }
-
-            //Output redirection
-            if (cmd -> stdout_file != NULL){
-                int file; //file descriptor
-                if (cmd  ->  is_file_append){
-                    file = open(cmd -> stdout_file, O_WRONLY | O_APPEND, 0644); //Append mode
-                }
-                else{
-                    file = open(cmd -> stdout_file, O_WRONLY | O_CREAT | O_TRUNC, 0644); //Overwrite mode
-                }
-                if (file < 0){
-                    perror("open");
-                    free(cmd);
-                    return;
-                }
-                else{
-                    if (dup2(file, STDOUT_FILENO) < 0){
-                        perror("dup2"); 
-                    }
-                    close(file);
-                }
-            }
-            
-            // //Pipelining
-            // if (n > 1){ // first command
-            //     if (i == 0){
-            //         if (dup2(fd[i][1],STDOUT_FILENO) < 0){
-            //             perror("dup2");
-            //         }
-            //         close(fd[i][0]); 
-            //         close(fd[i][1]); 
-            //     }
-            //     else if (i == n - 1){ // last command
-            //         if (dup2(fd[i-1][0],STDIN_FILENO) < 0){
-            //             perror("dup2");
-            //         }
-            //         close(fd[i-1][0]);
-            //         close(fd[i-1][1]);
-            //     }
-            //     else{ // any middle command - pipe in and pipe out
-            //         if (dup2(fd[i-1][0],STDIN_FILENO) < 0){
-            //             perror("dup2");
-            //         }
-            //         if (dup2(fd[i][1],STDOUT_FILENO) < 0){
-            //             perror("dup2");
-            //         }
-            //         close(fd[i][0]);   // close read end of current pipe
-            //         close(fd[i-1][1]); // close write end of previous pipe
-            //     }
-            // }
-            
-            if (execvp(cmd -> commands[i][0], cmd -> commands[i]) == -1) { 
-                free(cmd);
-                perror("execvp");
-                exit(EXIT_FAILURE);
-            } 
-
-            // // Close all ends for pipes in child
-            // for (int j = 0; j < n-1; j++){
-            //     close(fd[j][0]);
-            //     close(fd[j][1]);  
-            // }  
-            free(cmd);
-            return;                
-        }
-        else{ // parent else
-            pid_list[i] = pid; // Add child's PID to the list
-            group_pid = pid_list[0]; // set the pid of the first child to be the pgid
-            setpgid(pid, group_pid); // set for every child 
-            pgid = group_pid;
-
-            // // Close all ends of pipes in parent
-            // if(i != 0){
-            //     close(fd[i-1][0]);
-            //     close(fd[i-1][1]);   
-            // }
-
-            if(IS_BG == 1){
-                // for the first process in the job, add everything
-                if(i == 0){ 
-                    new_job = createJob(group_pid, BG, n, buffer);
-                }
-                // do this for every process in the job
-                new_job -> pids[i] = pid; 
-                new_job -> pids_finished[i] = false;                
-            }
-            else{ // same for FG
-                // for the first process in the job, add everything
-                if(i == 0){ 
-                    new_job = createJob(group_pid, FG, n, buffer);
-                }
-                // do this for every process in the job
-                new_job -> pids[i] = pid;
-                new_job -> pids_finished[i] = false;     
-            }
-        }        
+    if(IS_BG == 1){
+        // for the first process in the job, add everything
+        new_job = createJob(curr_pid, BG, n, buffer);  
     }
-    
+    else{ // same for FG
+        // for the first process in the job, add everything
+        new_job = createJob(curr_pid, FG, n, buffer);  
+    }
+     
     if (IS_BG == 0){ // wait as normal for foreground processes
         // static sigset_t mask;
 
-        tcsetpgrp(STDIN_FILENO, pid_list[0]); // give TC to child
+        tcsetpgrp(STDIN_FILENO, curr_pid); // give TC to child
 
-        for (int i = 0; i < n; i++){
-            waitpid(-group_pid, &status, WUNTRACED);   
-        }
+        waitpid(curr_pid, &status, WUNTRACED);   
+    
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
         if (WIFSTOPPED(status) && new_job -> status == RUNNING){
             fprintf(stderr, "\nStopped: %s", new_job-> commandInput); 
             new_job -> status = STOPPED; 
-            head = addJob(head, new_job);
-            
+            head = addJob(head, new_job);    
         }
         else{
             freeOneJob(new_job);
@@ -777,7 +667,7 @@ void pennShell(){
     // catch and ignore this signal else it does let jobs be suspended properly
     signal(SIGTTOU, SIG_IGN);
     
-    par_pgid = getpgid(0);
+    par_pid = getpid();
 
     // create a jobs linked list 
     struct Job *current = NULL;
@@ -833,24 +723,13 @@ void pennShell(){
                     }
                     else{
                         bool currJobFinished = false;
-                        int n = current -> numChild;
 
                         // check all pids in this job, if they match the returned pid, then mark finished
-                        for(int i = 0; i < n; i++){
-                            if(pid == current -> pids[i]){
-                                current -> pids_finished[i] = true; 
-                            }
-                        }
                         
-                        // check to see if all processes in current job are finished
-                        for(int i = 0; i < n; i++){
-                            if(current -> pids_finished[i] == false){
-                                currJobFinished = false;
-                                break;
-                            }
+                        if(pid == current->myPid){
                             currJobFinished = true;
-                        }
-
+                        }                   
+        
                         // ONLY if all processes in this job are finished and its not ALREADY finished in the past, print finished: cmd
                         if(currJobFinished && current -> status == RUNNING){
                             char *command = current -> commandInput;
@@ -914,7 +793,7 @@ void pennShell(){
                     }  
                 }
             }
-            penn_shredder(buffer);
+            pennShredder(buffer);
             if(head != NULL && current == NULL){
                 current = head; // first job
             }   
@@ -933,7 +812,7 @@ void pennShell(){
             if (numBytes == 1 && line[0] == '\n') {
                 continue;
             }
-            penn_shredder(line);
+            pennShredder(line);
             free(line);
         }
     }   
