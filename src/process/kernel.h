@@ -9,5 +9,5 @@
 
 struct pcb* k_process_create(struct pcb *parent);
 // Process *p;
-void k_process_cleanup(struct pcb *p);
+void k_process_cleanup(Process *p, int signal);
 Process *findProcessByPid(int pid);

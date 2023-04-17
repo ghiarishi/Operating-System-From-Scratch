@@ -83,8 +83,6 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
 // }
 
-
-
 // pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 //     // parent p_spwans child. Child runs. OS tracks child. Child complete/stopped. 
 //     // MAYBE:
@@ -128,20 +126,25 @@ int p_kill(pid_t pid, int sig){
     // Sig should come from parent? 
     // Kill the process with the pid passed => What does killing mean here? 
     // Only one pid essentially. We create a "process". Gets a pcb. calls funcs. So you clear memory. And check if anything referenced in parent??
+    Process *parent = findProcessByPid(pid);
+    switch(sig){
+        case S_SIGTERM: 
+            Process *child = NULL;
+            for(int i=0;i<parent->pcb->numChild;i++){
+                child = findProcessByPid(parent->pcb->childPids[i]);
+                k_process_cleanup(child, S_SIGTERM);
+            }
 
-    switch (sig){
-    case S_SIGTERM:
-        printf("inide sigteerm");
-        break;
+            k_process_cleanup(parent, sig);
+            break;
 
-    case S_SIGCONT: 
-        printf("inide sigteerm");
-        break;
-    
-    default:
-        break;
+        case S_SIGCONT:
+            break;
+
+        case S_SIGTSTP:
+            break;
     }
-
+    
     return 1;
 
 }

@@ -36,12 +36,25 @@ struct pcb* k_process_create(struct pcb *parent) {
     
 // }   
 
-// void k_process_cleanup(struct pcb *p) { 
-//     freeStacks(p);
-//     freePcb(p);  
-//     activeProcess = NULL; //current process becomes null
-//     activeContext = NULL; //current context becomes null
-// }
+void k_process_cleanup(Process *p, int signal) { 
+
+    switch (signal){
+    case S_SIGTERM:
+        printf("inside sigterm");
+        dequeue(p);
+        break;
+
+    case S_SIGCONT: 
+        printf("inside sigcont");
+        break;
+    
+    default:
+        break;
+    }
+
+    activeProcess = NULL; //current process becomes null
+    activeContext = NULL; //current context becomes null
+}
 
 Process *findProcessByPid(int pid){
 

@@ -21,6 +21,9 @@ Process *lowQtail = NULL;
 Process *blockedQhead = NULL; 
 Process *blockedQtail = NULL;
 
+Process *stoppedQhead = NULL; 
+Process *stoppedQtail = NULL;
+
 void terminateProcess(void){
     
     printf("Process terminated, about to be dequeued\n");
@@ -120,7 +123,7 @@ void scheduler(void){
 }
 
 void enqueueBlocked(Process* newProcess){
-    printf("Inside enqueue sleep!\n");
+    printf("%s enqueued into blocked Q!\n", newProcess->pcb->argument);
     if (blockedQhead == NULL) {
         blockedQhead = newProcess;
         blockedQtail = newProcess;
@@ -131,15 +134,26 @@ void enqueueBlocked(Process* newProcess){
     }
 }
 
+void enqueueStopped(Process* newProcess){
+    printf("%s enqueued into stopped Q!\n", newProcess->pcb->argument);
+    if (stoppedQhead == NULL) {
+        stoppedQhead = newProcess;
+        stoppedQtail = newProcess;
+    }
+    else {
+        stoppedQtail->next = newProcess;
+        stoppedQtail = newProcess;
+    }
+}
+
 // SCHEDULER WAALA
 // Function to add a thread to the appropriate priority queue
 void enqueue(Process* newProcess) {
     // Determine the appropriate priority queue based on the ProcessnewProcess's priority level
-
-    printf("Inside enqueue\n");
     
     switch(newProcess->pcb->priority) {
         case PRIORITY_HIGH:
+            printf("%s enqueued into high\n", newProcess->pcb->argument);
             if (highQhead == NULL) {
                 highQhead = newProcess;
                 highQtail = newProcess;
@@ -150,6 +164,7 @@ void enqueue(Process* newProcess) {
             }
             break;
         case PRIORITY_LOW:
+            printf("%s enqueued into low\n", newProcess->pcb->argument);
             if (lowQhead == NULL) {
                 lowQhead = newProcess;
                 lowQtail = newProcess;
@@ -160,6 +175,7 @@ void enqueue(Process* newProcess) {
             }
             break;
         default:
+            printf("%s enqueued into med\n", newProcess->pcb->argument);
             if (medQhead == NULL) {
                 medQhead = newProcess;
                 medQtail = newProcess;
@@ -172,18 +188,48 @@ void enqueue(Process* newProcess) {
 }
 
 void dequeueBlocked(Process* newProcess){
-    printf("Inside dequeueBlocked\n");
+    printf("About to dequeue blocked process \n");
 
     // if first job, set the new head to the next job and free head
     if (blockedQhead->pcb->pid == newProcess->pcb->pid){
         blockedQhead = blockedQhead->next;
-        printf("%s dequeued, blocked \n", newProcess->pcb->argument);
+        printf("%s deququed from blocked Q\n", newProcess->pcb->argument);
         // freeOneJob(head);
         return;
     }
 
     // iterate through all jobs until job of interest is reached
     Process *current = blockedQhead;
+    while (current -> next != NULL){
+
+        // if the next job is the one, replace next with the one after that
+        if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+            Process *removed = current -> next;
+            Process *newNext = removed -> next;
+
+            // if else for stopped or terminated, act differently for both
+            current -> next = newNext;
+            removed -> next = NULL; 
+            // freeOneJob(&removed);
+            return;
+        }
+        current = current -> next;
+    }
+}
+
+void dequeueStopped(Process* newProcess){
+    printf("About to dequeue blocked process \n");
+
+    // if first job, set the new head to the next job and free head
+    if (stoppedQhead->pcb->pid == newProcess->pcb->pid){
+        stoppedQhead = stoppedQhead->next;
+        printf("%s deququed from stopped Q\n", newProcess->pcb->argument);
+        // freeOneJob(head);
+        return;
+    }
+
+    // iterate through all jobs until job of interest is reached
+    Process *current = stoppedQhead;
     while (current -> next != NULL){
 
         // if the next job is the one, replace next with the one after that
@@ -210,7 +256,7 @@ void dequeue(Process* newProcess){
             // if first job, set the new head to the next job and free head
             if (highQhead->pcb->pid == newProcess->pcb->pid){
                 highQhead = highQhead->next;
-                printf("%s dequeued\n", newProcess->pcb->argument);
+                printf("%s dequeued from high (head)\n", newProcess->pcb->argument);
                 // freeOneJob(head);
                 return;
             }
@@ -220,6 +266,7 @@ void dequeue(Process* newProcess){
             while (current -> next != NULL){
                 // if the next job is the one, replace next with the one after that
                 if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+                    printf("%s dequeued from high\n", newProcess->pcb->argument);
                     Process *removed = current -> next;
                     Process *newNext = removed -> next;
                     // if else for stopped or terminated, act differently for both
@@ -235,7 +282,7 @@ void dequeue(Process* newProcess){
             // if first job, set the new head to the next job and free head
             if (lowQhead->pcb->pid == newProcess->pcb->pid){
                 lowQhead = lowQhead->next;
-                printf("%s dequeued\n", newProcess->pcb->argument);
+                printf("%s dequeued from low (head)\n", newProcess->pcb->argument);
                 // freeOneJob(head);
                 return;
             }
@@ -245,6 +292,7 @@ void dequeue(Process* newProcess){
             while (current -> next != NULL){
                 // if the next job is the one, replace next with the one after that
                 if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+                    printf("%s dequeued from low\n", newProcess->pcb->argument);
                     Process *removed = current -> next;
                     Process *newNext = removed -> next;
                     // if else for stopped or terminated, act differently for both
@@ -260,7 +308,7 @@ void dequeue(Process* newProcess){
             // if first job, set the new head to the next job and free head
             if (medQhead->pcb->pid == newProcess->pcb->pid){
                 medQhead = medQhead->next;
-                printf("%s dequeued\n", newProcess->pcb->argument);
+                printf("%s dequeued from med (head)\n", newProcess->pcb->argument);
                 // freeOneJob(head);
                 return;
             }
@@ -270,6 +318,7 @@ void dequeue(Process* newProcess){
             while (current -> next != NULL){
                 // if the next job is the one, replace next with the one after that
                 if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+                    printf("%s dequeued from med\n", newProcess->pcb->argument);
                     Process *removed = current -> next;
                     Process *newNext = removed -> next;
                     // if else for stopped or terminated, act differently for both
