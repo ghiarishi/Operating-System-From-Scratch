@@ -42,7 +42,7 @@ void sigtstpHandler(int signal);
 void setSignalHandler(void);
 void pennShredder(char* buffer);
 void pennShell();
-struct Job *createJob(int pgid, int bgFlag, int numChildren, char *input);
+struct Job *createJob(int pid, int bgFlag, int numChildren, char *input);
 void freeOneJob(struct Job *Job);
 void freeAllJobs(struct Job *head);
 struct Job *addJob(struct Job *head, struct Job *newJob);

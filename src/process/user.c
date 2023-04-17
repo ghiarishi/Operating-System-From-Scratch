@@ -130,7 +130,9 @@ int p_kill(pid_t pid, int sig){
 //             break;
 //     }
     
-//     return 1;
+    }
+
+    return 1;
 }
 
 // void p_exit(void){
