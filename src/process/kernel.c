@@ -26,34 +26,55 @@ struct pcb* k_process_create(struct pcb *parent) {
     newProcess->pcb = createPcb(*uc, pidCounter, parent->pid, 0, READY);
     
     pidCounter++;
-    // printf("Creating new process \n");
-    // printf("PID is %d\n", newProcess->pcb->pid);
 
     return newProcess->pcb;
 }
 
-// k_process_kill(Pcb *process, int signal){
-    
-// }   
+void k_process_kill(Process *p, int signal){
 
-void k_process_cleanup(Process *p, int signal) { 
+    p->pcb->status = TERMINATED;
 
-    switch (signal){
+    switch (signal)
+    {
     case S_SIGTERM:
-        printf("inside sigterm");
-        dequeue(p);
-        break;
-
-    case S_SIGCONT: 
-        printf("inside sigcont");
+        for(int i=0;i<p->pcb->numChild;i++){
+            Process *cp = findProcessByPid(p->pcb->childPids[i]);
+            k_process_kill(cp, S_SIGTERM);
+            dequeue(cp);
+        }
         break;
     
     default:
         break;
     }
 
-    activeProcess = NULL; //current process becomes null
-    activeContext = NULL; //current context becomes null
+}   
+
+void k_process_cleanup(Process *p) { 
+
+    p->pcb->status = TERMINATED;
+
+    // printf("inside k_process_cleanup\n");
+
+    Process *temp = blockedQhead;
+
+    while(temp != NULL){
+
+        if(temp->pcb->pid == p->pcb->ppid && (temp->pcb->waitChild == p->pcb->ppid)){
+            dequeueBlocked(temp);
+            for(int i =0;i<temp->pcb->numChild;i++){
+                if(temp->pcb->childPids[i] == p->pcb->pid){
+                    temp->pcb->childPids[i] = -1;
+                }
+            }
+            enqueue(temp);
+        }
+    }
+
+    for(int i=0;i<p->pcb->numChild;i++){
+        Process *cp = findProcessByPid(p->pcb->childPids[i]);
+        k_process_kill(cp, S_SIGTERM);
+    }
 }
 
 Process *findProcessByPid(int pid){

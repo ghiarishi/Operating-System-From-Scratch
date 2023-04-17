@@ -26,8 +26,6 @@ struct pcb *createPcb(ucontext_t context, int pid, int ppid, int priority, int s
     pcb_obj->childPids = malloc(pcb_obj->numChild * sizeof(int));
     pcb_obj->childPidsFinished = malloc(pcb_obj->numChild * sizeof(int));
     pcb_obj->sleep_time_remaining = -1;
-    // pcb_obj -> childArgs = NULL;
-    // set up fd table and stdio
     bzero(pcb_obj->fd_table, sizeof(file_t *) * MAX_FILES);
     file_t *special_stdin_file = malloc(sizeof(file_t));
     special_stdin_file->stdiomode = FIO_STDIN;

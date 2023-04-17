@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     activeProcess->next = NULL;
 
     pid_t pidNew = p_spawn(pennShell, argv, STDIN_FILENO, STDOUT_FILENO);
-    printf("printing pid %d\n", pidNew);
+    activeProcess->pcb->pid = pidNew;
     
     setSignalHandler();
     setTimer();

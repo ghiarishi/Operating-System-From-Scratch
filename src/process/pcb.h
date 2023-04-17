@@ -23,6 +23,7 @@ struct pcb {
     int numChild;
     int pid;
     int ppid;
+    int waitChild; 
     int priority;
     char *argument;
     int status;

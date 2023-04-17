@@ -83,59 +83,44 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
 // }
 
-// pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
-//     // parent p_spwans child. Child runs. OS tracks child. Child complete/stopped. 
-//     // MAYBE:
-//     // OS sends signal to parent. Parent has sig handler. 
-//     // There's a zombie queue. WHERE DOES IT COME INTO THE PICTURE??
-//     // When child completes running, it goes to the zombie queue. MAYBE.
-//     // LOTS OF MAYBES TANVI FIGURE IT OUT.
-// }
+pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
-// pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
-//     Process *p;
+    // Find the child process with the specified pid
+    Process *p = findProcessByPid(pid);
 
-//     // Find the child process with the specified pid
-//     p = findProcessByPid(pid);
+    printf("inside waitpid child%d; parent%d\n", p->pcb->pid, activeProcess->pcb->pid);
 
-//     // If the process does not exist or is not a child of the current process, return error
-//     // if (p == NULL || p->parent != getCurrentProcess()) {
-//     //     return -1;
-//     // }
+    activeProcess->pcb->waitChild = pid;
 
-//     // Block the current process if nohang is false
-//     if (!nohang) {
-//         enqueueBlocked(activeProcess);
-//     }
+    if(!nohang){
+        dequeue(activeProcess);
+        enqueueBlocked(activeProcess);
+        swapcontext(activeContext, &schedulerContext);
+    }
 
-//     // Wait for the child process to change state
-//     while (p->pcb->status != TERMINATED) {
-//         yield();
-//     }
+    wstatus = &p->pcb->status;
 
-//     // Return the child pid on success
-//     if (wstatus != NULL) {
-//         *wstatus = p->pcb->wStatus;
-//     }
-//     return p->pcb->pid;
-// }
+    int tpid = p->pcb->pid;
+
+    free(p);
+    freeStacks(p->pcb);
+    freePcb(p->pcb);
+
+    return tpid;
+}
 
 
 int p_kill(pid_t pid, int sig){
-    //Killing should free all memory locations. Remove it from all queues. 
-    // Sig should come from parent? 
-    // Kill the process with the pid passed => What does killing mean here? 
-    // Only one pid essentially. We create a "process". Gets a pcb. calls funcs. So you clear memory. And check if anything referenced in parent??
-    Process *parent = findProcessByPid(pid);
+    
     switch(sig){
         case S_SIGTERM: 
-            Process *child = NULL;
-            for(int i=0;i<parent->pcb->numChild;i++){
-                child = findProcessByPid(parent->pcb->childPids[i]);
-                k_process_cleanup(child, S_SIGTERM);
-            }
+            // Process *child = NULL;
+            // for(int i=0;i<parent->pcb->numChild;i++){
+            //     child = findProcessByPid(parent->pcb->childPids[i]);
+            //     k_process_cleanup(child, S_SIGTERM);
+            // }
 
-            k_process_cleanup(parent, sig);
+            // k_process_cleanup(parent, sig);
             break;
 
         case S_SIGCONT:
