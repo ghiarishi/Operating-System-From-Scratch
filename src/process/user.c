@@ -123,15 +123,14 @@ int p_kill(pid_t pid, int sig){
             // k_process_cleanup(parent, sig);
             break;
 
-        case S_SIGCONT:
-            break;
+//         case S_SIGCONT:
+//             break;
 
-        case S_SIGTSTP:
-            break;
-    }
+//         case S_SIGTSTP:
+//             break;
+//     }
     
-    return 1;
-
+//     return 1;
 }
 
 // void p_exit(void){
