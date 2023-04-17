@@ -6,6 +6,7 @@
 #include "scheduler.h"
 #include "pcb.h"
 #include "parser.h"
+#include "dependencies.h"
 
 #define MAX_CMD_LENGTH 1000
 #define MAX_ARGS 10

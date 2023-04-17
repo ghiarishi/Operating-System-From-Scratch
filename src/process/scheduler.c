@@ -23,7 +23,7 @@ Process *blockedQtail = NULL;
 
 void terminateProcess(void){
     
-    printf("TIME TO DEQUEUE\n");
+    printf("Process terminated, about to be dequeued\n");
     activeProcess->pcb->status = TERMINATED;
     dequeue(activeProcess);
     free(activeProcess);
@@ -172,12 +172,12 @@ void enqueue(Process* newProcess) {
 }
 
 void dequeueBlocked(Process* newProcess){
-    printf("Inside dnqueue sleep!\n");
+    printf("Inside dequeueBlocked\n");
 
     // if first job, set the new head to the next job and free head
     if (blockedQhead->pcb->pid == newProcess->pcb->pid){
         blockedQhead = blockedQhead->next;
-        printf("get dQd bro blocked\n");
+        printf("%s dequeued, blocked \n", newProcess->pcb->argument);
         // freeOneJob(head);
         return;
     }
@@ -210,7 +210,7 @@ void dequeue(Process* newProcess){
             // if first job, set the new head to the next job and free head
             if (highQhead->pcb->pid == newProcess->pcb->pid){
                 highQhead = highQhead->next;
-                printf("get dQd bro \n");
+                printf("%s dequeued\n", newProcess->pcb->argument);
                 // freeOneJob(head);
                 return;
             }
@@ -235,7 +235,7 @@ void dequeue(Process* newProcess){
             // if first job, set the new head to the next job and free head
             if (lowQhead->pcb->pid == newProcess->pcb->pid){
                 lowQhead = lowQhead->next;
-                printf("get dQd bro \n");
+                printf("%s dequeued\n", newProcess->pcb->argument);
                 // freeOneJob(head);
                 return;
             }
@@ -260,7 +260,7 @@ void dequeue(Process* newProcess){
             // if first job, set the new head to the next job and free head
             if (medQhead->pcb->pid == newProcess->pcb->pid){
                 medQhead = medQhead->next;
-                printf("get dQd bro \n");
+                printf("%s dequeued\n", newProcess->pcb->argument);
                 // freeOneJob(head);
                 return;
             }
