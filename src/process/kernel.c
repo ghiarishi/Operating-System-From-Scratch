@@ -32,26 +32,25 @@ struct pcb* k_process_create(struct pcb *parent) {
 
 void k_process_kill(Process *p, int signal){
 
-    p->pcb->status = TERMINATED;
+    p->pcb->status = SIG_TERMINATED;
+    p->pcb->changedStatus = 1;
 
     switch (signal){
-    case S_SIGTERM: {
-    // dequeue p from ready q to zombie q
-    }
-        // for(int i=0;i<p->pcb->numChild;i++){
-        //     Process *cp = findProcessByPid(p->pcb->childPids[i]);
-        //     k_process_kill(cp, S_SIGTERM);
-        //     dequeue(cp);
-        // }
+    case S_SIGTERM: 
+        for(int i=0;i<p->pcb->numChild;i++){
+            Process *cp = findProcessByPid(p->pcb->childPids[i]);
+            k_process_kill(cp, S_SIGTERM);
+            dequeue(cp);
+        }
         break;
-    case S_SIGSTOP:{
-    // dequeue p from stopped q to ready q
-    }
-    break;
-    case S_SIGCONT:{
-
-    }
-    break;
+    case S_SIGSTOP:
+        dequeue(p);
+        enqueueStopped(p);
+        break;
+    case S_SIGCONT:
+        dequeueStopped(p);
+        enqueue(p);
+        break;
     default:
         break;
     }
@@ -60,7 +59,8 @@ void k_process_kill(Process *p, int signal){
 void k_process_cleanup(Process *p) { 
 
     p->pcb->status = TERMINATED;
-
+    p->pcb->changedStatus = 1;
+    
     printf("inside KPC\n");
 
     dequeue(p);
@@ -82,14 +82,11 @@ void k_process_cleanup(Process *p) {
         temp = temp->next;
     }
 
-    // printf("before for loop\n");
-
     for(int i=0;i<p->pcb->numChild;i++){
         Process *cp = findProcessByPid(p->pcb->childPids[i]);
         k_process_kill(cp, S_SIGTERM);
     }
 
-    // printf("head of high Q is : %d\n", highQhead->pcb->pid);
     printf("end of KPC\n");
 }
 
@@ -122,11 +119,8 @@ Process *findProcessByPid(int pid){
             // printf("LOW exiting find process pid\n");
             return temp;
         }
-
         temp = temp->next;
     }
-
-    
     printf("NONE exiting find process pid\n");
     return temp;
 }

@@ -20,7 +20,7 @@
 
 #define STOPPED 3
 #define RUNNING 2
-#define READY 1
+#define SIG_TERMINATED 1
 #define TERMINATED 0
 #define FG 0
 #define BG 1
@@ -34,7 +34,7 @@ struct Job{
     int JobNumber;                  // Counter for current job number since first job begins from 1
     int bgFlag;                     // FG = 0 and BG = 1
     struct Job *next;               // pointer to next job
-    char *commandInput;             // Input command by user (only to be used when printing updated status)
+    char *commandInput;
     int status;                     // tell whether its running or stopped
 };
 

@@ -34,9 +34,11 @@ void setTimer(void) {
 
 void sigIntTermHandler(int signal) {
     // ignore for bg processes
+    printf("SIGINT 1");
     if(signal == SIGINT){
-        if(curr_pid != 0 && !IS_BG){
-            // p_kill(curr_pid, S_SIGKILL);
+        printf("SIGINT 2");
+        if(newpid != 0 && !IS_BG){
+            p_kill(newpid, S_SIGTERM);
         }
     }
 
@@ -195,7 +197,7 @@ struct Job *removeJob(struct Job *head, int jobNum){
     }
 
     // iterate through all jobs until job of interest is reached
-    struct Job *current= head;
+    struct Job *current = head;
     while (current -> next != NULL){
 
         // if the next job is the one, replace next with the one after that
@@ -332,6 +334,20 @@ char *statusToStr(int status){
 }
 
 struct Job *head = NULL;
+
+bool W_WIFEXITED(int status) {
+    return status == TERMINATED;
+}
+
+bool W_WIFSTOPPED(int status) {
+    return status == STOPPED;
+}
+
+bool W_WIFSIGNALED(int status) {
+    return status == SIG_TERMINATED;
+}
+
+
 
 void pennShredder(char* buffer){
     IS_BG = 0;
@@ -645,14 +661,8 @@ void pennShredder(char* buffer){
         printf("FG process detected \n");
         // tc set to fg
         fgpid = curr_pid; // use for signal handling, and identifying the process in the foreground
-
-        if(IS_BG){
-            newpid = p_waitpid(curr_pid, &status, true); 
-        }
-        else{
-             newpid = p_waitpid(curr_pid, &status, false); 
-        }
-          
+        
+        newpid = p_waitpid(curr_pid, &status, FALSE); 
         
         printf("pwait supposed to be run by now \n");
 
@@ -727,8 +737,11 @@ void pennShell(){
                 exit(EXIT_FAILURE);
             }
 
+            // loop through list
+            
             while(1){
                 pid_t pid = waitpid(-1, &status, WNOHANG | WUNTRACED);
+                // pid_t pid = p_waitpid(curr_pid, &status, FALSE); 
                 if (pid <= 0){
                     break;
                 }

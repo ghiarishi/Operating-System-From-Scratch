@@ -48,20 +48,15 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     newProcess->pcb->argument = malloc((strlen(concat(argc, argv))+1) * sizeof(char));
     newProcess->pcb->argument = concat(argc, argv);
 
-    printf("is bg?? %d\n", cmd->is_background);
-
     // replace with just one call to makecontext
     if(func == (void(*)())&pennShell){
         newProcess->pcb->priority = -1;
         makecontext(&newProcess->pcb->context, func, 0, argv);
-
-        // printf("making pennshell context \n");
     }
     else {
         makecontext(&newProcess->pcb->context, func, 2, argc, cmd->commands[0]);
     }
     printf("newProcess->pid: %d\n", newProcess->pcb->pid);
-    // printf("enqueuing now!\n");
     enqueue(newProcess);
 
     return pid_new;
@@ -71,27 +66,24 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
     printf("just entered PWAIT\n");
     // Find the child process with the specified pid
+    if(pid == -1){ 
+        // loop through processes that have changed their status
+    }
     Process *p = findProcessByPid(pid);
 
     // printf("inside waitpid child%d; parent%d\n", p->pcb->pid, activeProcess->pcb->pid);
 
     activeProcess->pcb->waitChild = pid;
-    // printf("mark 1 \n");
+    printf("printing child that has to be waited on: %d\n", activeProcess->pcb->waitChild);
     if(!nohang){
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
-        // swapcontext(activeContext, &schedulerContext);
+        printf("the pid of bqh %d\n", blockedQhead->pcb->pid);
     }
-    // printf("mark 1.5 \n");
     swapcontext(activeContext, &schedulerContext);
-    // printf("mark 2 \n");
     *wstatus = p->pcb->status;
-    // printf("mark 3 \n");
 
-    int tpid = p->pcb->pid;
-    
-    // printf("mark 4 \n");
-    
+    int tpid = p->pcb->pid; 
     
     freeStacks(p->pcb);
     freePcb(p->pcb);
@@ -103,13 +95,24 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig){
-    // Process *p = NULL;
-    // parent = findProcessByPid(pid);
-    // for(int i=0;i<parent->pcb->numChild;i++){
-    //     child = findProcessByPid(parent->pcb->childPids[i]);
-    //     k_process_kill(child, sig);
-    // }
-    return 1;
+
+    Process *proc = findProcessByPid(pid);
+
+    switch(sig) {
+        case S_SIGTERM:
+            for(int i=0;i<proc->pcb->numChild;i++){
+                Process *child = findProcessByPid(proc->pcb->childPids[i]);
+                k_process_kill(child, S_SIGTERM);
+            }
+            break;
+
+        case S_SIGCONT:
+            break;
+
+        case S_SIGTSTP:
+            k_process_kill(proc, S_SIGTSTP);
+    }
+    return -1;
 }
 
 void p_sleep(unsigned int ticks){

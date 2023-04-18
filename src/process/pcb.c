@@ -23,6 +23,7 @@ struct pcb *createPcb(ucontext_t context, int pid, int ppid, int priority, int s
     pcb_obj->ppid = ppid;
     pcb_obj->context = context;
     pcb_obj->status = status;
+    pcb_obj->changedStatus = 0;
     pcb_obj->childPids = malloc(pcb_obj->numChild * sizeof(int));
     pcb_obj->childPidsFinished = malloc(pcb_obj->numChild * sizeof(int));
     pcb_obj->sleep_time_remaining = -1;

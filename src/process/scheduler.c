@@ -151,7 +151,9 @@ void enqueueStopped(Process* newProcess){
         stoppedQtail->next = newProcess;
         stoppedQtail = newProcess;
     }
-}
+    newProcess->pcb->status = STOPPED;
+    newProcess->pcb->changedStatus = 1;
+}   
 
 // Function to add a thread to the appropriate priority queue
 void enqueue(Process* newProcess) {
