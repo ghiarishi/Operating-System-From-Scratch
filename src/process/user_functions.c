@@ -65,7 +65,7 @@ void catFunc(int argc, char **argv) {
         } while (bytes_read);
     } else {
         // open each read file, then read its contents to stdout in 4KB chunks
-        for (int i = 1; i <= argc; ++i) {
+        for (int i = 1; i < argc; ++i) {
             int fd = f_open(argv[i], F_READ);
             if (fd == -1) {
                 p_perror("f_open");
