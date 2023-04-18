@@ -21,6 +21,7 @@
 
 extern ucontext_t schedulerContext;
 extern ucontext_t *activeContext;
+extern ucontext_t idleContext;
 extern ucontext_t terminateContext;
 
 void terminateProcess(void);

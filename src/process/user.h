@@ -19,4 +19,4 @@ extern Process *activeProcess;
 char* concat(int argc, char *argv[]); 
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1);
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang);
-
+int p_kill(pid_t pid, int sig);

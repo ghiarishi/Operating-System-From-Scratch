@@ -14,5 +14,6 @@
 void echoFunc(int argc, char *argv[]);
 void sleepFunc(char *argv[]);
 void busy_wait(void);
+void idleFunc();
 // void lsFunc();
 // void touchFunc(const char* filename);

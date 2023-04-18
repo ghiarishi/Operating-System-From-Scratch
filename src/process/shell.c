@@ -4,10 +4,12 @@ char **bufferSig;
 int async = 0;
 int IS_BG = 0;
 int pgid = 0;
-int curr_pid = 0;
+pid_t curr_pid = 0;
 int par_pid = 0;
 int bufferWaiting = 0;
 int bufferCount = 0;
+int fgpid = 1;
+pid_t newpid = 0;
 
 struct Job *createJob(int pid, int bgFlag, int numChildren, char *input){
     struct Job *newJob;
@@ -34,7 +36,7 @@ void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
         if(curr_pid != 0 && !IS_BG){
-            kill(curr_pid, SIGKILL);
+            // p_kill(curr_pid, S_SIGKILL);
         }
     }
 
@@ -51,12 +53,13 @@ void sigcontHandler(int signal){
     //         kill(curr_pid, S_SIGCONT);
     //     }
     // }
+    // p_kill(curr_pid, S_SIGCONT);
 }
 
 void sigtstpHandler(int signal){
     if(signal == SIGTSTP){
         if(curr_pid != 0 && !IS_BG){
-            kill(curr_pid, SIGTSTP);
+            // p_kill(curr_pid, S_SIGTSTP);
         }
     }
 
@@ -624,11 +627,14 @@ void pennShredder(char* buffer){
      
     if (IS_BG == 0){ // wait as normal for foreground processes
         // static sigset_t mask;
+        printf("FG process detected \n");
+        // tc set to fg
+        fgpid = curr_pid; // use for signal handling, and identifying the process in the foreground
 
-        tcsetpgrp(STDIN_FILENO, curr_pid); // give TC to child
+        newpid = p_waitpid(curr_pid, &status, false);   
+        
+        printf("pwait supposed to be run by now \n");
 
-        waitpid(curr_pid, &status, WUNTRACED);   
-    
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
         if (WIFSTOPPED(status) && new_job -> status == RUNNING){
             fprintf(stderr, "\nStopped: %s", new_job-> commandInput); 
@@ -638,9 +644,11 @@ void pennShredder(char* buffer){
         else{
             freeOneJob(new_job);
         }
-        tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
-        //print bufferSig here IF not empty
 
+        // tc set back to pennshell
+        fgpid = 1;
+        
+        //print bufferSig here IF not empty
         // once (if) printed, empty it
         if (bufferWaiting){
             //PRINT BUFFER

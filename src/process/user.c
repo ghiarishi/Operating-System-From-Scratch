@@ -15,15 +15,6 @@ char* concat(int argc, char *argv[]) {
     return cmd_line;
 }
 
-// demo code showing high-level redirection logic
-//void foo() {
-//    int infd = f_open("...", F_READ);
-//    int outfd = f_open("...", F_WRITE);
-//    p_spawn(NULL, NULL, infd, outfd);
-//    f_close(infd);
-//    f_close(outfd);
-//}
-
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     // printf("Inside p_spawn \n");
@@ -85,6 +76,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
+    printf("just entered PWAIT\n");
     // Find the child process with the specified pid
     Process *p = findProcessByPid(pid);
 
@@ -97,41 +89,35 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
         enqueueBlocked(activeProcess);
         swapcontext(activeContext, &schedulerContext);
     }
-
-    wstatus = &p->pcb->status;
+    printf("mark 1 \n");
+    *wstatus = p->pcb->status;
+    printf("mark 2 \n");
 
     int tpid = p->pcb->pid;
-
-    free(p);
+    
+    printf("mark 3 \n");
+    
+    
     freeStacks(p->pcb);
     freePcb(p->pcb);
+    free(p);
+    
+    printf("mark 4 \n");
 
     return tpid;
 }
 
-
 int p_kill(pid_t pid, int sig){
-    
-    switch(sig){
-        case S_SIGTERM: 
-            // Process *child = NULL;
-            // for(int i=0;i<parent->pcb->numChild;i++){
-            //     child = findProcessByPid(parent->pcb->childPids[i]);
-            //     k_process_cleanup(child, S_SIGTERM);
-            // }
+    // Process *p = NULL;
+    // parent = findProcessByPid(pid);
 
-            // k_process_cleanup(parent, sig);
-            break;
 
-//         case S_SIGCONT:
-//             break;
 
-//         case S_SIGTSTP:
-//             break;
-//     }
-    
-    }
 
+    // for(int i=0;i<parent->pcb->numChild;i++){
+    //     child = findProcessByPid(parent->pcb->childPids[i]);
+    //     k_process_kill(child, sig);
+    // }
     return 1;
 }
 

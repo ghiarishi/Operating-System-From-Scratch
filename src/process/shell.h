@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include "kernel.h"
+#include "dependencies.h"
 #include "user_functions.h"
 #include "parser.h"
 #include "user.h"
@@ -36,6 +37,7 @@ struct Job{
 };
 
 void setTimer(void);
+void signalHandler(int signal);
 void sigIntTermHandler(int signal);
 void sigcontHandler(int signal);
 void sigtstpHandler(int signal);
