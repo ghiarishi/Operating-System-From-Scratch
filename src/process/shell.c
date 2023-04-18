@@ -603,14 +603,29 @@ void pennShredder(char* buffer){
         print_parsed_command(cmd);    
     }
 
-    int status = 0; 
+    int status = 0;
 
-    if (strcmp(cmd->commands[0][0], "sleep") == 0){
-        curr_pid = p_spawn(sleepFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    // spawn builtin
+    if (strcmp(cmd->commands[0][0], "sleep") == 0) {
+        curr_pid = p_spawn(sleepFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "echo") == 0) {
+        curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     }
-
-    else if (strcmp(cmd->commands[0][0], "echo") == 0){
-        curr_pid = p_spawn(echoFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+        // fs
+    else if (strcmp(cmd->commands[0][0], "cat") == 0) {
+        curr_pid = p_spawn(catFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "ls") == 0) {
+        curr_pid = p_spawn(lsFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "touch") == 0) {
+        curr_pid = p_spawn(touchFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "mv") == 0) {
+        curr_pid = p_spawn(mvFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "cp") == 0) {
+        curr_pid = p_spawn(cpFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "rm") == 0) {
+        curr_pid = p_spawn(rmFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "chmod") == 0) {
+        curr_pid = p_spawn(chmodFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     }
 
     // for loop to execute the commands line by line

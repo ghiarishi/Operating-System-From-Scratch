@@ -12,8 +12,15 @@
 #include "dependencies.h"
 
 void echoFunc(int argc, char *argv[]);
-void sleepFunc(char *argv[]);
+void sleepFunc(int argc, char *argv[]);
 void busy_wait(void);
 void idleFunc();
-// void lsFunc();
-// void touchFunc(const char* filename);
+
+// ==== filesystem ====
+void catFunc(int argc, char **argv);
+void lsFunc(int argc, char **argv);
+void touchFunc(int argc, char **argv);
+void mvFunc(int argc, char **argv);
+void cpFunc(int argc, char **argv);
+void rmFunc(int argc, char **argv);
+void chmodFunc(int argc, char **argv);

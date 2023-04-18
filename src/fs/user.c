@@ -94,7 +94,7 @@ ssize_t f_read(int fd, int n, char *buf) {
 }
 
 
-ssize_t f_write(int fd, const char *str, int n) {
+ssize_t f_write(int fd, const char *str, ssize_t n) {
     // get the file_t * to give to the fs_* method
     file_t *f = activeProcess->pcb->fd_table[fd];
     // handle stdout
@@ -129,4 +129,21 @@ filestat_t **f_ls(const char *fname) {
 
 void f_freels(filestat_t **stat) {
     fs_freels(stat);
+}
+
+int f_rename(const char *oldname, const char *newname) {
+    return fs_rename(fs, oldname, newname);
+}
+
+int f_chmod(int fd, char mode, uint8_t bitset) {
+    file_t *f = activeProcess->pcb->fd_table[fd];
+    if (mode == '+')
+        f->entry->perm |= bitset;
+    else if (mode == '=')
+        f->entry->perm = bitset;
+    else if (mode == '-')
+        f->entry->perm &= ~bitset;
+    else
+        p_raise(PEINVAL);
+    return 0;
 }
