@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
     activeProcess->pcb = initPCB();
     activeProcess->next = NULL;
 
+    // check if can be replaced by k proc create (avoids need for if, and diff priority)
     pid_t pidNew = p_spawn(pennShell, argv, STDIN_FILENO, STDOUT_FILENO);
     activeProcess->pcb->pid = pidNew;
     

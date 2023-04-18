@@ -27,12 +27,12 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     pid_new = newProcess->pcb->pid;
 
     // set up child fd table based on fd0/fd1
-    // file_t *in_f = activeProcess->pcb->fd_table[fd0];
-    // file_t *out_f = activeProcess->pcb->fd_table[fd1];
-    // memcpy(newProcess->pcb->fd_table[PSTDIN_FILENO], in_f, sizeof(file_t));
-    // memcpy(newProcess->pcb->fd_table[PSTDOUT_FILENO], out_f, sizeof(file_t));
-    // fs_trackopen(fs, newProcess->pcb->fd_table[PSTDIN_FILENO]);
-    // fs_trackopen(fs, newProcess->pcb->fd_table[PSTDOUT_FILENO]);
+    file_t *in_f = activeProcess->pcb->fd_table[fd0];
+    file_t *out_f = activeProcess->pcb->fd_table[fd1];
+    memcpy(newProcess->pcb->fd_table[PSTDIN_FILENO], in_f, sizeof(file_t));
+    memcpy(newProcess->pcb->fd_table[PSTDOUT_FILENO], out_f, sizeof(file_t));
+    fs_trackopen(fs, newProcess->pcb->fd_table[PSTDIN_FILENO]);
+    fs_trackopen(fs, newProcess->pcb->fd_table[PSTDOUT_FILENO]);
 
     int argc = 0;
     int i = 0;
@@ -49,6 +49,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     printf("is bg?? %d\n", cmd->is_background);
 
+    // replace with just one call to makecontext
     if(func == (void(*)())&pennShell){
         newProcess->pcb->priority = -1;
         makecontext(&newProcess->pcb->context, func, 0, argv);
