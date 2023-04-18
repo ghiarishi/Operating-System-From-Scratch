@@ -7,7 +7,7 @@ Process *activeProcess = NULL;
 char* concat(int argc, char *argv[]) {
     char *cmd_line = malloc(MAX_CMD_LENGTH * sizeof(char));
     memset(cmd_line, 0, MAX_CMD_LENGTH);
-
+    
     for (int i = 0; i < argc; i++) {
         strcat(cmd_line, argv[i]);
         strcat(cmd_line, " ");
@@ -47,7 +47,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     newProcess->pcb->argument = malloc((strlen(concat(argc, argv))+1) * sizeof(char));
     newProcess->pcb->argument = concat(argc, argv);
 
-    // printf("The arguments for new Process %c\n", *cmd->commands[0][1]);
+    printf("is bg?? %d\n", cmd->is_background);
 
     if(func == (void(*)())&pennShell){
         newProcess->pcb->priority = -1;
@@ -68,41 +68,37 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     return pid_new;
 }
 
-// void p_sleep(unsigned int ticks){
-//     // sleep 
-//     printf("inside p_sleep, hello \n");
-
-// }
-
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
     printf("just entered PWAIT\n");
     // Find the child process with the specified pid
     Process *p = findProcessByPid(pid);
 
-    printf("inside waitpid child%d; parent%d\n", p->pcb->pid, activeProcess->pcb->pid);
+    // printf("inside waitpid child%d; parent%d\n", p->pcb->pid, activeProcess->pcb->pid);
 
     activeProcess->pcb->waitChild = pid;
-
+    // printf("mark 1 \n");
     if(!nohang){
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
-        swapcontext(activeContext, &schedulerContext);
+        // swapcontext(activeContext, &schedulerContext);
     }
-    printf("mark 1 \n");
+    // printf("mark 1.5 \n");
+    swapcontext(activeContext, &schedulerContext);
+    // printf("mark 2 \n");
     *wstatus = p->pcb->status;
-    printf("mark 2 \n");
+    // printf("mark 3 \n");
 
     int tpid = p->pcb->pid;
     
-    printf("mark 3 \n");
+    // printf("mark 4 \n");
     
     
     freeStacks(p->pcb);
     freePcb(p->pcb);
     free(p);
     
-    printf("mark 4 \n");
+    // printf("mark 5 \n");
 
     return tpid;
 }
@@ -110,15 +106,19 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 int p_kill(pid_t pid, int sig){
     // Process *p = NULL;
     // parent = findProcessByPid(pid);
-
-
-
-
     // for(int i=0;i<parent->pcb->numChild;i++){
     //     child = findProcessByPid(parent->pcb->childPids[i]);
     //     k_process_kill(child, sig);
     // }
     return 1;
+}
+
+void p_sleep(unsigned int ticks){
+    dequeue(activeProcess);
+    activeProcess->pcb->sleep_time_remaining = ticks;
+    enqueueBlocked(activeProcess);
+    swapcontext(activeContext, &schedulerContext);
+    printf("finished with psleep\n");
 }
 
 // void p_exit(void){

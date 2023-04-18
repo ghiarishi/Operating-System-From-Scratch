@@ -13,14 +13,10 @@ void echoFunc(int argc, char *argv[]) {
 }
 
 void sleepFunc(char *argv[]) {
-    // int OGticksLeft = ticksLeft;
-    dequeue(activeProcess);
-    int ticksLeft = 10*atoi(argv[1]);
-    printf("num of ticks left %d\n", ticksLeft);
-    activeProcess->pcb->sleep_time_remaining = ticksLeft;
-    enqueueBlocked(activeProcess);
     
-    swapcontext(activeContext, &schedulerContext);
+    int ticksLeft = 10*atoi(argv[1]);
+    p_sleep(ticksLeft);
+    
     printf("Back in sleepFunc\n");
     
 }

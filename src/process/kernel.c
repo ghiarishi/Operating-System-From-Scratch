@@ -23,7 +23,7 @@ struct pcb* k_process_create(struct pcb *parent) {
     Process *newProcess = (Process*) malloc(sizeof(Process));
                                                             
  
-    newProcess->pcb = createPcb(*uc, pidCounter, parent->pid, 0, READY);
+    newProcess->pcb = createPcb(*uc, pidCounter, parent->pid, 0, RUNNING);
     
     pidCounter++;
 
@@ -61,7 +61,7 @@ void k_process_cleanup(Process *p) {
 
     p->pcb->status = TERMINATED;
 
-    printf("inside k_process_cleanup\n");
+    printf("inside KPC\n");
 
     dequeue(p);
 
@@ -76,29 +76,30 @@ void k_process_cleanup(Process *p) {
                 }
             }
             enqueue(temp);
-            printf("enq temp\n");
+            // printf("enq temp\n");
             break;
         }
         temp = temp->next;
     }
 
-    printf("before for loop\n");
+    // printf("before for loop\n");
 
     for(int i=0;i<p->pcb->numChild;i++){
         Process *cp = findProcessByPid(p->pcb->childPids[i]);
         k_process_kill(cp, S_SIGTERM);
     }
 
+    // printf("head of high Q is : %d\n", highQhead->pcb->pid);
     printf("end of KPC\n");
 }
 
 Process *findProcessByPid(int pid){
 
-    printf("entered find process pid\n");
+    // printf("entered find process pid\n");
     Process *temp = highQhead;
     while(temp != NULL){
         if(temp->pcb->pid == pid){
-            printf("HIGH exiting find process pid\n");
+            // printf("HIGH exiting find process pid\n");
             return temp;
         }
 
@@ -108,7 +109,7 @@ Process *findProcessByPid(int pid){
     temp = medQhead;
     while(temp != NULL){
         if(temp->pcb->pid == pid){
-            printf("MED exiting find process pid\n");
+            // printf("MED exiting find process pid\n");
             return temp;
         }
 
@@ -118,7 +119,7 @@ Process *findProcessByPid(int pid){
     temp = lowQhead;
     while(temp != NULL){
         if(temp->pcb->pid == pid){
-            printf("LOW exiting find process pid\n");
+            // printf("LOW exiting find process pid\n");
             return temp;
         }
 

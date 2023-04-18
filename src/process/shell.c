@@ -631,7 +631,13 @@ void pennShredder(char* buffer){
         // tc set to fg
         fgpid = curr_pid; // use for signal handling, and identifying the process in the foreground
 
-        newpid = p_waitpid(curr_pid, &status, false);   
+        if(IS_BG){
+            newpid = p_waitpid(curr_pid, &status, true); 
+        }
+        else{
+             newpid = p_waitpid(curr_pid, &status, false); 
+        }
+          
         
         printf("pwait supposed to be run by now \n");
 
@@ -783,8 +789,11 @@ void pennShell(){
             
             // If no input or there is input but the last char of the buffer isn't newline, its CTRL D
             if (numBytes == 0 || (numBytes != 0 && buffer[numBytes - 1] != '\n')) {
+                printf("entered 1st line ctrld \n");
                 if (numBytes == 0) { // In this case, just return a new line (avoids the # sign on the same line)
+                    printf("entered 2rd line ctrld \n");
                     if (write(STDERR_FILENO, "\n", strlen("\n")) == -1) {
+                        printf("entered 3rd line ctrld \n");
                         perror("write");
                         freeAllJobs(head);
                         freeAllJobs(current);
@@ -824,6 +833,7 @@ void pennShell(){
             free(line);
         }
     }   
+    printf("outside shell while \n");
     freeAllJobs(current);
     freeAllJobs(head);
     free(bufferSig); 

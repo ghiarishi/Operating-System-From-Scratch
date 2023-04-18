@@ -33,6 +33,7 @@ struct pcb *createPcb(ucontext_t context, int pid, int ppid, int priority, int s
     special_stdout_file->stdiomode = FIO_STDOUT;
     pcb_obj->fd_table[PSTDIN_FILENO] = special_stdin_file;
     pcb_obj->fd_table[PSTDOUT_FILENO] = special_stdout_file;
+    pcb_obj->bgFlag = IS_BG;
 
     return pcb_obj;
 }

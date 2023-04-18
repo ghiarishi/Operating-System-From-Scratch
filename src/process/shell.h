@@ -27,6 +27,8 @@
 #define TRUE 1
 #define FALSE 0
 
+extern int IS_BG;
+
 struct Job{
     int myPid;                      // job ID
     int JobNumber;                  // Counter for current job number since first job begins from 1
