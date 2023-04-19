@@ -137,6 +137,8 @@ int p_nice(pid_t pid, int priority){
     if (proc == NULL){
         return -1;
     }
+    dequeue(proc);
     proc->pcb->priority = priority;
+    enqueue(proc);
     return 0;
 }
