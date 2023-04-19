@@ -75,17 +75,20 @@ int k_process_kill(Process *p, int signal){
     }
     break;
     case S_SIGSTOP:{
-        printf("inside SIGSTOP in K proc kill");
+        printf("inside SIGSTOP in K proc kill\n");
         if(p->pcb->numChild == 0){
             printf("no child found, status %d\n",p->pcb->status);
             if(p->pcb->status == RUNNING){
+                printf("Parent pid is %d\n",p->pcb->ppid);
                 Process *parent = findProcessByPid(p->pcb->ppid);
+                printf("Parent found is %d\n",parent->pcb->pid);
+                printf("Parent's status is %d\n",parent->pcb->status);
                 dequeue(p);
                 enqueueStopped(p);
-                dequeueBlocked(parent);
-                enqueue(parent);
-    
-                printf("sigstop RUNNING \n");
+                if (parent->pcb->status == BLOCKED){
+                    dequeueBlocked(parent);
+                    enqueue(parent);
+                }
             }
             p->pcb->status = STOPPED;
             p->pcb->changedStatus = 1;
