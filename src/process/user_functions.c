@@ -10,6 +10,7 @@ void echoFunc(int argc, char *argv[]) {
         f_write(PSTDOUT_FILENO, argbuf, strlen(argv[i]) + 1);
         // todo error checking
     }
+    printf("\n");
 }
 
 void sleepFunc(int argc, char *argv[]) {
@@ -17,7 +18,7 @@ void sleepFunc(int argc, char *argv[]) {
     int ticksLeft = 10*atoi(argv[1]);
     p_sleep(ticksLeft);
     
-    printf("Back in sleepFunc\n");
+    // printf("Back in sleepFunc\n");
     
 }
 

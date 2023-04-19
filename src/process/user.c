@@ -54,11 +54,12 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     else {
         int nums = activeProcess->pcb->numChild;
         activeProcess->pcb->numChild = nums + 1;
+        // printf("prev number, new number %d %d\n", nums, nums + 1);
         activeProcess->pcb->childPids[nums] = pid_new;
-        printf("printing addition of child :%d\n", activeProcess->pcb->childPids[nums]);
+        // printf("printing addition of child :%d\n", activeProcess->pcb->childPids[nums]);
         makecontext(&newProcess->pcb->context, func, 2, argc, cmd->commands[0]);
     }
-    printf("newProcess->pid: %d\n", newProcess->pcb->pid);
+    // printf("newProcess->pid: %d\n", newProcess->pcb->pid);
     enqueue(newProcess);
 
     return pid_new;
@@ -66,36 +67,56 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
-    printf("just entered PWAIT\n");
+    // printf("just entered PWAIT\n");
 
     int pid_ret = 0;
-    
-    // printf("inside waitpid child%d; parent%d\n", p->pcb->pid, activeProcess->pcb->pid);
 
     if(pid == -1){
-        printf("WAIT ALL JOBS \n");
-        for(int i = 0; i < activeProcess->pcb->numChild; i++){
-            Process *child = findProcessByPid(activeProcess->pcb->childPids[i]);
-            if(child->pcb->changedStatus == 1){
-                activeProcess->pcb->waitChild = activeProcess->pcb->childPids[i];
-                *wstatus = child->pcb->status;
-                pid_ret = activeProcess->pcb->childPids[i];
-                break;
+        // printf("ALL JOBS \n");
+        // printf("numchilds = %d\n",activeProcess->pcb->numChild);
+        if(activeProcess->pcb->numChild == 0){
+            return -1;
+        }
+        for(int i = 0; i <= activeProcess->pcb->numChild; i++){
+            // printf("child proc pid = %d\n", activeProcess->pcb->childPids[i]);
+            if(activeProcess->pcb->childPids[i] > -2){
+                // printf("waitpid waala find %d\n", activeProcess->pcb->childPids[i]);
+                Process *child = findProcessByPid(activeProcess->pcb->childPids[i]);
+                // printf("inside waitpid child: %d; parent: %d\n", child->pcb->pid, activeProcess->pcb->pid);
+                // printf("MARK 4.x\n");
+                // printf("child pid %d\n", child->pcb->pid);
+                if(child == NULL){
+                    return 0;
+                }
+                if(child->pcb->changedStatus == 1){
+                    // printf("MARK 5.x\n");
+                    activeProcess->pcb->waitChild = activeProcess->pcb->childPids[i];
+                    // printf("MARK 6.x\n");
+                    *wstatus = child->pcb->status;
+                    pid_ret = activeProcess->pcb->childPids[i];
+                    break;
+                }
             }
         }
     } else {
-        printf("WAIT ONE JOB \n");
+        // printf("WAIT ONE JOB \n");
         Process *p = findProcessByPid(pid);
         activeProcess->pcb->waitChild = pid;
         *wstatus = p->pcb->status;
         pid_ret = pid; 
     }
     if(!nohang){ // FOREGROUND  
-        printf("IN HANG IF \n");  
+        // printf("IN HANG IF \n");  
         // put shell from ready to blocked Q
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
         swapcontext(activeContext, &schedulerContext);
+    } 
+    else{
+        if(zombieQhead != NULL){
+            // printf("going into find now \n");
+        dequeueZombie(findProcessByPid(pid_ret));
+        }
     }
 
     // printf("CHILD PID = %d\n", pid_ret);
@@ -104,13 +125,17 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig){
-    printf("p_kill, pid is %d\n",pid);
+    // printf("p_kill, pid is %d\n",pid);
     Process *proc = findProcessByPid(pid);
+    if(proc == NULL){
+        printf("issue here\n");
+    }
+    printf("pid of proc is %d\n", proc->pcb->pid);
     // printf("%d\n", sig);
     switch(sig) {
         case S_SIGTERM:
-            printf("SIGTERM \n");
-            printf("%d\n", proc->pcb->numChild);
+            // printf("SIGTERM \n");
+            // printf("%d\n", proc->pcb->numChild);
             return k_process_kill(proc, S_SIGTERM);
 
         case S_SIGCONT:
@@ -129,11 +154,11 @@ void p_sleep(unsigned int ticks){
     activeProcess->pcb->sleep_time_remaining = ticks;
     enqueueBlocked(activeProcess);
     swapcontext(activeContext, &schedulerContext);
-    printf("finished with psleep\n");
+    // printf("finished with psleep\n");
 }
 
 void p_exit(void){
-    printf("p_exit\n");
+    // printf("p_exit\n");
     //do cleanup to avoid memory leaks
     return;
 }

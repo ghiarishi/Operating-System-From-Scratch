@@ -30,6 +30,8 @@ void initContext(void);
 void enqueueBlocked(Process* newProcess);
 void enqueueStopped(Process* newProcess);
 void enqueue(Process* newProcess);
+void enqueueZombie(Process* newProcess);
+void dequeueZombie(Process* newProcess);
 void dequeueBlocked(Process* newProcess);
 void dequeueStopped(Process* newProcess);
 void dequeue(Process* newProcess);

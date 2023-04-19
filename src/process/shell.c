@@ -12,11 +12,22 @@ int fgpid = 1;
 pid_t newpid = 0;
 int flag_spaces = 0; 
 
+char* strCopy(char* src, char* dest) {
+    strtok(src, "&");
+    int i = 0;
+    while (src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+    return dest;
+}
+
 struct Job *createJob(int pid, int bgFlag, int numChildren, char *input){
     struct Job *newJob;
     newJob = (struct Job *)malloc(sizeof(struct Job));
     newJob -> commandInput = malloc((strlen(input) + 1) * sizeof(char));
-    strcpy(input, newJob -> commandInput);
+    strCopy(input, newJob -> commandInput);
     newJob -> next = NULL;
     newJob -> bgFlag = bgFlag;
     newJob -> myPid = pid;
@@ -36,9 +47,11 @@ void setTimer(void) {
 void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
+        printf("1. fgpid is: %d\n", fgpid);
         if(fgpid > 1){
-            printf("fg proc is %d\n",fgpid);
+            printf("2. fgpid is: %d\n", fgpid);
             p_kill(fgpid, S_SIGTERM);
+            printf("3. fgpid is: %d\n", fgpid);
         }
         if(fgpid == 1){
             write(STDERR_FILENO, "\n", sizeof("\n"));
@@ -201,7 +214,6 @@ struct Job *removeJob(struct Job *head, int jobNum){
     if (jobNum == 1){
         struct Job *newHead = head -> next;
         freeOneJob(head);
-        printf("JOB REMOVED \n");
         return newHead;
     }
 
@@ -216,12 +228,12 @@ struct Job *removeJob(struct Job *head, int jobNum){
             current -> next = newNext;
             removed -> next = NULL;
             freeOneJob(removed);
-            printf("JOB REMOVED NOT HEAD \n");
+            // printf("JOB REMOVED NOT HEAD \n");
             return head;
         }
         current = current -> next;
     }
-    printf("NO JOB REMOVED\n");
+    // printf("NO JOB REMOVED\n");
     return head;
 }
 
@@ -289,6 +301,7 @@ void changeStatus(struct Job *head, int jobNum, int newStatus){
         else if(newStatus == 0){
             head->status = TERMINATED;
         }
+        return;
     }
     // iterate through all jobs until job of interest is reached
     struct Job *current = head;
@@ -642,6 +655,8 @@ void pennShredder(char* buffer){
         curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
         curr_pid = p_spawn(ps, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "busy") == 0) {
+        curr_pid = p_spawn(busy_wait, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     }
         // fs
     else if (strcmp(cmd->commands[0][0], "cat") == 0) {
@@ -665,7 +680,7 @@ void pennShredder(char* buffer){
 
     if(IS_BG == 1){
         // for the first process in the job, add everything
-        new_job = createJob(curr_pid, BG, n, buffer);  
+        new_job = createJob(curr_pid, BG, n, buffer); 
     }
     else{ // same for FG
         // for the first process in the job, add everything
@@ -674,13 +689,13 @@ void pennShredder(char* buffer){
      
     if (IS_BG == 0){ // wait as normal for foreground processes
         // static sigset_t mask;
-        printf("FG process detected \n");
+        // printf("FG process detected \n");
         // tc set to fg
         fgpid = curr_pid; // use for signal handling, and identifying the process in the foreground
         
         newpid = p_waitpid(curr_pid, &status, FALSE); 
 
-        printf("pwait supposed to be run by now \n");
+        // printf("pwait supposed to be run by now \n");
 
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
         if (WIFSTOPPED(status) && new_job -> status == RUNNING){
@@ -697,14 +712,14 @@ void pennShredder(char* buffer){
         
         //print bufferSig here IF not empty
         // once (if) printed, empty it
-        if (bufferWaiting){
-            //PRINT BUFFER
-            for (int i = 0; i < bufferCount ; i++) {
-                printf("%s\n", bufferSig[i]);
-            }
-            free(bufferSig);
-            bufferWaiting=0;
-        }
+        // if (bufferWaiting){
+        //     //PRINT BUFFER
+        //     for (int i = 0; i < bufferCount ; i++) {
+        //         printf("%s\n", bufferSig[i]);
+        //     }
+        //     free(bufferSig);
+        //     bufferWaiting=0;
+        // }
     }
 
     // add the background job ALWAYS
@@ -757,68 +772,66 @@ void pennShell(){
 
             while(1){
                 // pid_t pid = waitpid(-1, &status, WNOHANG | WUNTRACED);
-                pid_t pid = p_waitpid(-1, &status, TRUE); 
-                if (pid  <=0){
-                    break;
-                }
-
+                
                 if(head == NULL){
                     break;
                 }
 
+                pid_t pid = p_waitpid(-1, &status, TRUE); 
+                if (pid  <= 0){
+                    break;
+                }
+
                 current = head;
+
                 do {
                     if(current->myPid == pid){
                         break;
                     }
                     current = current->next;
-                } while(current != NULL);
-
-                // NOW WE HAVE A PID THAT WE NEED TO CHECK STATUS
-            
-                // previously running now stopped
-
-                printf("the status returned is %d\n", status);
+                } while(current != NULL);               
+                
                 if (W_WIFSTOPPED(status) && current -> status == RUNNING){
                     printf("Stopped: %s", current -> commandInput); 
                     current -> status = STOPPED; 
-                    if (bufferWaiting){
-                        //PRINT BUFFER
-                        for (int i = 0; i < bufferCount ; i++) {
-                            printf("%s\n", bufferSig[i]);
-                        }
-                        free(bufferSig);
-                        bufferWaiting = 0;
-                        bufferCount = 0;
-                    }
+                    // if (bufferWaiting){
+                    //     //PRINT BUFFER
+                    //     for (int i = 0; i < bufferCount ; i++) {
+                    //         printf("%s\n", bufferSig[i]);
+                    //     }
+                    //     free(bufferSig);
+                    //     bufferWaiting = 0;
+                    //     bufferCount = 0;
+                    // }
                 }
                 else if(W_WIFSIGNALED(status) && current -> status == RUNNING){
                     printf("Finished: %s\n", current -> commandInput); 
-                    current -> status = SIG_TERMINATED; 
+                    changeStatus(head, current->JobNumber, 1);
                     head = removeJob(head, current->JobNumber);
-                    if (bufferWaiting){
-                        //PRINT BUFFER
-                        for (int i = 0; i < bufferCount ; i++) {
-                            printf("%s\n", bufferSig[i]);
-                        }
-                        free(bufferSig);
-                        bufferWaiting = 0;
-                        bufferCount = 0;
-                    }
+                    // if (bufferWaiting){
+                    //     //PRINT BUFFER
+                    //     for (int i = 0; i < bufferCount ; i++) {
+                    //         printf("%s\n", bufferSig[i]);
+                    //     }
+                    //     free(bufferSig);
+                    //     bufferWaiting = 0;
+                    //     bufferCount = 0;
+                    // }
                 }
                 else if(W_WIFEXITED(status) && current -> status == RUNNING){
                     printf("Finished: %s\n", current -> commandInput); 
-                    current -> status = TERMINATED;
+                    changeStatus(head, current->JobNumber, 0);
                     head = removeJob(head, current->JobNumber);
-                    if (bufferWaiting){
-                        //PRINT BUFFER
-                        for (int i = 0; i < bufferCount ; i++) {
-                            printf("%s\n", bufferSig[i]);
-                        }
-                        free(bufferSig);
-                        bufferWaiting = 0;
-                        bufferCount = 0;
-                    }
+                    
+                    // if (bufferWaiting){
+                    //     //PRINT BUFFER
+                    //     for (int i = 0; i < bufferCount ; i++) {
+                    //         printf("%s\n", bufferSig[i]);
+                    //     }
+                    //     free(bufferSig);
+                    //     bufferWaiting = 0;
+                    //     bufferCount = 0;
+                    // }
                 }
             }
 
@@ -846,11 +859,11 @@ void pennShell(){
             
             // If no input or there is input but the last char of the buffer isn't newline, its CTRL D
             if (numBytes == 0 || (numBytes != 0 && buffer[numBytes - 1] != '\n')) {
-                printf("entered 1st line ctrld \n");
+                // printf("entered 1st line ctrld \n");
                 if (numBytes == 0) { // In this case, just return a new line (avoids the # sign on the same line)
-                    printf("entered 2rd line ctrld \n");
+                    // printf("entered 2rd line ctrld \n");
                     if (write(STDERR_FILENO, "\n", strlen("\n")) == -1) {
-                        printf("entered 3rd line ctrld \n");
+                        // printf("entered 3rd line ctrld \n");
                         perror("write");
                         freeAllJobs(head);
                         freeAllJobs(current);
@@ -890,7 +903,7 @@ void pennShell(){
             free(line);
         }
     }   
-    printf("outside shell while \n");
+    // printf("outside shell while \n");
     freeAllJobs(current);
     freeAllJobs(head);
     free(bufferSig); 

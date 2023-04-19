@@ -7,6 +7,7 @@
 #include "../fs/user.h"
 // #include "dependencies.h"
 
+#define ZOMBIE 5
 #define BLOCKED 4
 #define STOPPED 3
 #define RUNNING 2
