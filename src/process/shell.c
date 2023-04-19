@@ -65,7 +65,11 @@ void sigcontHandler(int signal){
 void sigtstpHandler(int signal){
     if(signal == SIGTSTP){ //ctrl-z
         if(fgpid != 0 && !IS_BG){
-            p_kill(fgpid, S_SIGSTOP); 
+            int ret = p_kill(fgpid, S_SIGSTOP); 
+            // printf("exit only becasue nothing to run, need to exit using p_exit");
+            if (ret == -1){
+                p_exit();
+            }
         }
     }
 

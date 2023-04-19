@@ -126,6 +126,8 @@ void p_sleep(unsigned int ticks){
     printf("finished with psleep\n");
 }
 
-// void p_exit(void){
-//     //should be like killing but don't care about signal. just KILL KILL KILL.
-// }
+void p_exit(void){
+    printf("p_exit\n");
+    //do cleanup to avoid memory leaks
+    return;
+}
