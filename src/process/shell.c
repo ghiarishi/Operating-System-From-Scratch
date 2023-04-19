@@ -237,7 +237,8 @@ struct Job *getJob(struct Job *head, int jobNum){
     }
     freeOneJob(current); 
     fprintf(stderr,"No job with this ID found\n");
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
+    p_exit();
 }
 
 int getCurrentJob(struct Job *head){
@@ -267,7 +268,8 @@ int getCurrentJob(struct Job *head){
     }
     else{
         fprintf(stderr,"No bg or stopped jobs found\n");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        p_exit();
     }
 }
 
