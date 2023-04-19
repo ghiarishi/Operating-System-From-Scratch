@@ -61,7 +61,6 @@ int k_process_kill(Process *p, int signal){
 
                 
             }
-
             p->pcb->status = SIG_TERMINATED;
             p->pcb->changedStatus = 1;
             return 0;
@@ -76,31 +75,30 @@ int k_process_kill(Process *p, int signal){
     break;
     case S_SIGSTOP:{
         printf("inside SIGSTOP in K proc kill\n");
-        if(p->pcb->numChild == 0){
-            printf("no child found, status %d\n",p->pcb->status);
-            if(p->pcb->status == RUNNING){
-                printf("Parent pid is %d\n",p->pcb->ppid);
-                Process *parent = findProcessByPid(p->pcb->ppid);
-                printf("Parent found is %d\n",parent->pcb->pid);
-                printf("Parent's status is %d\n",parent->pcb->status);
-                dequeue(p);
-                enqueueStopped(p);
-                if (parent->pcb->status == BLOCKED){
-                    dequeueBlocked(parent);
-                    enqueue(parent);
-                }
-            }
-            p->pcb->status = STOPPED;
-            p->pcb->changedStatus = 1;
-            return 0;
+        // if(p->pcb->numChild == 0){
+        printf("Status %d\n",p->pcb->status);
+        
+        printf("Parent pid is %d\n",p->pcb->ppid);
+        Process *parent = findProcessByPid(p->pcb->ppid);
+        printf("Parent found is %d\n",parent->pcb->pid);
+        printf("Parent's status is %d\n",parent->pcb->status);
+        if(p->pcb->status == RUNNING){
+            dequeue(p);
         }
-        for(int i=0; i < p->pcb->numChild; i++){
-            printf("SIGSTOP %d\n", i);
-            Process *child = findProcessByPid(p->pcb->childPids[i]);
-            k_process_kill(child, S_SIGSTOP);
+        else if(p->pcb->status == BLOCKED){
+            dequeueBlocked(p);
         }
-        dequeue(p);
         enqueueStopped(p);
+        if (parent->pcb->status == BLOCKED){
+            dequeueBlocked(parent);
+            enqueue(parent);
+        }
+        
+        
+        p->pcb->status = STOPPED;
+        p->pcb->changedStatus = 1;
+        return 0;
+        // }
     }
     break;
     case S_SIGCONT:
