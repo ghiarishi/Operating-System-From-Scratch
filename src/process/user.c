@@ -98,7 +98,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig){
-
+    printf("p_kill, pid is %d",pid);
     Process *proc = findProcessByPid(pid);
     // printf("%d\n", sig);
     switch(sig) {

@@ -63,9 +63,9 @@ void sigcontHandler(int signal){
 }
 
 void sigtstpHandler(int signal){
-    if(signal == SIGTSTP){
-        if(curr_pid != 0 && !IS_BG){
-            // p_kill(curr_pid, S_SIGTSTP);
+    if(signal == SIGTSTP){ //ctrl-z
+        if(fgpid != 0 && !IS_BG){
+            p_kill(fgpid, S_SIGSTOP); 
         }
     }
 

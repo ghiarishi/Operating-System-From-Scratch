@@ -34,7 +34,7 @@ int k_process_kill(Process *p, int signal){
 
     printf("inside k  process kill \n");
     switch (signal){
-    case S_SIGTERM: 
+    case S_SIGTERM: {
         if(p->pcb->numChild == 0){
             // printf("SIGTERM 1\n");
             printf("sleep%d \n", p->pcb->status);
@@ -72,22 +72,12 @@ int k_process_kill(Process *p, int signal){
             k_process_kill(child, S_SIGTERM);
         }
         dequeue(p);
-        break;
+    }
+    break;
     case S_SIGSTOP:{
+        printf("inside SIGSTOP in K proc kill");
         if(p->pcb->numChild == 0){
-            // printf("SIGSTOP 1\n");
-            // printf("sleep%d \n", p->pcb->status);
-            // if(p->pcb->status == BLOCKED){
-            //     // sleep case
-            //     printf("sleep \n");
-            //     Process *parent = findProcessByPid(p->pcb->ppid);
-            //     dequeueBlocked(p);
-            //     enqueueStopped(p);
-            //     dequeueBlocked(parent);
-            //     enqueue(parent);
-            //     printf("sigstop BLOCKED\n");
-            // }
-            // else 
+            printf("no child found, status %d\n",p->pcb->status);
             if(p->pcb->status == RUNNING){
                 Process *parent = findProcessByPid(p->pcb->ppid);
                 dequeue(p);
@@ -97,10 +87,6 @@ int k_process_kill(Process *p, int signal){
     
                 printf("sigstop RUNNING \n");
             }
-            // else if(p->pcb->status == STOPPED){
-            //     dequeueStopped(p);
-            //     printf("sigstop STOPPED \n");
-            // }
             p->pcb->status = STOPPED;
             p->pcb->changedStatus = 1;
             return 0;
@@ -110,10 +96,10 @@ int k_process_kill(Process *p, int signal){
             Process *child = findProcessByPid(p->pcb->childPids[i]);
             k_process_kill(child, S_SIGSTOP);
         }
-    }
         dequeue(p);
         enqueueStopped(p);
-        break;
+    }
+    break;
     case S_SIGCONT:
         dequeueStopped(p);
         enqueue(p);
@@ -207,6 +193,6 @@ Process *findProcessByPid(int pid){
         }
         temp = temp->next;
     }
-    printf("Didn't find the process I was looking fo\n");
+    printf("Didn't find the process I was looking for.\n");
     return temp;
 }

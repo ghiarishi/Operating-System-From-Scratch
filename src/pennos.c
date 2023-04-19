@@ -31,7 +31,8 @@ int main(int argc, char** argv) {
     }
     // signal(SIGINT, SIG_IGN); // Ctrl-C
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
-    signal(SIGTSTP, SIG_IGN); // Ctrl-Z
+    
+    // signal(SIGTSTP, SIG_IGN); // Ctrl-Z
 
     initContext();
 
