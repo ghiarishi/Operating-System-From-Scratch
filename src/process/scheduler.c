@@ -115,7 +115,7 @@ void scheduler(void){
 
     if(highQhead == NULL && medQhead == NULL && lowQhead == NULL && blockedQhead != NULL){
         emptyQflag = 1;  
-        printf("All queues empty, running idle proc now!\n");
+        // printf("All queues empty, running idle proc now!\n");
         activeContext = &idleContext;
         setcontext(activeContext);
     }
@@ -367,7 +367,7 @@ void alarmHandler(int signum){
     Process *temp = blockedQhead;
     while(temp != NULL) {
         if(temp->pcb->sleep_time_remaining > 0){
-            // printf("decrementing sleep timer\n");
+            // printf("decrementing sleep timer%d\n", temp->pcb->sleep_time_remaining);
             temp->pcb->sleep_time_remaining--;
             if(temp->pcb->sleep_time_remaining == 0){
                 printf("SLEEP TIME OVER NOW \n");

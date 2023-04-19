@@ -37,6 +37,7 @@ void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
         if(fgpid > 1){
+            printf("fg proc is %d\n",fgpid);
             p_kill(fgpid, S_SIGTERM);
         }
         if(fgpid == 1){
@@ -296,6 +297,7 @@ void changeStatus(struct Job *head, int jobNum, int newStatus){
         }
     }
 }
+
 
 void changeFGBG(struct Job *head, int jobNum, int newFGBG){
     if (jobNum == 1){

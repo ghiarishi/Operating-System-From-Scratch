@@ -32,14 +32,12 @@ struct pcb* k_process_create(struct pcb *parent) {
 
 int k_process_kill(Process *p, int signal){
 
-    p->pcb->status = SIG_TERMINATED;
-    p->pcb->changedStatus = 1;
-
     printf("inside k  process kill \n");
     switch (signal){
     case S_SIGTERM: 
         if(p->pcb->numChild == 0){
-            printf("SIGTERM 1\n");
+            // printf("SIGTERM 1\n");
+            printf("sleep%d \n", p->pcb->status);
             if(p->pcb->status == BLOCKED){
                 // sleep case
                 printf("sleep \n");
@@ -60,7 +58,12 @@ int k_process_kill(Process *p, int signal){
             else if(p->pcb->status == STOPPED){
                 dequeueStopped(p);
                 printf("kill STOPPED \n");
+
+                
             }
+
+            p->pcb->status = SIG_TERMINATED;
+            p->pcb->changedStatus = 1;
             return 0;
         }
         for(int i=0; i < p->pcb->numChild; i++){
@@ -69,7 +72,6 @@ int k_process_kill(Process *p, int signal){
             k_process_kill(child, S_SIGTERM);
         }
         dequeue(p);
-
         break;
     case S_SIGSTOP:
         dequeue(p);
