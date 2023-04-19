@@ -73,7 +73,44 @@ int k_process_kill(Process *p, int signal){
         }
         dequeue(p);
         break;
-    case S_SIGSTOP:
+    case S_SIGSTOP:{
+        if(p->pcb->numChild == 0){
+            // printf("SIGSTOP 1\n");
+            // printf("sleep%d \n", p->pcb->status);
+            // if(p->pcb->status == BLOCKED){
+            //     // sleep case
+            //     printf("sleep \n");
+            //     Process *parent = findProcessByPid(p->pcb->ppid);
+            //     dequeueBlocked(p);
+            //     enqueueStopped(p);
+            //     dequeueBlocked(parent);
+            //     enqueue(parent);
+            //     printf("sigstop BLOCKED\n");
+            // }
+            // else 
+            if(p->pcb->status == RUNNING){
+                Process *parent = findProcessByPid(p->pcb->ppid);
+                dequeue(p);
+                enqueueStopped(p);
+                dequeueBlocked(parent);
+                enqueue(parent);
+    
+                printf("sigstop RUNNING \n");
+            }
+            // else if(p->pcb->status == STOPPED){
+            //     dequeueStopped(p);
+            //     printf("sigstop STOPPED \n");
+            // }
+            p->pcb->status = STOPPED;
+            p->pcb->changedStatus = 1;
+            return 0;
+        }
+        for(int i=0; i < p->pcb->numChild; i++){
+            printf("SIGSTOP %d\n", i);
+            Process *child = findProcessByPid(p->pcb->childPids[i]);
+            k_process_kill(child, S_SIGSTOP);
+        }
+    }
         dequeue(p);
         enqueueStopped(p);
         break;

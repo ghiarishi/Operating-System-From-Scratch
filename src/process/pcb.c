@@ -7,7 +7,7 @@ struct pcb *initPCB() {
     pcb_obj->numChild = 0;
     pcb_obj->pid = pidCounter;
     pcb_obj->ppid = pidCounter;
-    pcb_obj->status = READY;
+    pcb_obj->status = RUNNING;
     pcb_obj->childPids = malloc(20 * sizeof(int));
     pcb_obj->childPidsFinished = malloc(20 * sizeof(int));
     pcb_obj->sleep_time_remaining = -1;

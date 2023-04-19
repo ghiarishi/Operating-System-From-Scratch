@@ -112,9 +112,8 @@ int p_kill(pid_t pid, int sig){
             return 0;
 
         case S_SIGSTOP:
-            printf("SIGTERM \n");
-            k_process_kill(proc, S_SIGSTOP);
-            return 0;
+            printf("SIGSTOP \n");
+            return k_process_kill(proc, S_SIGSTOP);;
     }
     return -1;
 }
