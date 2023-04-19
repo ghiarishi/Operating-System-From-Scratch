@@ -21,17 +21,20 @@ int main(int argc, char** argv) {
     // mount global filesystem
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <filesystem>\n", argv[0]);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        p_exit();
     }
     char *path = argv[1];
     fs = fs_mount(path);
     if (fs == NULL) {
         p_perror("fs_mount");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        p_exit();
     }
     // signal(SIGINT, SIG_IGN); // Ctrl-C
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
-    signal(SIGTSTP, SIG_IGN); // Ctrl-Z
+    
+    // signal(SIGTSTP, SIG_IGN); // Ctrl-Z
 
     initContext();
 

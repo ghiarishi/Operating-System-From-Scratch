@@ -104,7 +104,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig){
-
+    printf("p_kill, pid is %d\n",pid);
     Process *proc = findProcessByPid(pid);
     // printf("%d\n", sig);
     switch(sig) {
@@ -118,9 +118,8 @@ int p_kill(pid_t pid, int sig){
             return 0;
 
         case S_SIGSTOP:
-            printf("SIGTERM \n");
-            k_process_kill(proc, S_SIGSTOP);
-            return 0;
+            printf("SIGSTOP \n");
+            return k_process_kill(proc, S_SIGSTOP);;
     }
     return -1;
 }
@@ -133,6 +132,20 @@ void p_sleep(unsigned int ticks){
     printf("finished with psleep\n");
 }
 
-// void p_exit(void){
-//     //should be like killing but don't care about signal. just KILL KILL KILL.
-// }
+void p_exit(void){
+    printf("p_exit\n");
+    //do cleanup to avoid memory leaks
+    return;
+}
+
+int p_nice(pid_t pid, int priority){
+    Process *proc = findProcessByPid(pid);
+    if (proc == NULL){
+        return -1;
+    }
+    dequeue(proc);
+    proc->pcb->priority = priority;
+    enqueue(proc);
+    return 0;
+}
+

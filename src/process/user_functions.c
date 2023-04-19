@@ -251,3 +251,7 @@ void chmodFunc(int argc, char **argv) {
         f_close(fd);
     }
 }
+
+void ps (int argc, char **argv){
+    //loop through all queues , %3d
+}

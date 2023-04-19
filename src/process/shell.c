@@ -63,9 +63,13 @@ void sigcontHandler(int signal){
 }
 
 void sigtstpHandler(int signal){
-    if(signal == SIGTSTP){
-        if(curr_pid != 0 && !IS_BG){
-            // p_kill(curr_pid, S_SIGTSTP);
+    if(signal == SIGTSTP){ //ctrl-z
+        if(fgpid != 0 && !IS_BG){
+            int ret = p_kill(fgpid, S_SIGSTOP); 
+            // printf("exit only becasue nothing to run, need to exit using p_exit");
+            if (ret == -1){
+                p_exit();
+            }
         }
     }
 
@@ -236,7 +240,9 @@ struct Job *getJob(struct Job *head, int jobNum){
     }
     freeOneJob(current); 
     fprintf(stderr,"No job with this ID found\n");
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
+    p_exit();
+    return current;
 }
 
 int getCurrentJob(struct Job *head){
@@ -266,7 +272,9 @@ int getCurrentJob(struct Job *head){
     }
     else{
         fprintf(stderr,"No bg or stopped jobs found\n");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        p_exit();
+        return -1;
     }
 }
 
@@ -632,6 +640,8 @@ void pennShredder(char* buffer){
         curr_pid = p_spawn(sleepFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "echo") == 0) {
         curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
+        curr_pid = p_spawn(ps, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     }
         // fs
     else if (strcmp(cmd->commands[0][0], "cat") == 0) {
