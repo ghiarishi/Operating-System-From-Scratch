@@ -22,6 +22,8 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     // pid_t pid = getpid();
 
+    activeProcess->pcb->numChild++;
+
     Process *newProcess = (Process*) malloc(sizeof(Process)); //NULL;
     newProcess->pcb = k_process_create(activeProcess->pcb);
     pid_new = newProcess->pcb->pid;
@@ -78,6 +80,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     if(!nohang){
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
+        
         printf("the pid of bqh %d\n", blockedQhead->pcb->pid);
     }
     swapcontext(activeContext, &schedulerContext);
@@ -97,20 +100,21 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 int p_kill(pid_t pid, int sig){
 
     Process *proc = findProcessByPid(pid);
-
+    // printf("%d\n", sig);
     switch(sig) {
         case S_SIGTERM:
-            for(int i=0;i<proc->pcb->numChild;i++){
-                Process *child = findProcessByPid(proc->pcb->childPids[i]);
-                k_process_kill(child, S_SIGTERM);
-            }
-            break;
+            printf("SIGTERM \n");
+            printf("%d\n", proc->pcb->numChild);
+            return k_process_kill(proc, S_SIGTERM);
 
         case S_SIGCONT:
-            break;
+            printf("SIGCONT\n");
+            return 0;
 
-        case S_SIGTSTP:
-            k_process_kill(proc, S_SIGTSTP);
+        case S_SIGSTOP:
+            printf("SIGTERM \n");
+            k_process_kill(proc, S_SIGSTOP);
+            return 0;
     }
     return -1;
 }

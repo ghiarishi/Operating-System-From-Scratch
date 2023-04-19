@@ -10,6 +10,7 @@ int bufferWaiting = 0;
 int bufferCount = 0;
 int fgpid = 1;
 pid_t newpid = 0;
+int flag_spaces = 0; 
 
 struct Job *createJob(int pid, int bgFlag, int numChildren, char *input){
     struct Job *newJob;
@@ -34,11 +35,13 @@ void setTimer(void) {
 
 void sigIntTermHandler(int signal) {
     // ignore for bg processes
-    printf("SIGINT 1");
     if(signal == SIGINT){
-        printf("SIGINT 2");
-        if(newpid != 0 && !IS_BG){
-            p_kill(newpid, S_SIGTERM);
+        if(fgpid > 1){
+            p_kill(fgpid, S_SIGTERM);
+        }
+        if(fgpid == 1){
+            write(STDERR_FILENO, "\n", sizeof("\n"));
+            write(STDERR_FILENO, PROMPT, sizeof(PROMPT));
         }
     }
 
@@ -711,6 +714,7 @@ void pennShell(){
     // create a jobs linked list 
     struct Job *current = NULL;
 
+    flag_spaces = 0;
     while (1) {
         // Interactive Section (Penn Shredder: Normal)
         // Reading I/P here but polling here
@@ -812,7 +816,22 @@ void pennShell(){
             if (numBytes == 1 && buffer[0] == '\n') {
                 continue;
             }
-            
+            // check if buffer is all spaces or tabs
+            for (int i = 0; i < numBytes - 1; i++) {
+                if (buffer[i] != ' ' && buffer[i] != '\t') {
+                    break;
+                }
+                if (i == numBytes - 2) {
+                    flag_spaces = 1;
+                }
+            }
+
+            // this check and continue done outside for, else it just goes to the next iter of the for loop
+            if (flag_spaces){
+                (write(STDERR_FILENO, "\n", strlen("\n")));
+                continue;
+            }    
+                
             buffer[numBytes] = '\0'; // Set last char of buffer to null to prevent memory leaks
             
             // If no input or there is input but the last char of the buffer isn't newline, its CTRL D
@@ -866,117 +885,3 @@ void pennShell(){
     freeAllJobs(head);
     free(bufferSig); 
 }  
-
-// // OLD CODE
-//     printf("Inside penn shell \n");
-//     timeout = 0;
-
-//     while (1) {
-        
-//         // WRITE AND READ 
-//         int write1 = f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
-//         if (write1 == -1) {
-//             p_perror("f_write");
-//             exit(EXIT_FAILURE); // replace with p_exit
-//         }
-
-//         char buffer[INPUT_SIZE];
-
-//         int numBytes = f_read(PSTDIN_FILENO, INPUT_SIZE, buffer);
-//         if (numBytes == -1) {
-//             p_perror("f_read");
-//             exit(EXIT_FAILURE);
-//         }
-
-//         // exit iterationg if only next line given
-//         if (numBytes == 1 && buffer[0] == '\n') {
-//             continue;
-//         }
-
-//         // set last char of buffer to null to prevent memory leaks
-//         buffer[numBytes] = '\0'; 
-        
-//         // if no input or there is input but the last char of the buffer isn't newline, its CTRL D
-//         if (numBytes == 0 || (numBytes != 0 && buffer[numBytes - 1] != '\n')) {
-//             if (numBytes == 0) { // in this case, just return a new line (avoids the # sign on the same line)
-//                 int write7 = f_write(PSTDOUT_FILENO, "\n", strlen("\n"));
-//                 if (write7 == -1) {
-//                     p_perror("f_write");
-//                     exit(EXIT_FAILURE);
-//                 }  
-//                 break; // either ways, just shut the code
-//             }
-//             else{ // normal case
-//                 int write6 = f_write(PSTDIN_FILENO, "\n", strlen("\n"));
-//                 if (write6 == -1) {
-//                     p_perror("f_write");
-//                     exit(EXIT_FAILURE);
-//                 }  
-//             }
-//         }
-
-//         // check if buffer is all spaces or tabs
-//         for (int i = 0; i < numBytes - 1; i++) {
-//             if (buffer[i] != ' ' && buffer[i] != '\t') {
-//                 break;
-//             }
-//             if (i == numBytes - 2) {
-//                 flag_spaces = 1;
-//             }
-//         }
-        
-//         // this check and continue done outside for, else it just goes to the next iter of the for loop
-//         if (flag_spaces){
-//             continue;
-//         }       
-
-//         // if the last char not a newline, reiterate and reprompt
-//         if (buffer[numBytes - 1] != '\n') {
-//             continue; // check if it should continue or
-//         }
-        
-//         buffer[numBytes - 1] = '\0'; // avoid memory leaks
-
-//         struct parsed_command *cmd; 
-//         parse_command(buffer, &cmd);
-
-//         if (strcmp(cmd->commands[0][0], "sleep") == 0){
-//             curr_pid = p_spawn(sleepFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-//         }
-
-//         else if (strcmp(cmd->commands[0][0], "echo") == 0){
-//             curr_pid = p_spawn(echoFunc, cmd -> commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-//         }
-
-//     //     if (pid == -1) {
-//     //         perror("fork");
-//     //         // free(argsv);
-//     //         fflush(stdin);
-//     //         exit(EXIT_FAILURE);
-//     //     }
-        
-//     //     if (pid) { // child process has PID 0 (returned from the fork process), while the parent will get the actual PID of child
-  
-//     //         //setcontext
-//     //         printf("In child rn yo \n");
-
-//     //         fflush(stdin);
-//     //         exit(EXIT_FAILURE); // exits child process and reprompts "penn-shredder"   
-//     //     }
-//     //     // parent section
-//     //     else {
-//     //         alarm(timeout); // set an alarm for "timeout" number of seconds (signal function catches SIGALRM)
-//     //         int wstatus;
-//     //         int waitCheck = wait(&wstatus); // wait for the child to complete execution
-//     //         if (waitCheck == -1) {
-//     //             perror("wait");
-//     //             fflush(stdin);
-//     //             exit(EXIT_FAILURE);
-//     //         }
-            
-//     //         printf("In parent rn yo \n");
-//     //     }
-//     //     fflush(stdin);
-//     //     alarm(0); // reset alarm to 0 incase child process did not need to be killed, as alarm continues to run otherwise
-//     }   
-// }

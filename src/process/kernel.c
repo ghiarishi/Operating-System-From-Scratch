@@ -20,28 +20,56 @@ struct pcb* k_process_create(struct pcb *parent) {
     setStack(&uc->uc_stack);
     uc->uc_link = &terminateContext;
     
-    Process *newProcess = (Process*) malloc(sizeof(Process));
+    // Process *newProcess = (Process*) malloc(sizeof(Process));
+    struct pcb *p = NULL;
                                                             
- 
-    newProcess->pcb = createPcb(*uc, pidCounter, parent->pid, 0, RUNNING);
+    p = createPcb(*uc, pidCounter, parent->pid, 0, RUNNING);
     
     pidCounter++;
 
-    return newProcess->pcb;
+    return p;
 }
 
-void k_process_kill(Process *p, int signal){
+int k_process_kill(Process *p, int signal){
 
     p->pcb->status = SIG_TERMINATED;
     p->pcb->changedStatus = 1;
 
+    printf("inside k  process kill \n");
     switch (signal){
     case S_SIGTERM: 
-        for(int i=0;i<p->pcb->numChild;i++){
-            Process *cp = findProcessByPid(p->pcb->childPids[i]);
-            k_process_kill(cp, S_SIGTERM);
-            dequeue(cp);
+        if(p->pcb->numChild == 0){
+            printf("SIGTERM 1\n");
+            if(p->pcb->status == BLOCKED){
+                // sleep case
+                printf("sleep \n");
+                Process *parent = findProcessByPid(p->pcb->ppid);
+                dequeueBlocked(p);
+                dequeueBlocked(parent);
+                enqueue(parent);
+                printf("kill BLOCKED\n");
+            }
+            else if(p->pcb->status == RUNNING){
+                Process *parent = findProcessByPid(p->pcb->ppid);
+                dequeue(p);
+                dequeueBlocked(parent);
+                enqueue(parent);
+    
+                printf("kill RUNNING \n");
+            }
+            else if(p->pcb->status == STOPPED){
+                dequeueStopped(p);
+                printf("kill STOPPED \n");
+            }
+            return 0;
         }
+        for(int i=0; i < p->pcb->numChild; i++){
+            printf("SIGTERM %d\n", i);
+            Process *child = findProcessByPid(p->pcb->childPids[i]);
+            k_process_kill(child, S_SIGTERM);
+        }
+        dequeue(p);
+
         break;
     case S_SIGSTOP:
         dequeue(p);
@@ -54,6 +82,8 @@ void k_process_kill(Process *p, int signal){
     default:
         break;
     }
+
+    return -1;
 }   
 
 void k_process_cleanup(Process *p) { 
@@ -99,7 +129,6 @@ Process *findProcessByPid(int pid){
             // printf("HIGH exiting find process pid\n");
             return temp;
         }
-
         temp = temp->next;
     }
 
@@ -121,6 +150,24 @@ Process *findProcessByPid(int pid){
         }
         temp = temp->next;
     }
-    printf("NONE exiting find process pid\n");
+
+    temp = blockedQhead;
+    while(temp != NULL){
+        if(temp->pcb->pid == pid){
+            // printf("BLOCKED exiting find process pid\n");
+            return temp;
+        }
+        temp = temp->next;
+    }
+    
+    temp = stoppedQhead;
+    while(temp != NULL){
+        if(temp->pcb->pid == pid){
+            // printf("BLOCKED exiting find process pid\n");
+            return temp;
+        }
+        temp = temp->next;
+    }
+    printf("Didn't find the process I was looking fo\n");
     return temp;
 }

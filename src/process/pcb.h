@@ -5,10 +5,12 @@
 #include <stdlib.h>
 #include "user.h"
 #include "../fs/user.h"
+// #include "dependencies.h"
 
+#define BLOCKED 4
 #define STOPPED 3
 #define RUNNING 2
-#define READY 1
+#define SIG_TERMINATED 1
 #define TERMINATED 0
 #define FG 0
 #define BG 1
@@ -33,7 +35,6 @@ struct pcb {
     int sleep_time_remaining;
     int changedStatus;
     file_t *fd_table[MAX_FILES];
-    int wStatus;
 };
 
 char* strCopy(char* src, char* dest);

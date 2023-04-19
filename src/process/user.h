@@ -11,6 +11,10 @@
 #define MAX_CMD_LENGTH 1000
 #define MAX_ARGS 10
 
+#define S_SIGTERM 1
+#define S_SIGSTOP 2
+#define S_SIGCONT 3
+
 extern Process *activeProcess;
 
 #define PROMPT "$ "

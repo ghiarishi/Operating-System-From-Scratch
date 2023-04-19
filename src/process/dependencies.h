@@ -6,10 +6,7 @@ typedef struct process{
     struct process* next;
 } Process;
 
-#define S_SIGTERM 1
-#define S_SIGSTOP 2
-#define S_SIGCONT 3
-#define S_SIGTSTP 4
+
 
 // initialize in .c
 extern Process *highQhead;

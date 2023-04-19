@@ -27,6 +27,10 @@
 #define TRUE 1
 #define FALSE 0
 
+#define S_SIGTERM 1
+#define S_SIGSTOP 2
+#define S_SIGCONT 3
+
 extern int IS_BG;
 
 struct Job{

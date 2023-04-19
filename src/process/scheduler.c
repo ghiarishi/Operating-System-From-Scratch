@@ -115,7 +115,7 @@ void scheduler(void){
 
     if(highQhead == NULL && medQhead == NULL && lowQhead == NULL && blockedQhead != NULL){
         emptyQflag = 1;  
-        // printf("All queues empty, running idle proc now!\n");
+        printf("All queues empty, running idle proc now!\n");
         activeContext = &idleContext;
         setcontext(activeContext);
     }
@@ -125,11 +125,11 @@ void scheduler(void){
     }
     listPointer++;
     setcontext(&schedulerContext);
-        
-    
 }
 
 void enqueueBlocked(Process* newProcess){
+    newProcess->pcb->status = BLOCKED;
+    newProcess->pcb->changedStatus = 1;
     // printf("%s enqueued into blocked Q!\n", newProcess->pcb->argument);
     if (blockedQhead == NULL) {
         blockedQhead = newProcess;
@@ -158,7 +158,7 @@ void enqueueStopped(Process* newProcess){
 // Function to add a thread to the appropriate priority queue
 void enqueue(Process* newProcess) {
     // Determine the appropriate priority queue based on the ProcessnewProcess's priority level
-    
+    newProcess->pcb->status = RUNNING;
     switch(newProcess->pcb->priority) {
         case PRIORITY_HIGH:
             // printf("%s enqueued into high\n", newProcess->pcb->argument);
