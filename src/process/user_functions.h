@@ -24,3 +24,5 @@ void mvFunc(int argc, char **argv);
 void cpFunc(int argc, char **argv);
 void rmFunc(int argc, char **argv);
 void chmodFunc(int argc, char **argv);
+
+void ps (int argc, char **argv);
