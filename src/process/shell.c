@@ -239,6 +239,7 @@ struct Job *getJob(struct Job *head, int jobNum){
     fprintf(stderr,"No job with this ID found\n");
     // exit(EXIT_FAILURE);
     p_exit();
+    return current;
 }
 
 int getCurrentJob(struct Job *head){
@@ -270,6 +271,7 @@ int getCurrentJob(struct Job *head){
         fprintf(stderr,"No bg or stopped jobs found\n");
         // exit(EXIT_FAILURE);
         p_exit();
+        return -1;
     }
 }
 

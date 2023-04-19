@@ -131,3 +131,12 @@ void p_exit(void){
     //do cleanup to avoid memory leaks
     return;
 }
+
+int p_nice(pid_t pid, int priority){
+    Process *proc = findProcessByPid(pid);
+    if (proc == NULL){
+        return -1;
+    }
+    proc->pcb->priority = priority;
+    return 0;
+}
