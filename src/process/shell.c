@@ -197,6 +197,7 @@ struct Job *removeJob(struct Job *head, int jobNum){
     if (jobNum == 1){
         struct Job *newHead = head -> next;
         freeOneJob(head);
+        printf("JOB REMOVED \n");
         return newHead;
     }
 
@@ -211,10 +212,12 @@ struct Job *removeJob(struct Job *head, int jobNum){
             current -> next = newNext;
             removed -> next = NULL;
             freeOneJob(removed);
+            printf("JOB REMOVED NOT HEAD \n");
             return head;
         }
         current = current -> next;
     }
+    printf("NO JOB REMOVED\n");
     return head;
 }
 
@@ -352,8 +355,6 @@ bool W_WIFSIGNALED(int status) {
     return status == SIG_TERMINATED;
 }
 
-
-
 void pennShredder(char* buffer){
     IS_BG = 0;
     int numBytes = strlen(buffer);
@@ -407,7 +408,7 @@ void pennShredder(char* buffer){
     //             changeStatus(head, job_id, 0); // set job to running
     //             changeFGBG(head, job_id, 1); // set job to BG 
     //             fprintf(stderr,"Running: %s", bgJob -> commandInput);
-    //             killpg(bgJob -> pgid, SIGCONT);
+    //             p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
     //             free(cmd);
     //             return;
     //         } 
@@ -427,7 +428,7 @@ void pennShredder(char* buffer){
     //             changeStatus(head, job_id, 0); // set job to running
     //             changeFGBG(head, job_id, 1); // set job to BG 
     //             fprintf(stderr,"Running: %s", bgJob -> commandInput);
-    //             killpg(bgJob -> pgid, SIGCONT);
+    //             p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
     //             free(cmd);
     //             return;
     //         }
@@ -459,13 +460,13 @@ void pennShredder(char* buffer){
     //             changeStatus(head, job_id, 0); // set job to running
     //             changeFGBG(head, job_id, 0); // set job to FG 
     //             fprintf(stderr,"Restarting: %s", fgJob -> commandInput);
-    //             killpg(fgJob -> pgid, SIGCONT);
-    //             tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
+    //             p_kill(fgJob -> myPid, S_SIGCONT); // killpg(fgJob -> pgid, SIGCONT); 
+    //             // tcsetpgrp(STDIN_FILENO, fgJob -> myPid);
     //             int status;
     //             for (int i = 0; i < fgJob -> numChild; i++){
     //                 waitpid(fgJob->pids[i], &status, WUNTRACED);   
     //             }
-    //             tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
+    //             // tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
     //             if(WIFSTOPPED(status)){ 
     //                 fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
     //                 fgJob -> status = STOPPED; 
@@ -489,14 +490,14 @@ void pennShredder(char* buffer){
     //         }
     //         // not stopped, but running in BG
     //         else{
-    //             tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
+    //             // tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
     //             changeFGBG(head, job_id, 0); // set job to FG 
     //             fprintf(stderr, "%s\n", fgJob -> commandInput); 
     //             int status;
     //             for (int i = 0; i < fgJob -> numChild; i++){
     //                 waitpid(fgJob->pids[i], &status, WUNTRACED);   
     //             }
-    //             tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
+    //             // tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
     //             if(WIFSTOPPED(status)){ 
     //                 fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
     //                 fgJob -> status = STOPPED; 
@@ -525,14 +526,14 @@ void pennShredder(char* buffer){
     //             // Send a SIGCONT signal to the process to continue it in the background
     //             changeStatus(head, job_id, 0); // set job to running
     //             changeFGBG(head, job_id, 0); // set job to FG 
-    //             killpg(fgJob -> pgid, SIGCONT);
-    //             tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
+    //             killpg(fgJob -> myPid, S_SIGCONT); //killpg(fgJob -> pgid, SIGCONT);
+    //             // tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
     //             fprintf(stderr, "Restarting: %s", fgJob -> commandInput);
     //             int status; 
     //             for (int i = 0; i < fgJob -> numChild; i++){
     //                 waitpid(fgJob->pids[i], &status, WUNTRACED);   
     //             }
-    //             tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
+    //             // tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
     //             if(WIFSTOPPED(status)){ 
     //                 fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
     //                 fgJob -> status = STOPPED; 
@@ -555,14 +556,14 @@ void pennShredder(char* buffer){
     //         }
     //         // not stopped, but running in BG
     //         else{
-    //             tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
+    //             // tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
     //             changeFGBG(head, job_id, 0); // set job to FG 
     //             fprintf(stderr,"%s\n", fgJob -> commandInput); 
     //             int status;
     //             for (int i = 0; i < fgJob -> numChild; i++){
     //                 waitpid(fgJob->pids[i], &status, WUNTRACED);   
     //             }
-    //             tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
+    //             // tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
     //             if(WIFSTOPPED(status)){ 
     //                 fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
     //                 fgJob -> status = STOPPED; 
@@ -668,7 +669,7 @@ void pennShredder(char* buffer){
         fgpid = curr_pid; // use for signal handling, and identifying the process in the foreground
         
         newpid = p_waitpid(curr_pid, &status, FALSE); 
-        
+
         printf("pwait supposed to be run by now \n");
 
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
@@ -721,10 +722,9 @@ void pennShell(){
         // Interactive Section (Penn Shredder: Normal)
         // Reading I/P here but polling here
         // POLLING 
-        int count = 0;
-        int finishedIndices[count];
+        // int count = 0;
         int status;
-        int num = 0;
+        // int num = 0;
         
         if(isatty(fileno(stdin))){
             // WRITE AND READ 
@@ -744,74 +744,72 @@ void pennShell(){
             }
 
             // loop through list
-            
+
             while(1){
-                pid_t pid = waitpid(-1, &status, WNOHANG | WUNTRACED);
-                // pid_t pid = p_waitpid(curr_pid, &status, FALSE); 
-                if (pid <= 0){
+                // pid_t pid = waitpid(-1, &status, WNOHANG | WUNTRACED);
+                pid_t pid = p_waitpid(-1, &status, TRUE); 
+                if (pid  <=0){
                     break;
                 }
+
                 if(head == NULL){
                     break;
                 }
+
                 current = head;
-                do{ 
-                    if (WIFSTOPPED(status) && current -> status == RUNNING){
-                        printf("Stopped: %s\n", current -> commandInput); 
-                        current -> status = STOPPED; 
-                        if (bufferWaiting){
+                do {
+                    if(current->myPid == pid){
+                        break;
+                    }
+                    current = current->next;
+                } while(current != NULL);
+
+                // NOW WE HAVE A PID THAT WE NEED TO CHECK STATUS
+            
+                // previously running now stopped
+
+                printf("the status returned is %d\n", status);
+                if (W_WIFSTOPPED(status) && current -> status == RUNNING){
+                    printf("Stopped: %s", current -> commandInput); 
+                    current -> status = STOPPED; 
+                    if (bufferWaiting){
                         //PRINT BUFFER
                         for (int i = 0; i < bufferCount ; i++) {
                             printf("%s\n", bufferSig[i]);
                         }
                         free(bufferSig);
-                        bufferWaiting=0;
+                        bufferWaiting = 0;
                         bufferCount = 0;
+                    }
+                }
+                else if(W_WIFSIGNALED(status) && current -> status == RUNNING){
+                    printf("Finished: %s\n", current -> commandInput); 
+                    current -> status = SIG_TERMINATED; 
+                    head = removeJob(head, current->JobNumber);
+                    if (bufferWaiting){
+                        //PRINT BUFFER
+                        for (int i = 0; i < bufferCount ; i++) {
+                            printf("%s\n", bufferSig[i]);
                         }
+                        free(bufferSig);
+                        bufferWaiting = 0;
+                        bufferCount = 0;
                     }
-                    else{
-                        bool currJobFinished = false;
-
-                        // check all pids in this job, if they match the returned pid, then mark finished
-                        
-                        if(pid == current->myPid){
-                            currJobFinished = true;
-                        }                   
-        
-                        // ONLY if all processes in this job are finished and its not ALREADY finished in the past, print finished: cmd
-                        if(currJobFinished && current -> status == RUNNING){
-                            char *command = current -> commandInput;
-                            printf("Finished: %s\n", command);
-                            current -> status = TERMINATED;          
-                            finishedIndices[num] = current -> JobNumber;
-                            num ++;       
-                            if (bufferWaiting){
-                                //PRINT BUFFER
-                                for (int i = 0; i < bufferCount ; i++) {
-                                    printf("%s\n", bufferSig[i]);
-                                }
-                                free(bufferSig);
-                                bufferWaiting=0;
-                                bufferCount = 0;
-                            }
-                        } 
+                }
+                else if(W_WIFEXITED(status) && current -> status == RUNNING){
+                    printf("Finished: %s\n", current -> commandInput); 
+                    current -> status = TERMINATED;
+                    head = removeJob(head, current->JobNumber);
+                    if (bufferWaiting){
+                        //PRINT BUFFER
+                        for (int i = 0; i < bufferCount ; i++) {
+                            printf("%s\n", bufferSig[i]);
+                        }
+                        free(bufferSig);
+                        bufferWaiting = 0;
+                        bufferCount = 0;
                     }
-                    current = current -> next;
-                } while(current != NULL);
-            }
-        
-            // count the number of jobs in the LL
-            if (head != NULL){
-                current = head;
-                do{
-                    count ++;
-                    current = current -> next;
-                }while(current != NULL);
-            }
-
-            // iterate through the finished job nums and remove them all
-            for(int i = 0; i < num; i++){
-                head = removeJob(head, finishedIndices[i]);
+                }
             }
 
             // Exit iteration if only new line given

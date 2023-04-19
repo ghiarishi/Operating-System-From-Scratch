@@ -40,6 +40,9 @@ struct Job{
     struct Job *next;               // pointer to next job
     char *commandInput;
     int status;                     // tell whether its running or stopped
+    int *pids;
+    int numChild;
+    int *pids_finished;             // boolean array list that checks every pid is finished
 };
 
 void setTimer(void);

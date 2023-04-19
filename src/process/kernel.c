@@ -11,7 +11,7 @@ void setStack(stack_t *stack){
 struct pcb* k_process_create(struct pcb *parent) {
     // Create a new process and set its ID and priority level
     
-    printf("Inside k_proc_create \n");
+    // printf("Inside k_proc_create \n");
 
     ucontext_t *uc = (ucontext_t*) malloc(sizeof(ucontext_t));
     getcontext(uc);
@@ -32,7 +32,7 @@ struct pcb* k_process_create(struct pcb *parent) {
 
 int k_process_kill(Process *p, int signal){
 
-    printf("inside k  process kill \n");
+    // printf("inside k  process kill \n");
     switch (signal){
     case S_SIGTERM: 
         if(p->pcb->numChild == 0){
@@ -40,12 +40,12 @@ int k_process_kill(Process *p, int signal){
             printf("sleep%d \n", p->pcb->status);
             if(p->pcb->status == BLOCKED){
                 // sleep case
-                printf("sleep \n");
+                // printf("sleep \n");
                 Process *parent = findProcessByPid(p->pcb->ppid);
                 dequeueBlocked(p);
                 dequeueBlocked(parent);
                 enqueue(parent);
-                printf("kill BLOCKED\n");
+                // printf("kill BLOCKED\n");
             }
             else if(p->pcb->status == RUNNING){
                 Process *parent = findProcessByPid(p->pcb->ppid);
@@ -53,13 +53,11 @@ int k_process_kill(Process *p, int signal){
                 dequeueBlocked(parent);
                 enqueue(parent);
     
-                printf("kill RUNNING \n");
+                // printf("kill RUNNING \n");
             }
             else if(p->pcb->status == STOPPED){
                 dequeueStopped(p);
-                printf("kill STOPPED \n");
-
-                
+                // printf("kill STOPPED \n");
             }
 
             p->pcb->status = SIG_TERMINATED;
@@ -67,7 +65,7 @@ int k_process_kill(Process *p, int signal){
             return 0;
         }
         for(int i=0; i < p->pcb->numChild; i++){
-            printf("SIGTERM %d\n", i);
+            // printf("SIGTERM %d\n", i);
             Process *child = findProcessByPid(p->pcb->childPids[i]);
             k_process_kill(child, S_SIGTERM);
         }
@@ -93,7 +91,7 @@ void k_process_cleanup(Process *p) {
     p->pcb->status = TERMINATED;
     p->pcb->changedStatus = 1;
     
-    printf("inside KPC\n");
+    // printf("inside KPC\n");
 
     dequeue(p);
 
@@ -119,7 +117,7 @@ void k_process_cleanup(Process *p) {
         k_process_kill(cp, S_SIGTERM);
     }
 
-    printf("end of KPC\n");
+    // printf("end of KPC\n");
 }
 
 Process *findProcessByPid(int pid){

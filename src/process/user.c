@@ -20,10 +20,6 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     // printf("Inside p_spawn \n");
     pid_t pid_new;
 
-    // pid_t pid = getpid();
-
-    activeProcess->pcb->numChild++;
-
     Process *newProcess = (Process*) malloc(sizeof(Process)); //NULL;
     newProcess->pcb = k_process_create(activeProcess->pcb);
     pid_new = newProcess->pcb->pid;
@@ -56,6 +52,10 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         makecontext(&newProcess->pcb->context, func, 0, argv);
     }
     else {
+        int nums = activeProcess->pcb->numChild;
+        activeProcess->pcb->numChild = nums + 1;
+        activeProcess->pcb->childPids[nums] = pid_new;
+        printf("printing addition of child :%d\n", activeProcess->pcb->childPids[nums]);
         makecontext(&newProcess->pcb->context, func, 2, argc, cmd->commands[0]);
     }
     printf("newProcess->pid: %d\n", newProcess->pcb->pid);
@@ -67,34 +67,40 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
     printf("just entered PWAIT\n");
-    // Find the child process with the specified pid
-    if(pid == -1){ 
-        // loop through processes that have changed their status
-    }
-    Process *p = findProcessByPid(pid);
 
+    int pid_ret = 0;
+    
     // printf("inside waitpid child%d; parent%d\n", p->pcb->pid, activeProcess->pcb->pid);
 
-    activeProcess->pcb->waitChild = pid;
-    printf("printing child that has to be waited on: %d\n", activeProcess->pcb->waitChild);
-    if(!nohang){
+    if(pid == -1){
+        printf("WAIT ALL JOBS \n");
+        for(int i = 0; i < activeProcess->pcb->numChild; i++){
+            Process *child = findProcessByPid(activeProcess->pcb->childPids[i]);
+            if(child->pcb->changedStatus == 1){
+                activeProcess->pcb->waitChild = activeProcess->pcb->childPids[i];
+                *wstatus = child->pcb->status;
+                pid_ret = activeProcess->pcb->childPids[i];
+                break;
+            }
+        }
+    } else {
+        printf("WAIT ONE JOB \n");
+        Process *p = findProcessByPid(pid);
+        activeProcess->pcb->waitChild = pid;
+        *wstatus = p->pcb->status;
+        pid_ret = pid; 
+    }
+    if(!nohang){ // FOREGROUND  
+        printf("IN HANG IF \n");  
+        // put shell from ready to blocked Q
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
-        
-        printf("the pid of bqh %d\n", blockedQhead->pcb->pid);
+        swapcontext(activeContext, &schedulerContext);
     }
-    swapcontext(activeContext, &schedulerContext);
-    *wstatus = p->pcb->status;
 
-    int tpid = p->pcb->pid; 
+    // printf("CHILD PID = %d\n", pid_ret);
     
-    freeStacks(p->pcb);
-    freePcb(p->pcb);
-    free(p);
-    
-    // printf("mark 5 \n");
-
-    return tpid;
+    return pid_ret;
 }
 
 int p_kill(pid_t pid, int sig){
