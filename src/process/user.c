@@ -22,6 +22,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     Process *newProcess = (Process*) malloc(sizeof(Process)); //NULL;
     newProcess->pcb = k_process_create(activeProcess->pcb);
+    newProcess->next = NULL;
     pid_new = newProcess->pcb->pid;
 
     // set up child fd table based on fd0/fd1
@@ -65,7 +66,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 
-    // printf("just entered PWAIT\n");
+    printf("just entered PWAIT\n");
 
     int pid_ret = 0;
 
@@ -81,7 +82,6 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                     return 0;
                 }
                 if(child->pcb->changedStatus == 1){
-                    activeProcess->pcb->waitChild = activeProcess->pcb->childPids[i];
                     *wstatus = child->pcb->status;
                     pid_ret = activeProcess->pcb->childPids[i];
                     break;
@@ -100,6 +100,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     if(!nohang){ // FOREGROUND  
         // printf("IN HANG IF \n");  
         // put shell from ready to blocked Q
+        activeProcess->pcb->waitChild = pid;
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
         swapcontext(activeContext, &schedulerContext);
@@ -112,6 +113,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     }
 
     // printf("CHILD PID = %d\n", pid_ret);
+    printf("About to leave PWAIT\n");
     
     return pid_ret;
 }

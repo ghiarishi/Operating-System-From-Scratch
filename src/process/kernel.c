@@ -211,6 +211,6 @@ Process *findProcessByPid(int pid){
         }
         temp = temp->next;
     }
-    // printf("Didn't find the process I was looking for.\n");
+    printf("Didn't find the process I was looking for.\n");
     return NULL;
 }

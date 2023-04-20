@@ -38,6 +38,15 @@ void terminateProcess(void){
 void scheduler(void){
     
     // printf("Inside scheduler\n");
+    // Process *tempPtr = medQhead;
+    // printf("med Q is: ");
+    // while (tempPtr != NULL) {
+    //     printf("%d ", tempPtr->pcb->pid);
+    //     tempPtr = tempPtr->next;
+    // }
+    // printf("\n");
+    // findProcessByPid(26);
+
 
     static int listPointer = 0;
 
@@ -227,7 +236,9 @@ void dequeueZombie(Process* newProcess){
             printf("%s deququed from zombie Q\n", newProcess->pcb->argument);
             Process *removed = current -> next;
             Process *newNext = removed -> next;
-
+            if (newNext == NULL){
+                zombieQtail = current;
+            }
             // if else for stopped or terminated, act differently for both
             current -> next = newNext;
             removed -> next = NULL; 
@@ -256,7 +267,9 @@ void dequeueBlocked(Process* newProcess){
             printf("%s deququed from blocked Q\n", newProcess->pcb->argument);
             Process *removed = current -> next;
             Process *newNext = removed -> next;
-
+            if (newNext == NULL){
+                blockedQtail = current;
+            }
             // if else for stopped or terminated, act differently for both
             current -> next = newNext;
             removed -> next = NULL; 
@@ -286,7 +299,9 @@ void dequeueStopped(Process* newProcess){
             printf("%s deququed from stopped Q\n", newProcess->pcb->argument);
             Process *removed = current -> next;
             Process *newNext = removed -> next;
-
+            if (newNext == NULL){
+                stoppedQhead = current;
+            }
             // if else for stopped or terminated, act differently for both
             current -> next = newNext;
             removed -> next = NULL; 
@@ -319,6 +334,9 @@ void dequeue(Process* newProcess){
                     printf("%s dequeued from high\n", newProcess->pcb->argument);
                     Process *removed = current -> next;
                     Process *newNext = removed -> next;
+                    if (newNext == NULL){
+                        highQtail = current;
+                    }
                     // if else for stopped or terminated, act differently for both
                     current -> next = newNext;
                     removed -> next = NULL; 
@@ -345,6 +363,9 @@ void dequeue(Process* newProcess){
                     printf("%s dequeued from low\n", newProcess->pcb->argument);
                     Process *removed = current -> next;
                     Process *newNext = removed -> next;
+                    if (newNext == NULL){
+                        lowQtail = current;
+                    }
                     // if else for stopped or terminated, act differently for both
                     current -> next = newNext;
                     removed -> next = NULL; 
@@ -371,6 +392,9 @@ void dequeue(Process* newProcess){
                     printf("%s dequeued from med\n", newProcess->pcb->argument);
                     Process *removed = current -> next;
                     Process *newNext = removed -> next;
+                    if (newNext == NULL){
+                        medQtail = current;
+                    }
                     // if else for stopped or terminated, act differently for both
                     current -> next = newNext;
                     removed -> next = NULL; 
