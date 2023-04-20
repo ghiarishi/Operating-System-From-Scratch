@@ -27,12 +27,12 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     // set up child fd table based on fd0/fd1
     // todo: uncomment this after changing initial shell to use low-level k_process_create to prevent segfault
-//    file_t *in_f = activeProcess->pcb->fd_table[fd0];
-//    file_t *out_f = activeProcess->pcb->fd_table[fd1];
-//    memcpy(newProcess->pcb->fd_table[PSTDIN_FILENO], in_f, sizeof(file_t));
-//    memcpy(newProcess->pcb->fd_table[PSTDOUT_FILENO], out_f, sizeof(file_t));
-//    fs_trackopen(fs, newProcess->pcb->fd_table[PSTDIN_FILENO]);
-//    fs_trackopen(fs, newProcess->pcb->fd_table[PSTDOUT_FILENO]);
+    // file_t *in_f = activeProcess->pcb->fd_table[fd0];
+    // file_t *out_f = activeProcess->pcb->fd_table[fd1];
+    // memcpy(newProcess->pcb->fd_table[PSTDIN_FILENO], in_f, sizeof(file_t));
+    // memcpy(newProcess->pcb->fd_table[PSTDOUT_FILENO], out_f, sizeof(file_t));
+    // fs_trackopen(fs, newProcess->pcb->fd_table[PSTDIN_FILENO]);
+    // fs_trackopen(fs, newProcess->pcb->fd_table[PSTDOUT_FILENO]);
 
     int argc = 0;
     int i = 0;
@@ -64,37 +64,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     return pid_new;
 }
 
-// pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
-//     // check if pid is given
-//     if(pid != -1){ // look at only one job, specified by pid
-//         // only one process 
-//         Process *child = findProcessByPid(pid);
-//         if(child->pcb->changedStatus == 1){ // look if there is a change of status in the past
-//             *wstatus = child->pcb->status;
-//             for(int i = 0; i < activeProcess->pcb->numChild; i++){
-//                 // iterate through every child 
-//                 if(activeProcess->pcb->childPids[i] == pid){
-//                     // set to -2 (DONT WAIT ON THIS AGAIN)
-//                     activeProcess->pcb->childPids[i] = -2;
-//                     break;
-//                 }
-//             }
-//             return child->pcb->pid;
-//         } else {
-//             if(!nohang){
-//                 // enq parent to block
-//                 activeProcess->pcb->waitChild = pid;
-//                 dequeue(activeProcess);
-//                 enqueueBlocked(activeProcess);
-//             } else {
 
-//             }
-//         }
-//     }
-//     // 
-  
-//     return pid_ret;
-// }
 
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     int pidRet = 0;
