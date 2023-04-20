@@ -49,11 +49,11 @@ int k_process_kill(Process *p, int signal){
             }
             else if(p->pcb->status == RUNNING){
                 Process *parent = findProcessByPid(p->pcb->ppid);
-                for(int i =0;i<parent->pcb->numChild;i++){
-                    if(parent->pcb->childPids[i] == p->pcb->pid){
-                        parent->pcb->childPids[i] = -2;
-                    }
-                }
+                // for(int i =0;i<parent->pcb->numChild;i++){
+                //     if(parent->pcb->childPids[i] == p->pcb->pid){
+                //         parent->pcb->childPids[i] = -2;
+                //     }
+                // }
                 dequeue(p);
                 dequeueBlocked(parent);
                 enqueue(parent);
@@ -121,34 +121,30 @@ void k_process_cleanup(Process *p) {
     p->pcb->changedStatus = 1;
     
     // printf("inside KPC\n");
-
-    dequeue(p);
-
     if(p->pcb->bgFlag == 1){
-        // enqueue into zombie q
-        // printf("enq into zombie queue with bgflag = %d\n", p->pcb->bgFlag);
-        printf("pid is %d\n", p->pcb->pid);
-        enqueueZombie(p);
+        // is background, so make zombie
+        p->pcb->changedStatus = 1;
+        dequeue(activeProcess);
+        enqueueZombie(activeProcess);
     }
-    else{
-        Process *temp = blockedQhead;
 
-        while(temp != NULL){
-            if(temp->pcb->pid == p->pcb->ppid && (temp->pcb->waitChild == p->pcb->pid)){
-                dequeueBlocked(temp);
-                for(int i =0;i<temp->pcb->numChild;i++){
-                    if(temp->pcb->childPids[i] == p->pcb->pid){
-                        temp->pcb->childPids[i] = -2;
-                    }
+    Process *temp = blockedQhead;
+
+    while(temp != NULL){
+        if(temp->pcb->pid == p->pcb->ppid && (temp->pcb->waitChild == p->pcb->pid)){
+            dequeueBlocked(temp);
+            for(int i =0;i<temp->pcb->numChild;i++){
+                if(temp->pcb->childPids[i] == p->pcb->pid){
+                    temp->pcb->childPids[i] = -2;
                 }
-                enqueue(temp);
-                // printf("enq temp\n");
-                break;
             }
-            temp = temp->next;
+            enqueue(temp);
+            // printf("enq temp\n");
+            break;
         }
+        temp = temp->next;
     }
-    
+
     if(p->pcb->numChild != 0){
         for(int i=0;i<p->pcb->numChild;i++){
             Process *cp = findProcessByPid(p->pcb->childPids[i]);

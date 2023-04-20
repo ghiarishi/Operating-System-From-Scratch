@@ -805,7 +805,7 @@ void pennShell(){
                     // }
                 }
                 else if(W_WIFSIGNALED(status) && current -> status == RUNNING){
-                    printf("Finished: %s\n", current -> commandInput); 
+                    // printf("Finished: %s\n", current -> commandInput); 
                     changeStatus(head, current->JobNumber, 1);
                     head = removeJob(head, current->JobNumber);
                     // if (bufferWaiting){

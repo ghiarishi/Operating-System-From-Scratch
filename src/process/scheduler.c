@@ -29,10 +29,9 @@ Process *zombieQhead = NULL;
 Process *zombieQtail = NULL;
 
 void terminateProcess(void){
-    
-    // printf("Process terminated, about to be dequeued\n");
+    printf("Process terminated, about to be dequeued\n");
     k_process_cleanup(activeProcess);
-    // printf("cleanup done fully \n");
+    printf("cleanup done fully \n");
     setcontext(&schedulerContext);
 }
 
@@ -394,7 +393,7 @@ void initContext(void){
     getcontext(&terminateContext);
     terminateContext.uc_stack.ss_sp = malloc(SIGSTKSZ);
     terminateContext.uc_stack.ss_size = SIGSTKSZ;
-    terminateContext.uc_link = &schedulerContext;
+    terminateContext.uc_link = NULL;
     makecontext(&terminateContext, terminateProcess, 0);
 
     getcontext(&idleContext);
@@ -406,15 +405,11 @@ void initContext(void){
 
 // SIGALRM
 void alarmHandler(int signum){
-    // printf("In alarm handler\n");
-   
     Process *temp = blockedQhead;
     while(temp != NULL) {
         if(temp->pcb->sleep_time_remaining > 0){
-            // printf("decrementing sleep timer%d\n", temp->pcb->sleep_time_remaining);
             temp->pcb->sleep_time_remaining--;
             if(temp->pcb->sleep_time_remaining == 0){
-                // printf("SLEEP TIME OVER NOW \n");
                 dequeueBlocked(temp);
                 enqueue(temp);
             }
@@ -422,7 +417,6 @@ void alarmHandler(int signum){
         temp = temp->next;
     }
     swapcontext(activeContext, &schedulerContext);
-
 }
 
 void freeStacks(struct pcb *p){

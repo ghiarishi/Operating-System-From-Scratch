@@ -54,9 +54,7 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     else {
         int nums = activeProcess->pcb->numChild;
         activeProcess->pcb->numChild = nums + 1;
-        // printf("prev number, new number %d %d\n", nums, nums + 1);
         activeProcess->pcb->childPids[nums] = pid_new;
-        // printf("printing addition of child :%d\n", activeProcess->pcb->childPids[nums]);
         makecontext(&newProcess->pcb->context, func, 2, argc, cmd->commands[0]);
     }
     // printf("newProcess->pid: %d\n", newProcess->pcb->pid);
@@ -72,26 +70,18 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     int pid_ret = 0;
 
     if(pid == -1){
-        // printf("ALL JOBS \n");
-        // printf("numchilds = %d\n",activeProcess->pcb->numChild);
+
         if(activeProcess->pcb->numChild == 0){
             return -1;
         }
         for(int i = 0; i <= activeProcess->pcb->numChild; i++){
-            // printf("child proc pid = %d\n", activeProcess->pcb->childPids[i]);
             if(activeProcess->pcb->childPids[i] > -2){
-                // printf("waitpid waala find %d\n", activeProcess->pcb->childPids[i]);
                 Process *child = findProcessByPid(activeProcess->pcb->childPids[i]);
-                // printf("inside waitpid child: %d; parent: %d\n", child->pcb->pid, activeProcess->pcb->pid);
-                // printf("MARK 4.x\n");
-                // printf("child pid %d\n", child->pcb->pid);
                 if(child == NULL){
                     return 0;
                 }
                 if(child->pcb->changedStatus == 1){
-                    // printf("MARK 5.x\n");
                     activeProcess->pcb->waitChild = activeProcess->pcb->childPids[i];
-                    // printf("MARK 6.x\n");
                     *wstatus = child->pcb->status;
                     pid_ret = activeProcess->pcb->childPids[i];
                     break;
@@ -101,9 +91,11 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     } else {
         // printf("WAIT ONE JOB \n");
         Process *p = findProcessByPid(pid);
-        activeProcess->pcb->waitChild = pid;
-        *wstatus = p->pcb->status;
-        pid_ret = pid; 
+        if(p->pcb->changedStatus == 1){
+            activeProcess->pcb->waitChild = pid;
+            *wstatus = p->pcb->status;
+            pid_ret = pid; 
+        }
     }
     if(!nohang){ // FOREGROUND  
         // printf("IN HANG IF \n");  
@@ -115,7 +107,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     else{
         if(zombieQhead != NULL){
             // printf("going into find now \n");
-        dequeueZombie(findProcessByPid(pid_ret));
+            dequeueZombie(findProcessByPid(pid_ret));
         }
     }
 
