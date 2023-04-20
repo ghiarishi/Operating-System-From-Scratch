@@ -47,23 +47,17 @@ void setTimer(void) {
 void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
-        printf("1. fgpid is: %d\n", fgpid);
+        // printf("1. fgpid is: %d\n", fgpid);
         if(fgpid > 1){
-            printf("2. fgpid is: %d\n", fgpid);
+            // printf("2. fgpid is: %d\n", fgpid);
             p_kill(fgpid, S_SIGTERM);
-            printf("3. fgpid is: %d\n", fgpid);
+            // printf("3. fgpid is: %d\n", fgpid);
         }
         if(fgpid == 1){
             f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
             f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         }
     }
-
-    // if(signal == SIGINT){
-    //     if(curr_pid != 0 && !IS_BG){
-    //         p_kill(curr_pid, S_SIGTERM);
-    //     }
-    // }
 }
 
 void sigcontHandler(int signal){
@@ -92,12 +86,6 @@ void sigtstpHandler(int signal){
             f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         }
     }
-
-    // if(signal == SIGTSTP){
-    //     if(curr_pid != 0 && !IS_BG){
-    //         p_kill(curr_pid, S_SIGTSTP);
-    //     }
-    // }
 }
 
 void setSignalHandler(void){

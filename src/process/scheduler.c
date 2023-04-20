@@ -29,9 +29,9 @@ Process *zombieQhead = NULL;
 Process *zombieQtail = NULL;
 
 void terminateProcess(void){
-    printf("Process terminated, about to be dequeued\n");
+    // printf("Process terminated, about to be dequeued\n");
     k_process_cleanup(activeProcess);
-    printf("cleanup done fully \n");
+    // printf("cleanup done fully \n");
     setcontext(&schedulerContext);
 }
 

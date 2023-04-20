@@ -153,7 +153,7 @@ void k_process_cleanup(Process *p) {
             k_process_kill(cp, S_SIGTERM);
         }
     }
-    printf("end of KPC\n");
+    // printf("end of KPC\n");
 }
 
 Process *findProcessByPid(int pid){
