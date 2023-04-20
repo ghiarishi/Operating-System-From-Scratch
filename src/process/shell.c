@@ -47,11 +47,11 @@ void setTimer(void) {
 void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
-        printf("1. fgpid is: %d\n", fgpid);
+        // printf("1. fgpid is: %d\n", fgpid);
         if(fgpid > 1){
-            printf("2. fgpid is: %d\n", fgpid);
+            // printf("2. fgpid is: %d\n", fgpid);
             p_kill(fgpid, S_SIGTERM);
-            printf("3. fgpid is: %d\n", fgpid);
+            // printf("3. fgpid is: %d\n", fgpid);
         }
         if(fgpid == 1){
             write(STDERR_FILENO, "\n", sizeof("\n"));
@@ -165,6 +165,7 @@ struct Job *addJob(struct Job *head, struct Job *newJob){
     if (head == NULL){ 
         head = newJob; 
         newJob -> JobNumber = 1;
+        // printf("job num is %d\n", newJob->JobNumber);
         return head;
     }
     
@@ -657,9 +658,7 @@ void pennShredder(char* buffer){
         curr_pid = p_spawn(ps, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "busy") == 0) {
         curr_pid = p_spawn(busy_wait, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    }
-        // fs
-    else if (strcmp(cmd->commands[0][0], "cat") == 0) {
+    } else if (strcmp(cmd->commands[0][0], "cat") == 0) {
         curr_pid = p_spawn(catFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "ls") == 0) {
         curr_pid = p_spawn(lsFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
@@ -724,6 +723,7 @@ void pennShredder(char* buffer){
 
     // add the background job ALWAYS
     if(IS_BG){
+        // printf("in BG, adding \n");
         head = addJob(head, new_job);
     }
     free(cmd);
@@ -771,14 +771,13 @@ void pennShell(){
             // loop through list
 
             while(1){
-                // pid_t pid = waitpid(-1, &status, WNOHANG | WUNTRACED);
-                
+
                 if(head == NULL){
                     break;
                 }
+                pid_t pid = p_waitpid(-1, &status, TRUE);
 
-                pid_t pid = p_waitpid(-1, &status, TRUE); 
-                if (pid  <= 0){
+                if (pid < 0){
                     break;
                 }
 
@@ -880,6 +879,7 @@ void pennShell(){
                     }  
                 }
             }
+            // printf("enterring shredd \n");
             pennShredder(buffer);
             if(head != NULL && current == NULL){
                 current = head; // first job

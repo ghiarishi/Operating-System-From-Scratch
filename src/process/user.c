@@ -64,58 +64,114 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
     return pid_new;
 }
 
+// pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
+//     // check if pid is given
+//     if(pid != -1){ // look at only one job, specified by pid
+//         // only one process 
+//         Process *child = findProcessByPid(pid);
+//         if(child->pcb->changedStatus == 1){ // look if there is a change of status in the past
+//             *wstatus = child->pcb->status;
+//             for(int i = 0; i < activeProcess->pcb->numChild; i++){
+//                 // iterate through every child 
+//                 if(activeProcess->pcb->childPids[i] == pid){
+//                     // set to -2 (DONT WAIT ON THIS AGAIN)
+//                     activeProcess->pcb->childPids[i] = -2;
+//                     break;
+//                 }
+//             }
+//             return child->pcb->pid;
+//         } else {
+//             if(!nohang){
+//                 // enq parent to block
+//                 activeProcess->pcb->waitChild = pid;
+//                 dequeue(activeProcess);
+//                 enqueueBlocked(activeProcess);
+//             } else {
+
+//             }
+//         }
+//     }
+//     // 
+  
+//     return pid_ret;
+// }
+
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
-
-    printf("just entered PWAIT\n");
-
-    int pid_ret = 0;
-
-    if(pid == -1){
-
-        if(activeProcess->pcb->numChild == 0){
+    int pidRet = 0;
+    if(nohang){
+        if(pid == -1){
+            // printf("mark 1\n");
+            if(zombieQhead != NULL){
+                // printf("mark 2\n");
+                pidRet = zombieQhead->pcb->pid;
+                zombieQhead->pcb->changedStatus = 0;
+                *wstatus = zombieQhead->pcb->status;
+                dequeueZombie(zombieQhead);
+                // printf("mark 3\n");
+                for(int i = 0; i < activeProcess->pcb->numChild; i++){
+                    if(activeProcess -> pcb -> childPids[i] == pidRet){
+                        activeProcess ->pcb->childPids[i] = -2;
+                        break;
+                    }
+                }
+                // printf("mark 4\n");
+                return pidRet;
+            }
+            return -1;
+        } else {
+            Process *curr = zombieQhead;
+            while(curr != NULL){
+               if(curr->pcb->pid == pid){
+                    pidRet = curr->pcb->pid;
+                    curr->pcb->changedStatus = 0;
+                    *wstatus = zombieQhead->pcb->status;
+                    dequeueZombie(curr);
+                    for(int i = 0; i < activeProcess->pcb->numChild; i++){
+                        if(activeProcess -> pcb -> childPids[i] == pid){
+                            activeProcess ->pcb->childPids[i] = -2;
+                            break;
+                        }
+                    }
+                    return pidRet;
+               } 
+               curr = curr->next;
+            }
             return -1;
         }
-        for(int i = 0; i <= activeProcess->pcb->numChild; i++){
-            if(activeProcess->pcb->childPids[i] > -2){
-                Process *child = findProcessByPid(activeProcess->pcb->childPids[i]);
-                if(child == NULL){
-                    return 0;
-                }
-                if(child->pcb->changedStatus == 1){
-                    *wstatus = child->pcb->status;
-                    pid_ret = activeProcess->pcb->childPids[i];
+    }
+    else{// hang
+        Process *fgproc = findProcessByPid(pid);
+        if(fgproc->pcb->changedStatus == 1){
+            pidRet = fgproc->pcb->pid;
+            *wstatus = fgproc->pcb->status;
+            fgproc->pcb->changedStatus = 0;
+            for(int i = 0; i < activeProcess->pcb->numChild; i++){
+                if(activeProcess -> pcb -> childPids[i] == pid){
+                    activeProcess ->pcb->childPids[i] = -2;
                     break;
                 }
             }
+            return pidRet;
         }
-    } else {
-        // printf("WAIT ONE JOB \n");
-        Process *p = findProcessByPid(pid);
-        if(p->pcb->changedStatus == 1){
+        else{
             activeProcess->pcb->waitChild = pid;
-            *wstatus = p->pcb->status;
-            pid_ret = pid; 
+            dequeue(activeProcess);
+            enqueueBlocked(activeProcess);
+            swapcontext(activeContext, &schedulerContext);
+            if(fgproc->pcb->changedStatus == 1){
+                *wstatus = fgproc->pcb->status;
+                fgproc->pcb->changedStatus = 0;
+                for(int i = 0; i < activeProcess->pcb->numChild; i++){
+                    if(activeProcess -> pcb -> childPids[i] == pid){
+                        activeProcess ->pcb->childPids[i] = -2;
+                        break;
+                    }
+                }
+                return pidRet;
+            }
+            return -1;
         }
     }
-    if(!nohang){ // FOREGROUND  
-        // printf("IN HANG IF \n");  
-        // put shell from ready to blocked Q
-        activeProcess->pcb->waitChild = pid;
-        dequeue(activeProcess);
-        enqueueBlocked(activeProcess);
-        swapcontext(activeContext, &schedulerContext);
-    } 
-    else{
-        if(zombieQhead != NULL){
-            // printf("going into find now \n");
-            dequeueZombie(findProcessByPid(pid_ret));
-        }
-    }
-
-    // printf("CHILD PID = %d\n", pid_ret);
-    printf("About to leave PWAIT\n");
-    
-    return pid_ret;
 }
 
 int p_kill(pid_t pid, int sig){
