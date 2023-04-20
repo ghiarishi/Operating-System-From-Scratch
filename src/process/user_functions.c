@@ -333,7 +333,7 @@ void orphanify(int argc, char **argv) {
     return;
 }
 
-void logout(int argc, char **argv){
+void logout(){
     printf("Logging out\n");
     p_exit();
 }

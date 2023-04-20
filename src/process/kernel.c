@@ -35,17 +35,17 @@ int k_process_kill(Process *p, int signal){
     // printf("inside k  process kill \n");
     switch (signal){
     case S_SIGTERM: {
-        printf("SIGTERM k_kill\n");
+        // printf("SIGTERM k_kill\n");
         if(p->pcb->numChild == 0){
-            printf("SIGTERM 1\n");
-            printf("kproc kill 0 child %d \n", p->pcb->status);
+            // printf("SIGTERM 1\n");
+            // printf("kproc kill 0 child %d \n", p->pcb->status);
             if(p->pcb->status == BLOCKED){
                 // sleep case
                 Process *parent = findProcessByPid(p->pcb->ppid);
                 dequeueBlocked(p);
                 dequeueBlocked(parent);
                 enqueue(parent);
-                printf("kill BLOCKED\n");
+                // printf("kill BLOCKED\n");
             }
             else if(p->pcb->status == RUNNING){
                 Process *parent = findProcessByPid(p->pcb->ppid);
@@ -58,18 +58,18 @@ int k_process_kill(Process *p, int signal){
                 dequeueBlocked(parent);
                 enqueue(parent);
                 
-                printf("kill RUNNING \n");
+                // printf("kill RUNNING \n");
             }
             else if(p->pcb->status == STOPPED){
                 dequeueStopped(p);
-                printf("kill STOPPED \n");
+                // printf("kill STOPPED \n");
             }
             p->pcb->status = SIG_TERMINATED;
             p->pcb->changedStatus = 1;
             return 0;
         }
         for(int i=0; i < p->pcb->numChild; i++){
-            printf("SIGTERM %d\n", i);
+            // printf("SIGTERM %d\n", i);
             Process *child = findProcessByPid(p->pcb->childPids[i]);
             k_process_kill(child, S_SIGTERM);
         }

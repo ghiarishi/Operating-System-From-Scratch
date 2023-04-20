@@ -655,7 +655,7 @@ void pennShredder(char* buffer){
     } else if (strcmp(cmd->commands[0][0], "orphanify") == 0) {
         curr_pid = p_spawn(orphanify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "logout") == 0) {
-        curr_pid = p_spawn(logout, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+        logout();
     }
         // fs
     else if (strcmp(cmd->commands[0][0], "cat") == 0) {
