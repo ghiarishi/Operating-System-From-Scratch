@@ -21,6 +21,8 @@ extern Process *stoppedQhead;
 extern Process *stoppedQtail;
 extern Process *zombieQhead; 
 extern Process *zombieQtail;
+extern Process *orphanQhead; 
+extern Process *orphanQtail;
 
 extern int ticks; 
 static const int quantum = 100000;

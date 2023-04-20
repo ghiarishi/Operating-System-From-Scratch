@@ -47,50 +47,45 @@ void setTimer(void) {
 void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
-        // printf("1. fgpid is: %d\n", fgpid);
+        printf("1. fgpid is: %d\n", fgpid);
         if(fgpid > 1){
-            // printf("2. fgpid is: %d\n", fgpid);
+            printf("2. fgpid is: %d\n", fgpid);
             p_kill(fgpid, S_SIGTERM);
-            // printf("3. fgpid is: %d\n", fgpid);
+            printf("3. fgpid is: %d\n", fgpid);
         }
         if(fgpid == 1){
-            write(STDERR_FILENO, "\n", sizeof("\n"));
-            write(STDERR_FILENO, PROMPT, sizeof(PROMPT));
+            f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+            f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         }
     }
-
-    // if(signal == SIGINT){
-    //     if(curr_pid != 0 && !IS_BG){
-    //         p_kill(curr_pid, S_SIGTERM);
-    //     }
-    // }
 }
 
 void sigcontHandler(int signal){
-    // if(signal == SIGTSTP){
-    //     if(curr_pid != 0 && !IS_BG){
-    //         kill(curr_pid, S_SIGCONT);
-    //     }
-    // }
-    // p_kill(curr_pid, S_SIGCONT);
+    if(signal == SIGTSTP){
+        if(fgpid > 1){
+            p_kill(fgpid, S_SIGCONT);
+        }
+        if(fgpid == 1){
+            f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+            f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
+        }
+    }
 }
 
 void sigtstpHandler(int signal){
     if(signal == SIGTSTP){ //ctrl-z
-        if(fgpid != 0 && !IS_BG){
+        if(fgpid > 1){
             int ret = p_kill(fgpid, S_SIGSTOP); 
             // printf("exit only becasue nothing to run, need to exit using p_exit");
             if (ret == -1){
                 p_exit();
             }
         }
+        if(fgpid == 1){
+            f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+            f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
+        }
     }
-
-    // if(signal == SIGTSTP){
-    //     if(curr_pid != 0 && !IS_BG){
-    //         p_kill(curr_pid, S_SIGTSTP);
-    //     }
-    // }
 }
 
 void setSignalHandler(void){
@@ -655,9 +650,13 @@ void pennShredder(char* buffer){
     } else if (strcmp(cmd->commands[0][0], "echo") == 0) {
         curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
-        curr_pid = p_spawn(ps, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "busy") == 0) {
-        curr_pid = p_spawn(busy_wait, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+        curr_pid = p_spawn(psFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "zombify") == 0) {
+        curr_pid = p_spawn(zombify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "orphanify") == 0) {
+        curr_pid = p_spawn(orphanify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "logout") == 0) {
+        logout();
     } else if (strcmp(cmd->commands[0][0], "cat") == 0) {
         curr_pid = p_spawn(catFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "ls") == 0) {
