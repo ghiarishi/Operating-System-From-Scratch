@@ -254,7 +254,7 @@ void chmodFunc(int argc, char **argv) {
 }
 
 void psFunc (int argc, char **argv){
-    //loop through all queues , %3d
+    //loop through all queues 
     // print every process, it's own ucontext
 
     //jobs : in-shell process. talking about the current shell. bg/fg.. finished/stopped/ shows pipelines.. JOB_ID printed
@@ -264,35 +264,41 @@ void psFunc (int argc, char **argv){
     // f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
     Process *temp = highQhead;
     while(temp != NULL){
-        printf("high\n");
+        // printf("high\n");
         printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
         temp = temp->next;
     }
     temp = medQhead;
     while(temp != NULL){
-        printf("med\n");
+        // printf("med\n");
         printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
         temp = temp->next;
     }
     temp = lowQhead;
     while(temp != NULL){
-        printf("low\n");
+        // printf("low\n");
         printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
         temp = temp->next;
     }
     temp = blockedQhead;
     while(temp != NULL){
-        printf("block\n");
+        // printf("block\n");
         printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
         temp = temp->next;
     }
     temp = stoppedQhead;
     while(temp != NULL){
-        printf("stop\n");
+        // printf("stop\n");
         printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
         temp = temp->next;
     }
     // temp = zombieQhead;
+    // while(temp != NULL){
+    //     printf("hi\n");
+    //     printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+    //     temp = temp->next;
+    // }
+    // temp = orphanQhead;
     // while(temp != NULL){
     //     printf("hi\n");
     //     printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
@@ -325,4 +331,9 @@ void orphanify(int argc, char **argv) {
         p_exit();
     }
     return;
+}
+
+void logout(int argc, char **argv){
+    printf("Logging out\n");
+    p_exit();
 }

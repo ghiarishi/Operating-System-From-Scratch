@@ -31,3 +31,4 @@ void zombify(int argc, char **argv);
 void zombie_child();
 void orphan_child();
 void orphanify(int argc, char **argv);
+void logout(int argc, char **argv);

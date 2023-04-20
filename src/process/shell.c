@@ -54,8 +54,8 @@ void sigIntTermHandler(int signal) {
             printf("3. fgpid is: %d\n", fgpid);
         }
         if(fgpid == 1){
-            write(STDERR_FILENO, "\n", sizeof("\n"));
-            write(STDERR_FILENO, PROMPT, sizeof(PROMPT));
+            f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+            f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         }
     }
 
@@ -70,6 +70,10 @@ void sigcontHandler(int signal){
     if(signal == SIGTSTP){
         if(fgpid > 1){
             p_kill(fgpid, S_SIGCONT);
+        }
+        if(fgpid == 1){
+            f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+            f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         }
     }
 }
@@ -657,17 +661,13 @@ void pennShredder(char* buffer){
     } else if (strcmp(cmd->commands[0][0], "echo") == 0) {
         curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
-<<<<<<< HEAD
-        curr_pid = p_spawn(ps, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "busy") == 0) {
-        curr_pid = p_spawn(busy_wait, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-=======
         curr_pid = p_spawn(psFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "zombify") == 0) {
         curr_pid = p_spawn(zombify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "orphanify") == 0) {
         curr_pid = p_spawn(orphanify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
->>>>>>> 711e409 (to do: zombie queue)
+    } else if (strcmp(cmd->commands[0][0], "logout") == 0) {
+        curr_pid = p_spawn(logout, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     }
         // fs
     else if (strcmp(cmd->commands[0][0], "cat") == 0) {
