@@ -253,6 +253,76 @@ void chmodFunc(int argc, char **argv) {
     }
 }
 
-void ps (int argc, char **argv){
+void psFunc (int argc, char **argv){
     //loop through all queues , %3d
+    // print every process, it's own ucontext
+
+    //jobs : in-shell process. talking about the current shell. bg/fg.. finished/stopped/ shows pipelines.. JOB_ID printed
+
+    //logging : fputs, fprintf, fwrite, create a logging.c/.h file.//user programs should not directly write to log file.
+    printf("PID PPID PRIORITY\n");
+    // f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+    Process *temp = highQhead;
+    while(temp != NULL){
+        printf("high\n");
+        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        temp = temp->next;
+    }
+    temp = medQhead;
+    while(temp != NULL){
+        printf("med\n");
+        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        temp = temp->next;
+    }
+    temp = lowQhead;
+    while(temp != NULL){
+        printf("low\n");
+        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        temp = temp->next;
+    }
+    temp = blockedQhead;
+    while(temp != NULL){
+        printf("block\n");
+        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        temp = temp->next;
+    }
+    temp = stoppedQhead;
+    while(temp != NULL){
+        printf("stop\n");
+        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        temp = temp->next;
+    }
+    // temp = zombieQhead;
+    // while(temp != NULL){
+    //     printf("hi\n");
+    //     printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+    //     temp = temp->next;
+    // }
+}
+
+void zombify(int argc, char **argv) {
+    // p_spawn(zombie_child);
+    pid_t pid = p_spawn(zombie_child, argv, PSTDIN_FILENO, PSTDOUT_FILENO);
+    if (pid == -1){
+        p_exit();
+    }
+    while (1) ;
+    return;
+}
+void zombie_child() {
+    printf("MMMMM Brains...!\n");
+    return;
+}
+
+void orphan_child() {
+    printf("Please sir, I want some more\n");
+    while (1) ;
+}
+void orphanify(int argc, char **argv) {
+    // p_spawn(orphan_child);
+    pid_t pid = p_spawn(orphan_child, argv, PSTDIN_FILENO, PSTDOUT_FILENO);
+    if (pid == -1){
+        p_exit();
+    }
+    return;
 }

@@ -67,22 +67,25 @@ void sigIntTermHandler(int signal) {
 }
 
 void sigcontHandler(int signal){
-    // if(signal == SIGTSTP){
-    //     if(curr_pid != 0 && !IS_BG){
-    //         kill(curr_pid, S_SIGCONT);
-    //     }
-    // }
-    // p_kill(curr_pid, S_SIGCONT);
+    if(signal == SIGTSTP){
+        if(fgpid > 1){
+            p_kill(fgpid, S_SIGCONT);
+        }
+    }
 }
 
 void sigtstpHandler(int signal){
     if(signal == SIGTSTP){ //ctrl-z
-        if(fgpid != 0 && !IS_BG){
+        if(fgpid > 1){
             int ret = p_kill(fgpid, S_SIGSTOP); 
             // printf("exit only becasue nothing to run, need to exit using p_exit");
             if (ret == -1){
                 p_exit();
             }
+        }
+        if(fgpid == 1){
+            f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+            f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         }
     }
 
@@ -654,9 +657,17 @@ void pennShredder(char* buffer){
     } else if (strcmp(cmd->commands[0][0], "echo") == 0) {
         curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
+<<<<<<< HEAD
         curr_pid = p_spawn(ps, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "busy") == 0) {
         curr_pid = p_spawn(busy_wait, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+=======
+        curr_pid = p_spawn(psFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "zombify") == 0) {
+        curr_pid = p_spawn(zombify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "orphanify") == 0) {
+        curr_pid = p_spawn(orphanify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+>>>>>>> 711e409 (to do: zombie queue)
     }
         // fs
     else if (strcmp(cmd->commands[0][0], "cat") == 0) {

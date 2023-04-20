@@ -134,7 +134,7 @@ int p_kill(pid_t pid, int sig){
 
         case S_SIGCONT:
             printf("SIGCONT\n");
-            return 0;
+            return k_process_kill(proc, S_SIGCONT);
 
         case S_SIGSTOP:
             printf("SIGSTOP \n");

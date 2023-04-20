@@ -105,13 +105,15 @@ int k_process_kill(Process *p, int signal){
     }
     break;
     case S_SIGCONT:
-        dequeueStopped(p);
-        enqueue(p);
+        if (p->pcb->status == STOPPED){
+            dequeueStopped(p);
+            p->pcb->status = RUNNING;
+            enqueue(p);
+        }
         break;
     default:
-        break;
+        return -1;
     }
-
     return -1;
 }   
 
