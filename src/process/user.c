@@ -155,7 +155,6 @@ int p_kill(pid_t pid, int sig){
     switch(sig) {
         case S_SIGTERM:
             // printf("SIGTERM \n");
-            // printf("%d\n", proc->pcb->numChild);
             return k_process_kill(proc, S_SIGTERM);
 
         case S_SIGCONT:
@@ -174,7 +173,7 @@ void p_sleep(unsigned int ticks){
     activeProcess->pcb->sleep_time_remaining = ticks;
     enqueueBlocked(activeProcess);
     swapcontext(activeContext, &schedulerContext);
-    // printf("finished with psleep\n");
+    printf("Finished with %s\n", activeProcess->pcb->argument);
 }
 
 void p_exit(void){

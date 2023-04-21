@@ -13,7 +13,7 @@
 
 void echoFunc(int argc, char *argv[]);
 void sleepFunc(int argc, char *argv[]);
-void busy_wait(void);
+void busyFunc(void);
 void idleFunc();
 
 // ==== filesystem ====

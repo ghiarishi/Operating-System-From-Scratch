@@ -35,6 +35,7 @@ void dequeueZombie(Process* newProcess);
 void dequeueBlocked(Process* newProcess);
 void dequeueStopped(Process* newProcess);
 void dequeue(Process* newProcess);
+void iterateQueue(Process *head);
 void alarmHandler(int signum);
 void setTimer(void);
 void freeStacks(struct pcb *p);

@@ -42,8 +42,13 @@ int main(int argc, char** argv) {
     activeProcess->pcb = initPCB();
     activeProcess->next = NULL;
 
+    char* argv1 = malloc(1 * sizeof("penn-shell"));
+    strcpy(argv1, "penn-shell");
+    char* argvNew[] = {argv1, NULL};
+
     // check if can be replaced by k proc create (avoids need for if, and diff priority)
-    pid_t pidNew = p_spawn(pennShell, argv, STDIN_FILENO, STDOUT_FILENO);
+    pid_t pidNew = p_spawn(pennShell, argvNew, STDIN_FILENO, STDOUT_FILENO);
+
     activeProcess->pcb->pid = pidNew;
 
     setSignalHandler();

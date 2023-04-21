@@ -408,58 +408,62 @@ void pennShredder(char* buffer){
         return;
     }
     
-    // // check for BG builtin
-    // if(strcmp("bg", cmd -> commands[0][0]) == 0){
-    //     if(head == NULL){
-    //         fprintf(stderr, "No jobs present in the queue \n");
-    //         free(cmd);
-    //         return;
-    //     }
+    // check for BG builtin
+    if(strcmp("bg", cmd -> commands[0][0]) == 0){
+        if(head == NULL){
+            fprintf(stderr, "No jobs present in the queue \n");
+            free(cmd);
+            return;
+        }
         
-    //     // case where JID is given
-    //     if(cmd -> commands[0][1] != NULL){
-    //         int job_id = atoi(cmd -> commands[0][1]);
-    //         struct Job *bgJob = getJob(head, job_id);
-    //         if (bgJob -> status == STOPPED){
-    //             // Send a SIGCONT signal to the process to continue it in the background
-    //             changeStatus(head, job_id, 0); // set job to running
-    //             changeFGBG(head, job_id, 1); // set job to BG 
-    //             fprintf(stderr,"Running: %s", bgJob -> commandInput);
-    //             p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
-    //             free(cmd);
-    //             return;
-    //         } 
-    //         else if (bgJob -> status == RUNNING){
-    //             changeFGBG(head, job_id, 1); // set job to BG 
-    //             fprintf(stderr,"Running: %s", bgJob -> commandInput);
-    //             free(cmd);
-    //             return;
-    //         }  
-    //     }
-    //     else{
-    //         // case where no job ID given
-    //         int job_id = getCurrentJob(head);
-    //         struct Job *bgJob = getJob(head, job_id);
-    //         if (bgJob -> status == STOPPED){
-    //             // Send a SIGCONT signal to the process to continue it in the background
-    //             changeStatus(head, job_id, 0); // set job to running
-    //             changeFGBG(head, job_id, 1); // set job to BG 
-    //             fprintf(stderr,"Running: %s", bgJob -> commandInput);
-    //             p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
-    //             free(cmd);
-    //             return;
-    //         }
-    //         else if(bgJob->status == RUNNING){
-    //             changeFGBG(head, job_id, 1); // set job to BG 
-    //             fprintf(stderr,"Running: %s", bgJob -> commandInput);
-    //             free(cmd);
-    //             return;
-    //         }
-    //         free(cmd);
-    //         return;
-    //     }
-    // }
+        // CASE WHERE JOB ID IS GIVEN
+        if(cmd -> commands[0][1] != NULL){
+            int job_id = atoi(cmd -> commands[0][1]);
+            struct Job *bgJob = getJob(head, job_id);
 
+            // if the chosen process is stopped, it must be set to run in the foreground
+            if (bgJob -> status == STOPPED){
+                // Send a SIGCONT signal to the process to continue it in the background
+                changeStatus(head, job_id, 2); // set job to running
+                changeFGBG(head, job_id, 1); // set job to BG 
+                fprintf(stderr,"Running: %s", bgJob -> commandInput);
+                p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
+                free(cmd);
+                return;
+            } 
+            // if running, move from bg to fg
+            else if (bgJob -> status == RUNNING){
+                changeFGBG(head, job_id, 1); // set job to BG 
+                fprintf(stderr,"Running: %s", bgJob -> commandInput);
+                free(cmd);
+                return;
+            }  
+        }
+        else{
+            // case where no job ID given
+            int job_id = getCurrentJob(head);
+            struct Job *bgJob = getJob(head, job_id);
+            if (bgJob -> status == STOPPED){
+                // Send a SIGCONT signal to the process to continue it in the background
+                changeStatus(head, job_id, 0); // set job to running
+                changeFGBG(head, job_id, 1); // set job to BG 
+                fprintf(stderr,"Running: %s", bgJob -> commandInput);
+                p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
+                free(cmd);
+                return;
+            }
+            else if(bgJob->status == RUNNING){
+                changeFGBG(head, job_id, 1); // set job to BG 
+                fprintf(stderr,"Running: %s", bgJob -> commandInput);
+                free(cmd);
+                return;
+            }
+            free(cmd);
+            return;
+        }
+    }
+
+   
     // // check for FG builtin
     // if(strcmp("fg", cmd -> commands[0][0]) == 0){
     //     if(head == NULL){
@@ -608,32 +612,32 @@ void pennShredder(char* buffer){
     //     return;
     // }
     
-    // // check for JOBS builtin
-    // if(strcmp("jobs", cmd -> commands[0][0]) == 0){
-    //     // if head null, print no jobs found
-    //     if(head == NULL){
-    //         fprintf(stderr, "No jobs present in the queue \n");
-    //         free(cmd);
-    //         return;
-    //     } 
-    //     else {
-    //         struct Job *current = head;
-    //         int noBg = 0;
-    //         do{
-    //             if(current -> bgFlag == BG){
-    //                 fprintf(stderr, "[%d] %s (%s)\n", current -> JobNumber, current->commandInput, statusToStr(current -> status));
-    //                 noBg = 1;
-    //             }
-    //             current = current -> next;
-    //         } while(current != NULL);
+    // check for JOBS builtin
+    if(strcmp("jobs", cmd -> commands[0][0]) == 0){
+        // if head null, print no jobs found
+        if(head == NULL){
+            fprintf(stderr, "No jobs present in the queue \n");
+            free(cmd);
+            return;
+        } 
+        else {
+            struct Job *current = head;
+            int noBg = 0;
+            do{
+                if(current -> bgFlag == BG){
+                    fprintf(stderr, "[%d] %s (%s)\n", current -> JobNumber, current->commandInput, statusToStr(current -> status));
+                    noBg = 1;
+                }
+                current = current -> next;
+            } while(current != NULL);
             
-    //         if(noBg == 0){
-    //             fprintf(stderr, "No bg jobs found\n");
-    //         }
-    //         free(cmd);
-    //         return;
-    //     }
-    // }
+            if(noBg == 0){
+                fprintf(stderr, "No bg jobs found\n");
+            }
+            free(cmd);
+            return;
+        }
+    }
     
     int n = cmd -> num_commands;  
     if (cmd -> is_background){
@@ -650,7 +654,7 @@ void pennShredder(char* buffer){
     } else if (strcmp(cmd->commands[0][0], "echo") == 0) {
         curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "busy") == 0) {
-        curr_pid = p_spawn(busy_wait, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+        curr_pid = p_spawn(busyFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
         curr_pid = p_spawn(psFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "zombify") == 0) {

@@ -14,7 +14,7 @@ void echoFunc(int argc, char *argv[]) {
 }
 
 void sleepFunc(int argc, char *argv[]) {
-    
+    // printf("entered sleep func \n");
     int ticksLeft = 10*atoi(argv[1]);
     p_sleep(ticksLeft);
     
@@ -22,7 +22,7 @@ void sleepFunc(int argc, char *argv[]) {
     
 }
 
-void busy_wait(void) {
+void busyFunc(void) {
     while (1) {
         // Do nothing and keep looping indefinitely
     }
