@@ -160,7 +160,7 @@ struct Job *addJob(struct Job *head, struct Job *newJob){
     if (head == NULL){ 
         head = newJob; 
         newJob -> JobNumber = 1;
-        // printf("job num is %d\n", newJob->JobNumber);
+        printf("adding to shell queue:  %s\n", newJob->commandInput);
         return head;
     }
     
@@ -168,6 +168,7 @@ struct Job *addJob(struct Job *head, struct Job *newJob){
     if (head -> next == NULL){
         head -> next = newJob;
         newJob -> JobNumber = 2;
+        printf("adding to shell queue:  %s\n", newJob->commandInput);
         return head;
     }
 
@@ -699,7 +700,7 @@ void pennShredder(char* buffer){
         
         newpid = p_waitpid(curr_pid, &status, FALSE); 
 
-        // printf("pwait supposed to be run by now \n");
+        printf("pwait FG supposed to be run by now \n");
 
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
         if (WIFSTOPPED(status) && new_job -> status == RUNNING){
@@ -781,20 +782,30 @@ void pennShell(){
                     break;
                 }
                 pid_t pid = p_waitpid(-1, &status, TRUE);
-
+                
                 if (pid < 0){
                     break;
                 }
+    
+                printf("pid from wait is: %d\n", pid);
 
                 current = head;
-
+                
+                // printf("current proc is %s\n", current->next->commandInput);
+                // printf("PID IS: %d\n",current->next->myPid);
+            
                 do {
                     if(current->myPid == pid){
+                        // printf("PID IS: %d\n",current->myPid);
                         break;
                     }
                     current = current->next;
                 } while(current != NULL);               
+
+                // printf("PID IS: %d\n",current->myPid);
                 
+                // printf("current proc is %s\n", current->commandInput);
+
                 if (W_WIFSTOPPED(status) && current -> status == RUNNING){
                     printf("Stopped: %s", current -> commandInput); 
                     current -> status = STOPPED; 

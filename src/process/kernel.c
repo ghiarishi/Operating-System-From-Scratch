@@ -48,9 +48,15 @@ int k_process_kill(Process *p, int signal){
                 // printf("kill BLOCKED\n");
             }
             else if(p->pcb->status == RUNNING){
+                printf("K KILL BEFORE FIND \n");
+                printf("Processes in BLOCKED Q\n");
+                iterateQueue(medQhead);
                 Process *parent = findProcessByPid(p->pcb->ppid);
+                printf("K KILL after FIND \n");
                 dequeue(p);
-                enqueueZombie(p);
+                if(p->pcb->bgFlag== 1){
+                    enqueueZombie(p);
+                }
                 dequeueBlocked(parent);
                 enqueue(parent);                
                 // printf("kill RUNNING \n");
@@ -115,6 +121,7 @@ void k_process_cleanup(Process *p) {
     
     if(p->pcb->bgFlag == 1){
         // is background, so make zombie
+        printf("inside KPC about to enq zombie \n");
         enqueueZombie(p);
         return;
     }

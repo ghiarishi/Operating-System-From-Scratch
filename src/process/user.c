@@ -76,15 +76,18 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 pidRet = zombieQhead->pcb->pid;
                 zombieQhead->pcb->changedStatus = 0;
                 *wstatus = zombieQhead->pcb->status;
+                printf("mark 1\n");
+                printf("ARG ARG  ARG %s\n", zombieQhead->pcb->argument);
                 dequeueZombie(zombieQhead);
-                // printf("mark 3\n");
+                printf("mark 2\n");
                 for(int i = 0; i < activeProcess->pcb->numChild; i++){
+                    // printf("child pids are: %d\n", activeProcess->pcb->childPids[i]);
                     if(activeProcess -> pcb -> childPids[i] == pidRet){
                         activeProcess ->pcb->childPids[i] = -2;
                         break;
                     }
                 }
-                // printf("mark 4\n");
+                printf("mark 3\n");
                 return pidRet;
             }
             return -1;
@@ -111,6 +114,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     }
     else{// hang
         Process *fgproc = findProcessByPid(pid);
+        printf("args is %s\n", fgproc->pcb->argument);
         if(fgproc->pcb->changedStatus == 1){
             pidRet = fgproc->pcb->pid;
             *wstatus = fgproc->pcb->status;
@@ -128,6 +132,8 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
             dequeue(activeProcess);
             enqueueBlocked(activeProcess);
             swapcontext(activeContext, &schedulerContext);
+            // printf("WAIT HO GAYA BUSY KA BC\n");
+            // printf("%s has status: %d", fgproc->pcb->argument, fgproc->pcb->changedStatus);
             if(fgproc->pcb->changedStatus == 1){
                 *wstatus = fgproc->pcb->status;
                 fgproc->pcb->changedStatus = 0;
