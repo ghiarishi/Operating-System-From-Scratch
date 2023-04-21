@@ -337,3 +337,42 @@ void logout(){
     printf("Logging out\n");
     p_exit();
 }
+
+void killFunc(int argc, char **argv){
+    char *signal == 'term';
+    int pid;
+    if (argc == 3){
+        signal = argv[1];
+        pid = atoi(argv[2]);
+    }
+    else if (argc == 2){
+        pid = atoi(argv[1]);
+    }
+    else{
+        p_perror("invalid command");
+        return;
+    }
+    
+    // printf("signal %s argc %d", signal, argc);
+    switch (signal){
+        case 'stop':{
+            if (p_kill(pid,S_SIGSTOP) < 0){
+                p_perror("error in killing process");
+            }
+        }
+        break;
+        case 'cont':{
+            if (p_kill(pid,S_SIGCONT)< 0){
+                p_perror("error in killing process");
+            }
+        }
+        break;
+        default:{
+            //term
+            if (p_kill(pid,S_SIGTERM) < 0){
+                p_perror("error in killing process");
+            }
+        }
+    }
+    return;
+}

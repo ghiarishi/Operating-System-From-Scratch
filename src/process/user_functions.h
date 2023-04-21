@@ -26,6 +26,7 @@ void rmFunc(int argc, char **argv);
 void chmodFunc(int argc, char **argv);
 
 void psFunc (int argc, char **argv);
+void killFunc (int argc, char **argv);
 
 void zombify(int argc, char **argv);
 void zombie_child();

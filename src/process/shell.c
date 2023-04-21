@@ -685,6 +685,8 @@ void pennShredder(char* buffer){
         curr_pid = p_spawn(busyFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
         curr_pid = p_spawn(psFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "kill") == 0) {
+        curr_pid = p_spawn(killFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "zombify") == 0) {
         curr_pid = p_spawn(zombify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][0], "orphanify") == 0) {
