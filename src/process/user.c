@@ -76,10 +76,10 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 pidRet = zombieQhead->pcb->pid;
                 zombieQhead->pcb->changedStatus = 0;
                 *wstatus = zombieQhead->pcb->status;
-                printf("mark 1\n");
-                printf("ARG ARG  ARG %s\n", zombieQhead->pcb->argument);
+                // printf("mark 3\n");
+                // printf("ARG ARG ARG %s\n", zombieQhead->pcb->argument);
                 dequeueZombie(zombieQhead);
-                printf("mark 2\n");
+                // printf("mark 4\n");
                 for(int i = 0; i < activeProcess->pcb->numChild; i++){
                     // printf("child pids are: %d\n", activeProcess->pcb->childPids[i]);
                     if(activeProcess -> pcb -> childPids[i] == pidRet){
@@ -87,9 +87,9 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                         break;
                     }
                 }
-                printf("mark 3\n");
+                // printf("mark 5\n");
                 return pidRet;
-            }
+            } 
             return -1;
         } else {
             Process *curr = zombieQhead;
@@ -114,20 +114,20 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
     }
     else{// hang
         Process *fgproc = findProcessByPid(pid);
-        printf("args is %s\n", fgproc->pcb->argument);
-        if(fgproc->pcb->changedStatus == 1){
+        // printf("args is %s\n", fgproc->pcb->argument);
+        if(fgproc->pcb->changedStatus == 1){ // if there is change of status already
             pidRet = fgproc->pcb->pid;
             *wstatus = fgproc->pcb->status;
             fgproc->pcb->changedStatus = 0;
             for(int i = 0; i < activeProcess->pcb->numChild; i++){
-                if(activeProcess -> pcb -> childPids[i] == pid){
+                if(activeProcess -> pcb -> childPids[i] == pid && fgproc->pcb->status != STOPPED){
                     activeProcess ->pcb->childPids[i] = -2;
                     break;
                 }
             }
             return pidRet;
         }
-        else{
+        else{ // if there isnt currently a change of status YET
             activeProcess->pcb->waitChild = pid;
             dequeue(activeProcess);
             enqueueBlocked(activeProcess);
@@ -138,7 +138,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 *wstatus = fgproc->pcb->status;
                 fgproc->pcb->changedStatus = 0;
                 for(int i = 0; i < activeProcess->pcb->numChild; i++){
-                    if(activeProcess -> pcb -> childPids[i] == pid){
+                    if(activeProcess -> pcb -> childPids[i] == pid && fgproc->pcb->status != STOPPED){
                         activeProcess ->pcb->childPids[i] = -2;
                         break;
                     }
@@ -151,12 +151,12 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig){
-    // printf("p_kill, pid is %d\n",pid);
+    printf("p_kill, pid is %d\n",pid);
     Process *proc = findProcessByPid(pid);
     if(proc == NULL){
         printf("issue here\n");
     }
-    printf("pid of proc is %d\n", proc->pcb->pid);
+    // printf("pid of proc is %d\n", proc->pcb->pid);
     // printf("%d\n", sig);
     switch(sig) {
         case S_SIGTERM:
@@ -169,16 +169,24 @@ int p_kill(pid_t pid, int sig){
 
         case S_SIGSTOP:
             // printf("SIGSTOP \n");
-            return k_process_kill(proc, S_SIGSTOP);;
+            return k_process_kill(proc, S_SIGSTOP);
     }
     return -1;
 }
 
 void p_sleep(unsigned int ticks){
+    printf("Just entered %s\n", activeProcess->pcb->argument);
     dequeue(activeProcess);
+    printf("MARK 1\n");
     activeProcess->pcb->sleep_time_remaining = ticks;
+    printf("MARK 2\n");
     enqueueBlocked(activeProcess);
+    printf("MARK 3\n");
     swapcontext(activeContext, &schedulerContext);
+    if(activeProcess->pcb->sleep_time_remaining > 0){
+        dequeue(activeProcess);
+        enqueueBlocked(activeProcess);
+    }
     printf("Finished with %s\n", activeProcess->pcb->argument);
 }
 

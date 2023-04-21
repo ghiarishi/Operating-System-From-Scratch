@@ -47,11 +47,11 @@ void setTimer(void) {
 void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
-        printf("1. fgpid is: %d\n", fgpid);
+        // printf("1. fgpid is: %d\n", fgpid);
         if(fgpid > 1){
-            printf("2. fgpid is: %d\n", fgpid);
+            // printf("2. fgpid is: %d\n", fgpid);
             p_kill(fgpid, S_SIGTERM);
-            printf("3. fgpid is: %d\n", fgpid);
+            // printf("3. fgpid is: %d\n", fgpid);
         }
         if(fgpid == 1){
             f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
@@ -66,8 +66,9 @@ void sigcontHandler(int signal){
             p_kill(fgpid, S_SIGCONT);
         }
         if(fgpid == 1){
-            f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
-            f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
+            p_kill(fgpid, S_SIGCONT);
+            // f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+            // f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         }
     }
 }
@@ -131,27 +132,27 @@ void setSignalHandler(void){
     sigaction(SIGTSTP, &sa_stop, NULL);
 }
 
-// clear all the mallocs to prevent memory leaks
-void freeOneJob(struct Job *Job){
-    free(Job -> commandInput);
-    free(Job);
-}
+// // clear all the mallocs to prevent memory leaks
+// void freeOneJob(struct Job *Job){
+//     free(Job -> commandInput);
+//     free(Job);
+// }
 
-// call freeOneJob for every job in order to clear the entire LL memory
-void freeAllJobs(struct Job *head) {
-    // if the head is null, nothing to clear
-    if (head == NULL) {
-        return;
-    }
+// // call freeOneJob for every job in order to clear the entire LL memory
+// void freeAllJobs(struct Job *head) {
+//     // if the head is null, nothing to clear
+//     if (head == NULL) {
+//         return;
+//     }
 
-    // iterate through LL, call freeOneJob
-    struct Job * current = head;
-        while (current != NULL) {
-            struct Job* removal = current;
-            current = current -> next;
-            freeOneJob(removal);
-    }
-}
+//     // iterate through LL, call freeOneJob
+//     struct Job * current = head;
+//         while (current != NULL) {
+//             struct Job* removal = current;
+//             current = current -> next;
+//             // freeOneJob(removal);
+//     }
+// }
 
 // input parameters: head of LL, newJob we want to add to LL
 struct Job *addJob(struct Job *head, struct Job *newJob){
@@ -160,7 +161,9 @@ struct Job *addJob(struct Job *head, struct Job *newJob){
     if (head == NULL){ 
         head = newJob; 
         newJob -> JobNumber = 1;
-        printf("adding to shell queue:  %s\n", newJob->commandInput);
+        // printf("adding to shell queue:  %s\n", newJob->commandInput);
+        // printf("Shell Q after adding head: \n");
+        // iterateShell(head);
         return head;
     }
     
@@ -168,7 +171,9 @@ struct Job *addJob(struct Job *head, struct Job *newJob){
     if (head -> next == NULL){
         head -> next = newJob;
         newJob -> JobNumber = 2;
-        printf("adding to shell queue:  %s\n", newJob->commandInput);
+        // printf("adding to shell queue:  %s\n", newJob->commandInput);
+        // printf("Shell Q after adding head.next: \n");
+        // iterateShell(head);
         return head;
     }
 
@@ -191,6 +196,8 @@ struct Job *addJob(struct Job *head, struct Job *newJob){
         newJob -> JobNumber = current -> JobNumber + 1;
         current -> next = newJob;
         newJob -> next = NULL;
+        // printf("Shell Q after adding to end of LL: \n");
+        // iterateShell(head);
         return head;
     }
 
@@ -199,6 +206,8 @@ struct Job *addJob(struct Job *head, struct Job *newJob){
         newJob -> JobNumber = current -> JobNumber + 1;
         current -> next = newJob;
         newJob -> next = current -> next;
+        // printf("Shell Q after adding to gap: \n");
+        // iterateShell(head);
         return head;
     }
     return head;
@@ -206,32 +215,28 @@ struct Job *addJob(struct Job *head, struct Job *newJob){
 
 // Removes a job give a specifc job number.
 struct Job *removeJob(struct Job *head, int jobNum){
+    if (head == NULL) {
+        // If the list is empty, return NULL
+        return NULL;
+    }
 
-    // if first job, set the new head to the next job and free head
-    if (jobNum == 1){
-        struct Job *newHead = head -> next;
-        freeOneJob(head);
+    if (head->JobNumber == jobNum) {
+        struct Job *newHead = head->next;
         return newHead;
     }
 
-    // iterate through all jobs until job of interest is reached
     struct Job *current = head;
-    while (current -> next != NULL){
-
-        // if the next job is the one, replace next with the one after that
-        if (current -> next -> JobNumber == jobNum){
-            struct Job *removed = current -> next;
-            struct Job *newNext = removed -> next;
-            current -> next = newNext;
-            removed -> next = NULL;
-            freeOneJob(removed);
-            // printf("JOB REMOVED NOT HEAD \n");
-            return head;
+    while (current->next != NULL) {
+        if (current->next->JobNumber == jobNum) {
+            current->next = current->next->next;
+            break;
         }
-        current = current -> next;
+        current = current->next;
     }
-    // printf("NO JOB REMOVED\n");
+
+    // If the job number was not found in the list, return the original head
     return head;
+
 }
 
 struct Job *getJob(struct Job *head, int jobNum){
@@ -247,7 +252,7 @@ struct Job *getJob(struct Job *head, int jobNum){
             return current;
         }
     }
-    freeOneJob(current); 
+    // freeOneJob(current); 
     fprintf(stderr,"No job with this ID found\n");
     // exit(EXIT_FAILURE);
     p_exit();
@@ -359,6 +364,19 @@ char *statusToStr(int status){
     }
 }
 
+void iterateShell(struct Job *head){
+    printf("Shell Queue Contains: \n");
+    if(head == NULL){
+        printf("Shell Q Empty\n");
+        return;
+    }
+    while(head!= NULL){
+        printf("%s\n", head->commandInput);
+        head = head->next;
+    }
+}
+
+
 struct Job *head = NULL;
 
 bool W_WIFEXITED(int status) {
@@ -372,6 +390,7 @@ bool W_WIFSTOPPED(int status) {
 bool W_WIFSIGNALED(int status) {
     return status == SIG_TERMINATED;
 }
+
 
 void pennShredder(char* buffer){
     IS_BG = 0;
@@ -420,6 +439,7 @@ void pennShredder(char* buffer){
         // CASE WHERE JOB ID IS GIVEN
         if(cmd -> commands[0][1] != NULL){
             int job_id = atoi(cmd -> commands[0][1]);
+            
             struct Job *bgJob = getJob(head, job_id);
 
             // if the chosen process is stopped, it must be set to run in the foreground
@@ -434,8 +454,9 @@ void pennShredder(char* buffer){
             } 
             // if running, move from bg to fg
             else if (bgJob -> status == RUNNING){
-                changeFGBG(head, job_id, 1); // set job to BG 
-                fprintf(stderr,"Running: %s", bgJob -> commandInput);
+                fprintf(stderr,"%s already running\n", bgJob -> commandInput);
+                // changeFGBG(head, job_id, 1); // set job to BG 
+                // fprintf(stderr,"Running: %s", bgJob -> commandInput);
                 free(cmd);
                 return;
             }  
@@ -446,16 +467,18 @@ void pennShredder(char* buffer){
             struct Job *bgJob = getJob(head, job_id);
             if (bgJob -> status == STOPPED){
                 // Send a SIGCONT signal to the process to continue it in the background
-                changeStatus(head, job_id, 0); // set job to running
+                changeStatus(head, job_id, 2); // set job to running
                 changeFGBG(head, job_id, 1); // set job to BG 
                 fprintf(stderr,"Running: %s", bgJob -> commandInput);
+                printf("TEST\n");
                 p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
                 free(cmd);
                 return;
             }
             else if(bgJob->status == RUNNING){
-                changeFGBG(head, job_id, 1); // set job to BG 
-                fprintf(stderr,"Running: %s", bgJob -> commandInput);
+                fprintf(stderr,"%s already running\n", bgJob -> commandInput);
+                // changeFGBG(head, job_id, 1); // set job to BG 
+                // fprintf(stderr,"Running: %s", bgJob -> commandInput);
                 free(cmd);
                 return;
             }
@@ -617,7 +640,7 @@ void pennShredder(char* buffer){
     if(strcmp("jobs", cmd -> commands[0][0]) == 0){
         // if head null, print no jobs found
         if(head == NULL){
-            fprintf(stderr, "No jobs present in the queue \n");
+            fprintf(stderr, "No jobs present in the queue\n");
             free(cmd);
             return;
         } 
@@ -626,6 +649,10 @@ void pennShredder(char* buffer){
             int noBg = 0;
             do{
                 if(current -> bgFlag == BG){
+                    int len = strlen(current->commandInput);
+                    if (len > 0 && current->commandInput[len - 1] == '\n') {
+                        current->commandInput[len - 1] = '\0';
+                    }
                     fprintf(stderr, "[%d] %s (%s)\n", current -> JobNumber, current->commandInput, statusToStr(current -> status));
                     noBg = 1;
                 }
@@ -700,18 +727,16 @@ void pennShredder(char* buffer){
         
         newpid = p_waitpid(curr_pid, &status, FALSE); 
 
-        printf("pwait FG supposed to be run by now \n");
+        // printf("pwait FG supposed to be run by now \n");
 
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
-        if (WIFSTOPPED(status) && new_job -> status == RUNNING){
+        if (W_WIFSTOPPED(status) && new_job -> status == RUNNING){
             fprintf(stderr, "\nStopped: %s", new_job-> commandInput); 
             new_job -> status = STOPPED; 
+            new_job->bgFlag = 1;
             head = addJob(head, new_job);    
         }
-        else{
-            freeOneJob(new_job);
-        }
-
+    
         // tc set back to pennshell
         fgpid = 1;
         
@@ -761,16 +786,16 @@ void pennShell(){
             // WRITE AND READ 
             if (write(STDERR_FILENO, PROMPT, sizeof(PROMPT)) == -1) {
                 perror("write");
-                freeAllJobs(head);
-                freeAllJobs(current);
+                // freeAllJobs(head);
+                // freeAllJobs(current);
                 exit(EXIT_FAILURE);
             }
 
             int numBytes = read(STDIN_FILENO, buffer, INPUT_SIZE);
             if (numBytes == -1) {
                 perror("read");
-                freeAllJobs(head);
-                freeAllJobs(current);
+                // freeAllJobs(head);
+                // freeAllJobs(current);
                 exit(EXIT_FAILURE);
             }
 
@@ -787,13 +812,9 @@ void pennShell(){
                     break;
                 }
     
-                printf("pid from wait is: %d\n", pid);
-
                 current = head;
                 
-                // printf("current proc is %s\n", current->next->commandInput);
-                // printf("PID IS: %d\n",current->next->myPid);
-            
+                // iterateShell(head);
                 do {
                     if(current->myPid == pid){
                         // printf("PID IS: %d\n",current->myPid);
@@ -802,11 +823,12 @@ void pennShell(){
                     current = current->next;
                 } while(current != NULL);               
 
-                // printf("PID IS: %d\n",current->myPid);
+                // printf("pid of process of interest: %d\n",current->JobNumber);
                 
                 // printf("current proc is %s\n", current->commandInput);
 
                 if (W_WIFSTOPPED(status) && current -> status == RUNNING){
+                    // pkill
                     printf("Stopped: %s", current -> commandInput); 
                     current -> status = STOPPED; 
                     // if (bufferWaiting){
@@ -821,7 +843,7 @@ void pennShell(){
                 }
                 else if(W_WIFSIGNALED(status) && current -> status == RUNNING){
                     // printf("Finished: %s\n", current -> commandInput); 
-                    changeStatus(head, current->JobNumber, 1);
+                    // changeStatus(head, current->JobNumber, 1);
                     head = removeJob(head, current->JobNumber);
                     // if (bufferWaiting){
                     //     //PRINT BUFFER
@@ -835,7 +857,7 @@ void pennShell(){
                 }
                 else if(W_WIFEXITED(status) && current -> status == RUNNING){
                     printf("Finished: %s\n", current -> commandInput); 
-                    changeStatus(head, current->JobNumber, 0);
+                    // changeStatus(head, current->JobNumber, 0);
                     head = removeJob(head, current->JobNumber);
                     
                     // if (bufferWaiting){
@@ -880,8 +902,8 @@ void pennShell(){
                     if (write(STDERR_FILENO, "\n", strlen("\n")) == -1) {
                         // printf("entered 3rd line ctrld \n");
                         perror("write");
-                        freeAllJobs(head);
-                        freeAllJobs(current);
+                        // freeAllJobs(head);
+                        // freeAllJobs(current);
                         exit(EXIT_FAILURE);
                     }  
                     break; // Either ways, just shut the code
@@ -889,8 +911,8 @@ void pennShell(){
                 else{ // Normal case
                     if (write(STDERR_FILENO, "\n", strlen("\n")) == -1) {
                         perror("write");
-                        freeAllJobs(head);
-                        freeAllJobs(current);
+                        // freeAllJobs(head);
+                        // freeAllJobs(current);
                         exit(EXIT_FAILURE);
                     }  
                 }
@@ -907,8 +929,8 @@ void pennShell(){
             size_t len = 0; // unsigned int type
             int numBytes = getline(&line, &len, stdin); // read line from txt file
             if (numBytes == -1) {
-                freeAllJobs(head);
-                freeAllJobs(current);
+                // freeAllJobs(head);
+                // freeAllJobs(current);
                 exit(1);
             }
             // Exit iteration if only new line given
@@ -920,7 +942,7 @@ void pennShell(){
         }
     }   
     // printf("outside shell while \n");
-    freeAllJobs(current);
-    freeAllJobs(head);
+    // freeAllJobs(current);
+    // freeAllJobs(head);
     free(bufferSig); 
 }  

@@ -42,17 +42,19 @@ int k_process_kill(Process *p, int signal){
             if(p->pcb->status == BLOCKED){
                 Process *parent = findProcessByPid(p->pcb->ppid);
                 dequeueBlocked(p);
-                enqueueZombie(p);
+                if(p->pcb->bgFlag == 1){
+                    enqueueZombie(p);
+                }
                 dequeueBlocked(parent);
                 enqueue(parent);
                 // printf("kill BLOCKED\n");
             }
             else if(p->pcb->status == RUNNING){
-                printf("K KILL BEFORE FIND \n");
-                printf("Processes in BLOCKED Q\n");
-                iterateQueue(medQhead);
+                // printf("K KILL BEFORE FIND \n");
+                // printf("Processes in BLOCKED Q\n");
+                // iterateQueue(medQhead);
                 Process *parent = findProcessByPid(p->pcb->ppid);
-                printf("K KILL after FIND \n");
+                // printf("K KILL after FIND \n");
                 dequeue(p);
                 if(p->pcb->bgFlag== 1){
                     enqueueZombie(p);
@@ -92,15 +94,25 @@ int k_process_kill(Process *p, int signal){
         }
         p->pcb->status = STOPPED;
         p->pcb->changedStatus = 1;
+        p->pcb->bgFlag = 1;
         return 0;
     }
     break;
     case S_SIGCONT:
     // need to write this
+        printf("entered sigcont in KPK: %d\n", p->pcb->pid);
         if (p->pcb->status == STOPPED){
+            printf("process to be cont: %s\n", p->pcb->argument);
             dequeueStopped(p);
+            p->pcb->changedStatus = 0;
+            p->pcb->bgFlag = 1;
             p->pcb->status = RUNNING;
-            enqueue(p);
+            if(p->pcb->sleep_time_remaining > 0){
+                enqueueBlocked(p);
+            } else{
+                enqueue(p);
+            }
+            
         }
         break;
     default:
@@ -114,6 +126,7 @@ void k_process_cleanup(Process *p) {
     p->pcb->status = TERMINATED;
     p->pcb->changedStatus = 1;
     
+
     dequeue(p);
     // printf("looking at %s in KPC\n", p->pcb->argument);
 
@@ -121,7 +134,7 @@ void k_process_cleanup(Process *p) {
     
     if(p->pcb->bgFlag == 1){
         // is background, so make zombie
-        printf("inside KPC about to enq zombie \n");
+        // printf("inside KPC about to enq zombie \n");
         enqueueZombie(p);
         return;
     }
@@ -147,7 +160,7 @@ void k_process_cleanup(Process *p) {
             k_process_kill(cp, S_SIGTERM);
         }
     }
-    printf("end of KPC\n");
+    // printf("end of KPC\n");
 }
 
 Process *findProcessByPid(int pid){
