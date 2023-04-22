@@ -151,7 +151,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig){
-    printf("p_kill, pid is %d\n",pid);
+    // printf("p_kill, pid is %d\n",pid);
     Process *proc = findProcessByPid(pid);
     if(proc == NULL){
         printf("issue here\n");
@@ -175,19 +175,14 @@ int p_kill(pid_t pid, int sig){
 }
 
 void p_sleep(unsigned int ticks){
-    printf("Just entered %s\n", activeProcess->pcb->argument);
     dequeue(activeProcess);
-    printf("MARK 1\n");
     activeProcess->pcb->sleep_time_remaining = ticks;
-    printf("MARK 2\n");
     enqueueBlocked(activeProcess);
-    printf("MARK 3\n");
     swapcontext(activeContext, &schedulerContext);
     if(activeProcess->pcb->sleep_time_remaining > 0){
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
     }
-    printf("Finished with %s\n", activeProcess->pcb->argument);
 }
 
 void p_exit(void){

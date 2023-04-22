@@ -61,4 +61,5 @@ struct Job *removeJob(struct Job *head, int jobNum);
 struct Job *getJob(struct Job *head, int jobNum);
 int getCurrentJob(struct Job *head);
 void changeStatus(struct Job *head, int jobNum, int newStatus);
+void changeFGBG(struct Job *head, int jobNum, int newFGBG);
 void iterateShell(struct Job *head);
