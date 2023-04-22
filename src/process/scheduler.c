@@ -164,6 +164,9 @@ void enqueueBlocked(Process* newProcess){
         blockedQtail = newProcess;
     }
     printf("Processes in blocked Q\n");
+    // fp = fopen(argv[2], "a");
+    // fprintf(fp, "a = %d, b = %f, c = %c\n", a, b, c);
+    // fclose(fp);
     iterateQueue(blockedQhead);
     
 }
@@ -180,6 +183,9 @@ void enqueueStopped(Process* newProcess){
     }
     newProcess->pcb->status = STOPPED;
     newProcess->pcb->changedStatus = 1;
+    // fp = fopen(argv[2], "a");
+    // fprintf(fp, "Hello, world!\n");
+    // fclose(fp);
     printf("Processes in stopped Q\n");
     iterateQueue(stoppedQhead);
 }   

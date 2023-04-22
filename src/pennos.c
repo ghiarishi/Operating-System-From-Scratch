@@ -2,6 +2,7 @@
 #include "process/user_functions.h"
 #include "process/shell.h"
 #include "fs/user.h"
+#include "process/dependencies.h"
 
 // global fs - you can move this if needed
 fs_t *fs;
@@ -19,10 +20,23 @@ void setTimerAlarmHandler(void) {
 
 int main(int argc, char** argv) {
     // mount global filesystem
+    
+    char file[] = "log";
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <filesystem>\n", argv[0]);
         // exit(EXIT_FAILURE);
         p_exit();
+    }
+    else if (argc == 2){
+        
+        FILE *fp = fopen(file, "w");
+        fprintf(fp, "Hello, world!\n");
+        fclose(fp);
+    }
+    else if (argc ==3){
+        FILE *fp = fopen(argv[2], "w");
+        fprintf(fp, "Hello, world!\n");
+        // fclose(fp);
     }
     char *path = argv[1];
     fs = fs_mount(path);
@@ -59,6 +73,6 @@ int main(int argc, char** argv) {
     // fprintf(stderr, "Back in the main context\n");
 
     // freeStacks();
-
+    fclose(fp);
     return 0;
 }
