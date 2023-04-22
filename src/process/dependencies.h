@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdio.h>
 // Define the structure for a Process
 typedef struct process{
     struct pcb* pcb;
@@ -29,3 +29,4 @@ extern Process *tempTail;
 extern int ticks; 
 extern int fgpid;
 static const int quantum = 100000;
+extern FILE *fp;

@@ -174,9 +174,12 @@ int p_kill(pid_t pid, int sig){
     return -1;
 }
 
-void p_sleep(unsigned int ticks){
+void p_sleep(unsigned int ticks1){
+    printf("Just entered %s\n", activeProcess->pcb->argument);
     dequeue(activeProcess);
-    activeProcess->pcb->sleep_time_remaining = ticks;
+    printf("MARK 1\n");
+    activeProcess->pcb->sleep_time_remaining = ticks1;
+    printf("MARK 2\n");
     enqueueBlocked(activeProcess);
     swapcontext(activeContext, &schedulerContext);
     if(activeProcess->pcb->sleep_time_remaining > 0){
@@ -188,6 +191,7 @@ void p_sleep(unsigned int ticks){
 void p_exit(void){
     // printf("p_exit\n");
     //do cleanup to avoid memory leaks
+    fclose(fp);
     return;
 }
 
@@ -197,7 +201,9 @@ int p_nice(pid_t pid, int priority){
         return -1;
     }
     dequeue(proc);
+    int old = proc->pcb->priority;
     proc->pcb->priority = priority;
+    fprintf(fp, "[%d] NICE PID %d %d %s", ticks, old, priority, proc->pcb->argument);
     enqueue(proc);
     return 0;
 }
