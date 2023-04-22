@@ -22,6 +22,9 @@ PennOS specific filesystem errors will be in the 1000-2000 range.
 #define PEFMODE 1007   // attempted operation on a file in the wrong mode
 #define PEFPERM 1008   // attempted operation on a file without read/write permissions
 #define PEFNAME 1009   // the filename is invalid
+
+#define PETOOMANYF 1101 // you have too many files open already
+#define PESTDIO 1102    // tried to read from stdout or write to stdin
 ```
 
 ## Structs
