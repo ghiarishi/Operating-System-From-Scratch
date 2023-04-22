@@ -48,6 +48,20 @@ void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
         if(fgpid > 1){
+<<<<<<< Updated upstream
+=======
+            // printf("2. fgpid is: %d\n", fgpid);
+            // char buf[20];
+            // buf[0] = '\0';
+            // // char s[10];
+            // strcat(buf,"SIGNALED\t");
+            // sprintf(s, "%d\t", proc->pcb->pid);
+            // strcat(buf,s);
+            // sprintf(s, "%d\t", proc->pcb->priority);
+            // strcat(buf,s);
+            // strcat(buf,proc->pcb->argument);
+            // writeLogs(buf);
+>>>>>>> Stashed changes
             p_kill(fgpid, S_SIGTERM);
         }
         if(fgpid == 1){
@@ -444,6 +458,27 @@ void pennShredder(char* buffer){
     struct parsed_command *cmd;
     int num = parse_command(buffer, &cmd);
 
+<<<<<<< Updated upstream
+=======
+    // error handling for parsed command
+    switch(num){
+        case 1: p_perror("invalid: parser encountered an unexpected file input token '<' \n");
+                break;
+        case 2: p_perror("invalid: parser encountered an unexpected file output token '>' \n");
+                break;
+        case 3: p_perror("invalid: parser encountered an unexpected pipeline token '|' \n");
+                break;
+        case 4: p_perror("invalid: parser encountered an unexpected ampersand token '&' \n");
+                break;
+        case 5: p_perror("invalid: parser didn't find input filename following '<' \n");
+                break;
+        case 6: p_perror("invalid: parser didn't find output filename following '>' or '>>' \n");
+                break;
+        case 7: p_perror("invalid: parser didn't find any commands or arguments where it expects one \n");
+                break;
+    }
+
+>>>>>>> Stashed changes
     if(num != 0){
         return;
     }
@@ -451,10 +486,14 @@ void pennShredder(char* buffer){
     // check for BG builtin
     if(strcmp("bg", cmd -> commands[0][0]) == 0){
         if(head == NULL){
+<<<<<<< Updated upstream
             char argbuf[strlen("No jobs present in the queue \n") + 1];
             sprintf(argbuf, "%s ", "No jobs present in the queue \n");
             f_write(PSTDOUT_FILENO, argbuf, strlen(argbuf) + 1);
             // fprintf(stderr, "No jobs present in the queue \n");
+=======
+            // fprintf(fp, "No jobs present in the queue \n");
+>>>>>>> Stashed changes
             free(cmd);
             return;
         }
@@ -469,20 +508,28 @@ void pennShredder(char* buffer){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 2); // set job to running
                 changeFGBG(head, job_id, 1); // set job to BG 
+<<<<<<< Updated upstream
                 char argbuf[strlen(bgJob -> commandInput) + 1];
                 sprintf(argbuf, "Running: %s ", bgJob -> commandInput);
                 f_write(PSTDOUT_FILENO, argbuf, strlen(bgJob -> commandInput) + 1);
                 // fprintf(stderr,"Running: %s", bgJob -> commandInput);
+=======
+                // fprintf(fp,"Running: %s", bgJob -> commandInput);
+>>>>>>> Stashed changes
                 p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
                 free(cmd);
                 return;
             } 
             // if running, move from bg to fg
             else if (bgJob -> status == RUNNING){
+<<<<<<< Updated upstream
                 char argbuf[strlen(bgJob -> commandInput) + 1];
                 sprintf(argbuf, "%s already running\n", bgJob -> commandInput);
                 f_write(PSTDOUT_FILENO, argbuf, strlen(bgJob -> commandInput) + 1);
                 // fprintf(stderr,"%s already running\n", bgJob -> commandInput);
+=======
+                // fprintf(fp,"%s already running\n", bgJob -> commandInput);
+>>>>>>> Stashed changes
                 // changeFGBG(head, job_id, 1); // set job to BG 
                 // fprintf(stderr,"Running: %s", bgJob -> commandInput);
                 free(cmd);
@@ -716,6 +763,7 @@ void pennShredder(char* buffer){
 
     int status = 0;
 
+<<<<<<< Updated upstream
     // create process via priority
     if(strcmp("nice", cmd -> commands[0][0]) == 0){
         shellBFunc(cmd);
@@ -724,6 +772,43 @@ void pennShredder(char* buffer){
         }
     } else {
         shellBFunc(cmd);
+=======
+    // spawn builtin
+    if (strcmp(cmd->commands[0][0], "sleep") == 0) {
+        curr_pid = p_spawn(sleepFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "echo") == 0) {
+        curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "busy") == 0) {
+        curr_pid = p_spawn(busyFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
+        curr_pid = p_spawn(psFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "kill") == 0) {
+        curr_pid = p_spawn(killFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "zombify") == 0) {
+        curr_pid = p_spawn(zombify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "orphanify") == 0) {
+        curr_pid = p_spawn(orphanify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "logout") == 0) {
+        logout();
+        return;
+    } else if (strcmp(cmd->commands[0][0], "man") == 0) {
+        man();
+        return;
+    } else if (strcmp(cmd->commands[0][0], "cat") == 0) {
+        curr_pid = p_spawn(catFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "ls") == 0) {
+        curr_pid = p_spawn(lsFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "touch") == 0) {
+        curr_pid = p_spawn(touchFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "mv") == 0) {
+        curr_pid = p_spawn(mvFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "cp") == 0) {
+        curr_pid = p_spawn(cpFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "rm") == 0) {
+        curr_pid = p_spawn(rmFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+    } else if (strcmp(cmd->commands[0][0], "chmod") == 0) {
+        curr_pid = p_spawn(chmodFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
+>>>>>>> Stashed changes
     }
 
     // for loop to execute the commands line by line

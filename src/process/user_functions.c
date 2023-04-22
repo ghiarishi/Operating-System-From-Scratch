@@ -111,7 +111,7 @@ void lsFunc(int argc, char **argv) {
         char date[32];
         strftime(date, 32, "%b %e %H:%M", timestruct);
         // blockno perm size month day time name
-        fprintf(stdout, "%d\t%c%c%c\t%d\t%s\t%s\n", entry->blockno, x, r, w, entry->size, date, entry->name);
+        fprintf(fp, "%d\t%c%c%c\t%d\t%s\t%s\n", entry->blockno, x, r, w, entry->size, date, entry->name);
     }
     f_freels(entries);
 }
@@ -429,4 +429,104 @@ void killFunc(int argc, char **argv){
     //     }
     // }
     return;
+<<<<<<< Updated upstream
 }
+=======
+}
+
+void man(){
+    
+    // f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+    // sprintf(argbuf, "%s ", argv[i]);
+    // f_write(PSTDOUT_FILENO, argbuf, strlen(argv[i]) + 1);
+    // f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
+
+    char argbuf[200];
+    // char s[200];
+    // sprintf(argbuf, "%s",s);
+    
+    char s[] = "mkfs FS_NAME BLOCKS_IN_FAT BLOCK_SIZE_CONFIG\t - Creates a PennFAT filesystem in the file named FS_NAME\n";
+    sprintf(argbuf,"%s",s);  
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s));
+    char s1[] = "mount FS_NAME\t - Mounts the filesystem named FS_NAME by loading its FAT into memory\n";
+    sprintf(argbuf,"%s",s1); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s1));
+    char s2[] = "umount\t - Unmounts the currently mounted filesystem\n";
+    sprintf(argbuf,"%s",s2); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s2));
+    char s3[] = "touch FILE\t - Creates the files if they do not exist, or updates their timestamp to the current system time";
+    sprintf(argbuf,"%s",s3); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s3));
+    char s4[] =  "mv SOURCE DEST\t - Renames SOURCE to DEST\n";
+    sprintf(argbuf,"%s",s4);
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s4));
+    char s5[] =  "rm FILE\t - Removes the files\n";
+    sprintf(argbuf,"%s",s5);
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s5));
+    char s6[] = "cat FILE ... [ -w OUTPUT_FILE ]\t - Concatenates the files and prints them to stdout by default, or overwrites OUTPUT_FILE. If OUTPUT_FILE does not exist, it will be created.\n";
+    sprintf(argbuf,"%s",s6); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s6));
+    char s7[] = "cat FILE ... [ -a OUTPUT_FILE ]\t - Concatenates the files and prints them to stdout by default, or appends to OUTPUT_FILE.\n";
+    sprintf(argbuf,"%s",s7); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s7));
+    char s8[] = "cat -w OUTPUT_FILE\t - Reads from the terminal and overwrites OUTPUT_FILE.\n";
+    sprintf(argbuf,"%s",s8); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s8));
+    char s9[] = "cat -a OUTPUT_FILE\t - Reads from the terminal and appends to OUTPUT_FILE.\n";
+    sprintf(argbuf,"%s",s9); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s9));
+    char s10[]="cp [ -h ] SOURCE DEST\t - Copies SOURCE to DEST. With -h, SOURCE is from the host OS\n";
+    sprintf(argbuf,"%s",s10); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s10));
+    char s11[]="cp SOURCE -h DEST\t - Copies SOURCE from the filesystem to DEST in the host OS.\n";
+    sprintf(argbuf,"%s",s11); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s11));
+    char s12[]="ls\t - List all files in the directory\n";
+    sprintf(argbuf,"%s",s12); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s12));
+    char s13[]="chmod ([+=-][rwx]*|OCT) FILE \t - To change permissions of a file\n";
+    sprintf(argbuf,"%s",s13); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s13));
+    char s14[]="sleep n\t - sleep for n seconds\n";
+    sprintf(argbuf,"%s",s14); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s14));
+    char s15[]="busy\t - usy wait indefinitely\n";
+    sprintf(argbuf,"%s",s15); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s15));
+    char s16[]="echo\t - Write arguments to the standard output\n";
+    sprintf(argbuf,"%s",s16); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s16));
+    char s17[]="ps\t - list all processes on PennOS. Displays pid, ppid, and priority\n";
+    sprintf(argbuf,"%s",s17); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s17));
+    char s18[]="kill [ -SIGNAL_NAME ] pid\t - end the specified signal to the specified processes, where -SIGNAL_NAME is either term (the default), stop, or cont\n";
+    sprintf(argbuf,"%s",s18); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s18));
+    char s19[]="zombify\t - To check if PennOS can handle zombies\n";
+    sprintf(argbuf,"%s",s19); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s19));
+    char s20[]="orphanify\t - To check if PennOS can handle orphans\n";
+    sprintf(argbuf,"%s",s20); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s20));
+    char s21[]="nice priority command [arg]\t - set the priority of the command to priority and execute the command\n";
+    sprintf(argbuf,"%s",s21); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s21));
+    char s22[]="nice_pid priority pid\t - adjust the nice level of process pid to priority priority.\n";
+    sprintf(argbuf,"%s",s22); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s22));
+    char s23[]="bg [job_id]\t - continue the last stopped job, or the job specified by job_id\n";
+    sprintf(argbuf,"%s",s23); 
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s23));
+    char s24[]="fg [job_id]\t - bring the last stopped or backgrounded job to the foreground, or the job specified by job_id\n";
+    sprintf(argbuf,"%s", s24);
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s24));
+    char s25[]="jobs\t - list all jobs\n";
+    sprintf(argbuf,"%s", s25);
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s25));
+    char s26[]="logout\t - exit the shell and shutdown PennOS\n";
+    sprintf(argbuf,"%s", s26);
+    f_write(PSTDOUT_FILENO, argbuf, sizeof(s26));
+    return;
+}
+
+>>>>>>> Stashed changes

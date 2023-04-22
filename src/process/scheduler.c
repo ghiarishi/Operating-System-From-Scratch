@@ -72,6 +72,24 @@ void scheduler(void){
             emptyQflag = 0;
             listPointer++;
             // printf("setting the context in high Q\n");
+            // writeLogs("SCHEDULE %d HIGH %s",activeContext->pcb->pid, activeContext->pcb->argument);
+            // char buf[20];
+            // buf[0] = '\0';
+            // char s[10];
+            // strcat(buf,"SCHEDULE\t");
+            // sprintf(s, "%d\t", activeProcess->pcb->pid);
+            // strcat(buf,s);
+            // if (activeProcess->pcb->priority == PRIORITY_HIGH)
+            //     sprintf(s, "%s\t", "HIGH");
+            // else if (activeProcess->pcb->priority== PRIORITY_LOW)
+            //     sprintf(s, "%s\t", "LOW");
+            // else if (activeProcess->pcb->priority == PRIORITY_MED)
+            //     sprintf(s, "%s\t", "MEDIUM");
+            // strcat(buf,s);
+            // strcat(buf,activeProcess->pcb->argument);
+            // strcat(buf,"\n");
+            // writeLogs(buf);
+
             setcontext(activeContext);
         }
         
@@ -97,6 +115,7 @@ void scheduler(void){
             emptyQflag = 0;
             listPointer++;
             // printf("setting the context in low Q\n");
+            // writeLogs("SCHEDULE %d LOW %s",activeContext->pcb->pid, activeContext->pcb->argument);
             setcontext(activeContext);
         }
         break;
@@ -132,6 +151,7 @@ void scheduler(void){
 
             // printf("Processes in med Q1111\n");
             // iterateQueue(medQhead);
+            // writeLogs("SCHEDULE %d MEDIUM %s",activeContext->pcb->pid, activeContext->pcb->argument);
             setcontext(activeContext);
         } 
     }
@@ -154,6 +174,21 @@ void enqueueBlocked(Process* newProcess){
     newProcess->pcb->status = BLOCKED;
     newProcess->pcb->changedStatus = 1;
     // printf("%s enqueued into blocked Q!\n", newProcess->pcb->argument);
+    char buf[50];
+    buf[0] = '\0'; 
+    char s[10];
+    sprintf(s, "[%d]\t", ticks);
+    strcat(buf, s);
+    strcat(buf,"BLOCKED\t");
+    sprintf(s, "%d\t", newProcess->pcb->pid);
+    strcat(buf,s);
+    sprintf(s, "%d\t", newProcess->pcb->priority);
+    strcat(buf,s);
+    sprintf(s, "%s", newProcess->pcb->argument);
+    strcat(buf,s);
+    strcat(buf,"\n");
+    writeLogs(buf);
+
     if (blockedQhead == NULL) {
         blockedQhead = newProcess;
         blockedQtail = newProcess;
@@ -169,6 +204,7 @@ void enqueueBlocked(Process* newProcess){
 
 void enqueueStopped(Process* newProcess){
     // printf("%s enqueued into stopped Q!\n", newProcess->pcb->argument);
+
     if (stoppedQhead == NULL) {
         stoppedQhead = newProcess;
         stoppedQtail = newProcess;
@@ -179,8 +215,29 @@ void enqueueStopped(Process* newProcess){
     }
     newProcess->pcb->status = STOPPED;
     newProcess->pcb->changedStatus = 1;
+<<<<<<< Updated upstream
     // printf("Processes in stopped Q\n");
     // iterateQueue(stoppedQhead);
+=======
+    
+    char buf[50];
+    buf[0] = '\0'; 
+    char s[10];
+    sprintf(s, "[%d]\t", ticks);
+    strcat(buf, s);
+    strcat(buf,"STOPPED\t");
+    sprintf(s, "%d\t", newProcess->pcb->pid);
+    strcat(buf,s);
+    sprintf(s, "%d\t", newProcess->pcb->priority);
+    strcat(buf,s);
+    sprintf(s, "%s", newProcess->pcb->argument);
+    strcat(buf,s);
+    strcat(buf,"\n");
+    writeLogs(buf);
+
+    // printf("Processes in stopped Q\n");
+    iterateQueue(stoppedQhead);
+>>>>>>> Stashed changes
 }   
 
 void enqueueZombie(Process* newProcess){
@@ -196,15 +253,51 @@ void enqueueZombie(Process* newProcess){
     }
     // printf("Processes in zombie Q\n");
     // iterateQueue(zombieQhead);
+
+    char buf[50];
+    buf[0] = '\0'; 
+    char s[10];
+    sprintf(s, "[%d]\t", ticks);
+    strcat(buf, s);
+    strcat(buf,"ZOMBIE\t");
+    sprintf(s, "%d\t", newProcess->pcb->pid);
+    strcat(buf,s);
+    sprintf(s, "%d\t", newProcess->pcb->priority);
+    strcat(buf,s);
+    sprintf(s, "%s", newProcess->pcb->argument);
+    strcat(buf,s);
+    strcat(buf,"\n");
+    writeLogs(buf);
 }
 
 // Function to add a thread to the appropriate priority queue
 void enqueue(Process* newProcess) {
     // Determine the appropriate priority queue based on the ProcessnewProcess's priority level
     newProcess->pcb->status = RUNNING;
+    // char buf[20];
+    // buf[0] = '\0';
+    // char s[20];
+    // strcat(buf,"SCHEDULE\t");
+    // sprintf(s, "%d\t", newProcess->pcb->pid);
+    // strcat(buf,s);
+    // if (newProcess->pcb->priority == PRIORITY_HIGH)
+    //     sprintf(s, "%s\t", "HIGH");
+    // else if (newProcess->pcb->priority== PRIORITY_LOW)
+    //     sprintf(s, "%s\t", "LOW");
+    // else if (newProcess->pcb->priority == PRIORITY_MED)
+    //     sprintf(s, "%s\t", "MEDIUM");
+    // strcat(buf,s);
+    // if (newProcess->pcb->argument != NULL){
+    //     sprintf(s, "%s\t", newProcess->pcb->argument);
+    //     strcat(buf,s);
+    // }
+        
+    // strcat(buf,"\n");
+    // writeLogs(buf);
+    
     switch(newProcess->pcb->priority) {
-        case PRIORITY_HIGH:
-            // printf("%s enqueued into high\n", newProcess->pcb->argument);
+        case PRIORITY_HIGH:{
+
             if (highQhead == NULL) {
                 highQhead = newProcess;
                 highQtail = newProcess;
@@ -213,8 +306,23 @@ void enqueue(Process* newProcess) {
                 highQtail->next = newProcess;
                 highQtail = newProcess;
             }
+        }
+            // printf("%s enqueued into high\n", newProcess->pcb->argument);
+
+            
             break;
-        case PRIORITY_LOW:
+        case PRIORITY_LOW:{
+            // char buf[20];
+            // buf[0] = '\0'; 
+            // char s[10];
+            // strcat(buf,"SCHEDULE\t");
+            // sprintf(s, "%d\t", newProcess->pcb->pid);
+            // strcat(buf,s);
+            // strcat(buf,"LOW\t");
+            // // strcat(buf,s);
+            // strcat(buf,newProcess->pcb->argument);
+            // strcat(buf,"\n");
+            // writeLogs(buf);
             // printf("%s enqueued into low\n", newProcess->pcb->argument);
             if (lowQhead == NULL) {
                 lowQhead = newProcess;
@@ -224,10 +332,21 @@ void enqueue(Process* newProcess) {
                 lowQtail->next = newProcess;
                 lowQtail = newProcess;
             }
-            break;
-        default:
-            // printf("%s enqueued into med\n", newProcess->pcb->argument);
+        }
+        default:{
+            // char buf[20];
+            // buf[0] = '\0'; 
+            // char s[10];
+            // strcat(buf,"SCHEDULE\t");
+            // sprintf(s, "%d\t", newProcess->pcb->pid);
+            // strcat(buf,s);
+            // strcat(buf,"MEDIUM\t");
+            // // strcat(buf,s);
+            // strcat(buf,newProcess->pcb->argument);
+            // strcat(buf,"\n");
+            // writeLogs(buf);
             if (medQhead == NULL) {
+                printf("mark 2\n");
                 medQhead = newProcess;
                 medQtail = newProcess;
             }
@@ -235,13 +354,23 @@ void enqueue(Process* newProcess) {
                 medQtail->next = newProcess;
                 medQtail = newProcess;
             }
+<<<<<<< Updated upstream
             // printf("Processes in med Q\n");
             // iterateQueue(medQhead);
+=======
+
+            // printf("Processes in med Q\n");
+            // iterateQueue(medQhead);
+        }
+            
+>>>>>>> Stashed changes
     }
+
 }
 
 void dequeueZombie(Process* newProcess){
     // if first job, set the new head to the next job and free head
+    
     if (zombieQhead != NULL && zombieQhead->pcb->pid == newProcess->pcb->pid) {
         Process *old_head = zombieQhead;
         zombieQhead = zombieQhead->next;
@@ -275,11 +404,26 @@ void dequeueZombie(Process* newProcess){
         }
         current = current -> next;
     }
+
 }
 
 void dequeueBlocked(Process* newProcess){
     // printf("Processes in blocked Q IMP LOOK AT THIS\n");
     // iterateQueue(blockedQhead);
+    char buf[50];
+    buf[0] = '\0'; 
+    char s[10];
+    sprintf(s, "[%d]\t", ticks);
+    strcat(buf, s);
+    strcat(buf,"UNBLOCKED\t");
+    sprintf(s, "%d\t", newProcess->pcb->pid);
+    strcat(buf,s);
+    sprintf(s, "%d\t", newProcess->pcb->priority);
+    strcat(buf,s);
+    sprintf(s, "%s", newProcess->pcb->argument);
+    strcat(buf,s);
+    strcat(buf,"\n");
+    writeLogs(buf);
 
     if (blockedQhead != NULL && blockedQhead->pcb->pid == newProcess->pcb->pid) {
         Process *old_head = blockedQhead;
@@ -315,6 +459,21 @@ void dequeueBlocked(Process* newProcess){
 }
 
 void dequeueStopped(Process* newProcess){
+    char buf[50];
+    buf[0] = '\0'; 
+    char s[10];
+    sprintf(s, "[%d]\t", ticks);
+    strcat(buf, s);
+    strcat(buf,"CONTINUED\t");
+    sprintf(s, "%d\t", newProcess->pcb->pid);
+    strcat(buf,s);
+    sprintf(s, "%d\t", newProcess->pcb->priority);
+    strcat(buf,s);
+    sprintf(s, "%s", newProcess->pcb->argument);
+    strcat(buf,s);
+    strcat(buf,"\n");
+    writeLogs(buf);
+    
     Process *current = NULL;
     // if first job, set the new head to the next job and free head
     if (stoppedQhead->pcb->pid == newProcess->pcb->pid){
@@ -486,6 +645,7 @@ void initContext(void){
 
 // SIGALRM
 void alarmHandler(int signum){
+    ticks++;
     Process *temp = blockedQhead;
     int* array = malloc(20 * sizeof(int));
     int count = 0;

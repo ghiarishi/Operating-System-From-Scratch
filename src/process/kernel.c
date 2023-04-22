@@ -36,6 +36,22 @@ int k_process_kill(Process *p, int signal){
     switch (signal){
     case S_SIGTERM: {
         // printf("SIGTERM k_kill\n");
+        char buf[50];
+        buf[0] = '\0';
+        char s[50];
+        sprintf(s, "[%d]\t", ticks);
+        strcat(buf, s);
+        strcat(buf,"SIGNALED\t");
+        sprintf(s, "%d\t", p->pcb->pid);
+        strcat(buf,s);
+        sprintf(s, "%d\t", p->pcb->priority);
+        strcat(buf,s);
+        sprintf(s, "%s", p->pcb->argument);
+        strcat(buf,s);
+        strcat(buf,"\n");
+        writeLogs(buf);
+
+
         if(p->pcb->numChild == 0){
             // printf("SIGTERM 1\n");
             // printf("kproc kill 0 child %d \n", p->pcb->status);
@@ -43,9 +59,34 @@ int k_process_kill(Process *p, int signal){
                 Process *parent = findProcessByPid(p->pcb->ppid);
                 dequeueBlocked(p);
                 if(p->pcb->bgFlag == 1){
+                    
                     enqueueZombie(p);
+                    
                 }
                 dequeueBlocked(parent);
+
+                char buf[50];
+                buf[0] = '\0';
+                char s[50];
+                sprintf(s, "[%d]\t", ticks);
+                strcat(buf, s);
+                strcat(buf,"SCHEDULE\t");
+                sprintf(s, "%d\t", parent->pcb->pid);
+                strcat(buf,s);
+                if (parent->pcb->priority == PRIORITY_HIGH)
+                    sprintf(s, "%s\t", "HIGH");
+                else if (parent->pcb->priority== PRIORITY_LOW)
+                    sprintf(s, "%s\t", "LOW");
+                else if (parent->pcb->priority == PRIORITY_MED)
+                    sprintf(s, "%s\t", "MEDIUM");
+                strcat(buf,s);
+                if (parent->pcb->argument != NULL){
+                    sprintf(s, "%s\t", parent->pcb->argument);
+                    strcat(buf,s);
+                }
+                    
+                strcat(buf,"\n");
+                writeLogs(buf);
                 enqueue(parent);
                 // printf("kill BLOCKED\n");
             }
@@ -60,6 +101,29 @@ int k_process_kill(Process *p, int signal){
                     enqueueZombie(p);
                 }
                 dequeueBlocked(parent);
+
+                char buf[50];
+                buf[0] = '\0';
+                char s[20];
+                sprintf(s, "[%d]\t", ticks);
+                strcat(buf, s);
+                strcat(buf,"SCHEDULE\t");
+                sprintf(s, "%d\t", parent->pcb->pid);
+                strcat(buf,s);
+                if (parent->pcb->priority == PRIORITY_HIGH)
+                    sprintf(s, "%s\t", "HIGH");
+                else if (parent->pcb->priority== PRIORITY_LOW)
+                    sprintf(s, "%s\t", "LOW");
+                else if (parent->pcb->priority == PRIORITY_MED)
+                    sprintf(s, "%s\t", "MEDIUM");
+                strcat(buf,s);
+                if (parent->pcb->argument != NULL){
+                    sprintf(s, "%s\t", parent->pcb->argument);
+                    strcat(buf,s);
+                }
+                    
+                strcat(buf,"\n");
+                writeLogs(buf);
                 enqueue(parent);                
                 // printf("kill RUNNING \n");
             }
@@ -90,6 +154,29 @@ int k_process_kill(Process *p, int signal){
         enqueueStopped(p);
         if (parent->pcb->status == BLOCKED){
             dequeueBlocked(parent);
+            char buf[50];
+            buf[0] = '\0';
+            char s[50];
+            sprintf(s, "[%d]\t", ticks);
+            strcat(buf, s);
+            strcat(buf,"SCHEDULE\t");
+            sprintf(s, "%d\t", parent->pcb->pid);
+            strcat(buf,s);
+            if (parent->pcb->priority == PRIORITY_HIGH)
+                sprintf(s, "%s\t", "HIGH");
+            else if (parent->pcb->priority== PRIORITY_LOW)
+                sprintf(s, "%s\t", "LOW");
+            else if (parent->pcb->priority == PRIORITY_MED)
+                sprintf(s, "%s\t", "MEDIUM");
+            strcat(buf,s);
+            if (parent->pcb->argument != NULL){
+                sprintf(s, "%s\t", parent->pcb->argument);
+                strcat(buf,s);
+            }
+                
+            strcat(buf,"\n");
+            writeLogs(buf);
+
             enqueue(parent);
         }
         p->pcb->status = STOPPED;
@@ -102,6 +189,7 @@ int k_process_kill(Process *p, int signal){
         p->pcb->changedStatus = 0;
         if (p->pcb->status == STOPPED){
             dequeueStopped(p);
+<<<<<<< Updated upstream
             if(fgpid == 1){ // if shell in foreground (bg command)
                 // printf("Mark 3\n");
                 p->pcb->bgFlag = 1;
@@ -122,6 +210,39 @@ int k_process_kill(Process *p, int signal){
                     p->pcb->status = RUNNING;
                     enqueue(p);
                 }
+=======
+            p->pcb->changedStatus = 0;
+            p->pcb->bgFlag = 1;
+            p->pcb->status = RUNNING;
+            if(p->pcb->sleep_time_remaining > 0){
+                enqueueBlocked(p);
+            } else{
+
+                char buf[50];
+                buf[0] = '\0';
+                char s[50];
+                sprintf(s, "[%d]\t", ticks);
+                strcat(buf, s);
+                strcat(buf,"SCHEDULE\t");
+                sprintf(s, "%d\t", p->pcb->pid);
+                strcat(buf,s);
+                if (p->pcb->priority == PRIORITY_HIGH)
+                    sprintf(s, "%s\t", "HIGH");
+                else if (p->pcb->priority== PRIORITY_LOW)
+                    sprintf(s, "%s\t", "LOW");
+                else if (p->pcb->priority == PRIORITY_MED)
+                    sprintf(s, "%s\t", "MEDIUM");
+                strcat(buf,s);
+                if (p->pcb->argument != NULL){
+                    sprintf(s, "%s\t", p->pcb->argument);
+                    strcat(buf,s);
+                }
+                    
+                strcat(buf,"\n");
+                writeLogs(buf);
+
+                enqueue(p);
+>>>>>>> Stashed changes
             }
         } else if (p->pcb->status == BLOCKED && p->pcb->sleep_time_remaining >0){
             p->pcb->bgFlag = 0;
@@ -139,12 +260,19 @@ int k_process_kill(Process *p, int signal){
 
 void k_process_cleanup(Process *p) { 
 
-    p->pcb->status = TERMINATED;
-    p->pcb->changedStatus = 1;
     
-
-    dequeue(p);
-    // printf("looking at %s in KPC\n", p->pcb->argument);
+    if (p->pcb->status == BLOCKED){
+        p->pcb->status = TERMINATED;
+        p->pcb->changedStatus = 1;
+        dequeueBlocked(p);
+    }
+    else{
+        p->pcb->status = TERMINATED;
+        p->pcb->changedStatus = 1;
+        dequeue(p);
+    }
+    
+    // printf("looking at %d in KPC\n", p->pcb->status);
 
     // printf("bg flag = %d\n", p->pcb->bgFlag);
     
@@ -156,11 +284,34 @@ void k_process_cleanup(Process *p) {
     }
     Process *temp = blockedQhead;
 
-    // printf("%d\n", temp->pcb->pid);
+    // printf("temp %d\n", temp->pcb->pid);
     
     while(temp != NULL){
         if(temp->pcb->pid == p->pcb->ppid && (temp->pcb->waitChild == p->pcb->pid)){
             dequeueBlocked(temp);
+            char buf[50];
+            buf[0] = '\0';
+            char s[50];
+            sprintf(s, "[%d]\t", ticks);
+            strcat(buf, s);
+            strcat(buf,"SCHEDULE\t");
+            sprintf(s, "%d\t", temp->pcb->pid);
+            strcat(buf,s);
+            if (temp->pcb->priority == PRIORITY_HIGH)
+                sprintf(s, "%s\t", "HIGH");
+            else if (temp->pcb->priority== PRIORITY_LOW)
+                sprintf(s, "%s\t", "LOW");
+            else if (temp->pcb->priority == PRIORITY_MED)
+                sprintf(s, "%s\t", "MEDIUM");
+            strcat(buf,s);
+            if (temp->pcb->argument != NULL){
+                sprintf(s, "%s\t", temp->pcb->argument);
+                strcat(buf,s);
+            }
+                
+            strcat(buf,"\n");
+            writeLogs(buf);
+
             enqueue(temp);
             // printf("enq temp\n");
             break;
@@ -175,6 +326,20 @@ void k_process_cleanup(Process *p) {
         }
     }
     // printf("end of KPC\n");
+    char buf[50];
+    buf[0] = '\0';
+    char s[50];
+    sprintf(s, "[%d]\t", ticks);
+    strcat(buf, s);
+    strcat(buf,"EXITED\t");
+    sprintf(s, "%d\t", p->pcb->pid);
+    strcat(buf,s);
+    sprintf(s, "%d\t", p->pcb->priority);
+    strcat(buf,s);
+    sprintf(s, "%s", p->pcb->argument);
+    strcat(buf,s);
+    strcat(buf,"\n");
+    writeLogs(buf);
 }
 
 Process *findProcessByPid(int pid){
