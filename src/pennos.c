@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     activeProcess->next = NULL;
 
     char* argv1 = malloc(1 * sizeof("penn-shell"));
-    // strcpy(argv1, "penn-shell");
+    strcpy(argv1, "penn-shell");
     char* argvNew[] = {argv1, NULL};
 
     // check if can be replaced by k proc create (avoids need for if, and diff priority)

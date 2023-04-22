@@ -5,10 +5,12 @@ int pidCounter = 1;
 Process *activeProcess = NULL;
 
 char* concat(int argc, char *argv[]) {
+    
     char *cmd_line = malloc(MAX_CMD_LENGTH * sizeof(char));
     memset(cmd_line, 0, MAX_CMD_LENGTH);
-    
+
     for (int i = 0; i < argc; i++) {
+
         strcat(cmd_line, argv[i]);
         strcat(cmd_line, " ");
     }
@@ -53,17 +55,19 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
 
     int argc = 0;
     int i = 0;
+
     while(argv[i] != NULL){
         argc++;
         i ++;
     }
 
     if(strcmp(argv[0], "nice") == 0){
-        removeNicePrefix(argv, 4);
-        argc = 2;
-        // printf("printing args ")
+        removeNicePrefix(argv, argc);
+        while(argv[i] != NULL){
+            argc++;
+            i ++;
+        }
     }
-
 
     struct parsed_command *cmd;
     parse_command(concat(argc, argv), &cmd);

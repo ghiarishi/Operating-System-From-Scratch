@@ -716,7 +716,7 @@ void alarmHandler(void){
     int* array = malloc(20 * sizeof(int));
     int count = 0;
     while(temp != NULL) {
-        // printf("looking at : %s\n", temp->pcb->argument);
+
         if(temp->pcb->sleep_time_remaining > 0 && temp->pcb->status != STOPPED){
             temp->pcb->sleep_time_remaining--;
             // printf("%s time remaining = %d\n", temp->pcb->argument, temp->pcb->sleep_time_remaining);

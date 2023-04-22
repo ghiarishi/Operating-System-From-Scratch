@@ -363,9 +363,7 @@ Process *findProcessByPid(int pid){
 
     temp = blockedQhead;
     while(temp != NULL){
-        printf("pid of med q proc %d %d\n", temp->pcb->pid, pid);
         if(temp->pcb->pid == pid){
-            printf("BLOCKED exiting find process pid\n");
             return temp;
         }
         temp = temp->next;
@@ -374,7 +372,6 @@ Process *findProcessByPid(int pid){
     temp = stoppedQhead;
     while(temp != NULL){
         if(temp->pcb->pid == pid){
-            printf("Stopped exiting find process pid %s\n", temp->pcb->argument);
             return temp;
         }
         temp = temp->next;

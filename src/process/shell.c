@@ -535,7 +535,10 @@ void pennShredder(char* buffer){
     // check for FG builtin
     if(strcmp("fg", cmd -> commands[0][0]) == 0){
         if(head == NULL){
-            fprintf(stderr, "No jobs present in the queue \n");
+            // fprintf(stderr, "No jobs present in the queue \n");
+            char argbuf[strlen("No jobs present in the queue \n")+1];
+            sprintf(argbuf, "No jobs present in the queue \n"); 
+            f_write(PSTDOUT_FILENO, argbuf, strlen("No jobs present in the queue \n") + 1);
             free(cmd);
             return;
         }
@@ -550,7 +553,11 @@ void pennShredder(char* buffer){
                 changeStatus(head, job_id, 2); // set job to running
                 changeFGBG(head, job_id, 0); // set job to FG 
                 fgpid = pid_fg;
-                fprintf(stderr, "Restarting: %s", fgJob -> commandInput);
+                // fprintf(stderr, "Restarting: %s", fgJob -> commandInput);
+                char argbuf[strlen(fgJob->commandInput)+1];
+                sprintf(argbuf, "Restarting: %s\n", fgJob->commandInput); 
+                f_write(PSTDOUT_FILENO, argbuf, strlen(fgJob->commandInput) + 1);
+
                 p_kill(pid_fg, S_SIGCONT);   
                 head = removeJob(head, fgJob->JobNumber);
 
