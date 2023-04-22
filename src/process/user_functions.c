@@ -490,3 +490,27 @@ void man(){
     f_write(PSTDOUT_FILENO, argbuf, sizeof(s26));
     return;
 }
+
+void niceFunc(char *argv[]){
+    // p_nice();
+}
+int nice_pid(char *argv[]){
+
+    int argc = 0;
+    int i = 0;
+    while(argv[i] != NULL){
+        argc++;
+        i ++;
+    }
+
+    // struct parsed_command *cmd;
+    // parse_command(concat(argc, argv), &cmd);
+
+    if (argc != 3){
+        p_perror("invalid command");
+        return -1;
+    }
+    pid_t pid = atoi(argv[2]);
+    int priority = atoi(argv[1]);
+    return p_nice(priority,pid);
+}
