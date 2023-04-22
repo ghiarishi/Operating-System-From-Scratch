@@ -492,7 +492,13 @@ void man(){
 }
 
 void niceFunc(char *argv[]){
-    // p_nice();
+    int argc = 0;
+    int i = 0;
+    while(argv[i] != NULL){
+        argc++;
+        i ++;
+    }
+    
 }
 int nice_pid(char *argv[]){
 
