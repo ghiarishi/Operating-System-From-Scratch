@@ -51,6 +51,7 @@ void sigIntTermHandler(int signal);
 void sigcontHandler(int signal);
 void sigtstpHandler(int signal);
 void setSignalHandler(void);
+void shellBFunc(struct parsed_command *cmd);
 void pennShredder(char* buffer);
 void pennShell();
 struct Job *createJob(int pid, int bgFlag, int numChildren, char *input);

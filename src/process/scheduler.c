@@ -32,15 +32,14 @@ Process *zombieQhead = NULL;
 Process *zombieQtail = NULL;
 
 void terminateProcess(void){
-    printf("Process terminated, about to be cleaned up: %s\n", activeProcess->pcb->argument);
+
     k_process_cleanup(activeProcess);
-    printf("cleanup done fully \n");
+
     setcontext(&schedulerContext);
 }
 
 void scheduler(void){
     
-    // printf("HQH PID IS %d\n", highQhead->pcb->pid);
     static int listPointer = 0;
 
     // if at the end, restart from the first element
@@ -163,8 +162,8 @@ void enqueueBlocked(Process* newProcess){
         blockedQtail->next = newProcess;
         blockedQtail = newProcess;
     }
-    printf("Processes in blocked Q\n");
-    iterateQueue(blockedQhead);
+    // printf("Processes in blocked Q\n");
+    // iterateQueue(blockedQhead);
     
 }
 
@@ -180,8 +179,8 @@ void enqueueStopped(Process* newProcess){
     }
     newProcess->pcb->status = STOPPED;
     newProcess->pcb->changedStatus = 1;
-    printf("Processes in stopped Q\n");
-    iterateQueue(stoppedQhead);
+    // printf("Processes in stopped Q\n");
+    // iterateQueue(stoppedQhead);
 }   
 
 void enqueueZombie(Process* newProcess){
@@ -236,8 +235,9 @@ void enqueue(Process* newProcess) {
                 medQtail->next = newProcess;
                 medQtail = newProcess;
             }
-            printf("Processes in med Q\n");
-            iterateQueue(medQhead);
+            // printf("Processes in med Q\n");
+            // iterateQueue(medQhead);
+            // printf("Sleep priority: %d\n", medQhead->pcb->priority);
     }
 }
 

@@ -10,7 +10,7 @@ void echoFunc(int argc, char *argv[]) {
         f_write(PSTDOUT_FILENO, argbuf, strlen(argv[i]) + 1);
         // todo error checking
     }
-    printf("\n");
+    f_write(PSTDOUT_FILENO, "\n", 1);
 }
 
 void sleepFunc(int argc, char *argv[]) {
@@ -253,6 +253,29 @@ void chmodFunc(int argc, char **argv) {
     }
 }
 
+char psStatus(int stat){
+    char procStatus = '\0';
+
+    switch (stat){
+    case BLOCKED:
+        procStatus = 'B';
+        break;
+
+    case RUNNING:
+        procStatus = 'R';
+        break;
+
+    case STOPPED:
+        procStatus = 'S';
+        break;
+    
+    default:
+        break;
+    }
+
+    return procStatus;
+}
+
 void psFunc (int argc, char **argv){
     //loop through all queues 
     // print every process, it's own ucontext
@@ -260,50 +283,67 @@ void psFunc (int argc, char **argv){
     //jobs : in-shell process. talking about the current shell. bg/fg.. finished/stopped/ shows pipelines.. JOB_ID printed
 
     //logging : fputs, fprintf, fwrite, create a logging.c/.h file.//user programs should not directly write to log file.
-    printf("PID PPID PRIORITY\n");
-    // f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
-    Process *temp = highQhead;
+    char stat = '\0';
+    char argbuf[4096];
+
+    f_write(PSTDOUT_FILENO, "PID PPID PRIORITY STAT", strlen("PID PPID PRIORITY STAT")+1);
+    f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+    Process *temp = highQhead; 
+
     while(temp != NULL){
         // printf("high\n");
-        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        // stat = psStatus(temp->pcb->status);
+        char argbuf[4096];
+        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
+        f_write(PSTDOUT_FILENO, argbuf, 4096);
+        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
         temp = temp->next;
     }
-    temp = medQhead;
+
+    memset(argbuf, '\0', strlen(argbuf));
+    temp = medQhead; 
     while(temp != NULL){
         // printf("med\n");
-        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        stat = psStatus(temp->pcb->status);
+        char argbuf[4096];
+        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
+        f_write(PSTDOUT_FILENO, argbuf, 4096);
+        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
         temp = temp->next;
     }
-    temp = lowQhead;
+
+    memset(argbuf, '\0', strlen(argbuf));
+    temp = lowQhead; 
     while(temp != NULL){
         // printf("low\n");
-        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        stat = psStatus(temp->pcb->status);
+        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
+        f_write(PSTDOUT_FILENO, argbuf, 4096);
+        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
         temp = temp->next;
     }
-    temp = blockedQhead;
+
+    memset(argbuf, '\0', strlen(argbuf));
+    temp = blockedQhead; 
     while(temp != NULL){
         // printf("block\n");
-        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        stat = psStatus(temp->pcb->status);
+        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
+        f_write(PSTDOUT_FILENO, argbuf, 4096);
+        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
         temp = temp->next;
     }
-    temp = stoppedQhead;
+
+    memset(argbuf, '\0', strlen(argbuf));
+    temp = stoppedQhead; 
     while(temp != NULL){
         // printf("stop\n");
-        printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        stat = psStatus(temp->pcb->status);
+        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
+        f_write(PSTDOUT_FILENO, argbuf, 4096);
+        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
         temp = temp->next;
     }
-    // temp = zombieQhead;
-    // while(temp != NULL){
-    //     printf("hi\n");
-    //     printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
-    //     temp = temp->next;
-    // }
-    // temp = orphanQhead;
-    // while(temp != NULL){
-    //     printf("hi\n");
-    //     printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
-    //     temp = temp->next;
-    // }
 }
 
 void zombify(int argc, char **argv) {
@@ -316,12 +356,18 @@ void zombify(int argc, char **argv) {
     return;
 }
 void zombie_child() {
-    printf("MMMMM Brains...!\n");
+    char argbuf[4096];
+    sprintf(argbuf, "MMMMM Brains...!\n"); 
+    f_write(PSTDOUT_FILENO, argbuf, 4096);
+    // printf("MMMMM Brains...!\n");
     return;
 }
 
 void orphan_child() {
-    printf("Please sir, I want some more\n");
+    char argbuf[4096];
+    sprintf(argbuf, "Please sir, I want some more\n"); 
+    f_write(PSTDOUT_FILENO, argbuf, 4096);
+    // printf("Please sir, I want some more\n");
     while (1) ;
 }
 void orphanify(int argc, char **argv) {
@@ -334,45 +380,48 @@ void orphanify(int argc, char **argv) {
 }
 
 void logout(){
-    printf("Logging out\n");
+     char argbuf[4096];
+    sprintf(argbuf, "Logging out\n"); 
+    f_write(PSTDOUT_FILENO, argbuf, 4096);
+    // printf("Logging out\n");
     p_exit();
 }
 
 void killFunc(int argc, char **argv){
-    char *signal == 'term';
-    int pid;
-    if (argc == 3){
-        signal = argv[1];
-        pid = atoi(argv[2]);
-    }
-    else if (argc == 2){
-        pid = atoi(argv[1]);
-    }
-    else{
-        p_perror("invalid command");
-        return;
-    }
+    // char *signal = 'term';
+    // int pid;
+    // if (argc == 3){
+    //     signal = argv[1];
+    //     pid = atoi(argv[2]);
+    // }
+    // else if (argc == 2){
+    //     pid = atoi(argv[1]);
+    // }
+    // else{
+    //     p_perror("invalid command");
+    //     return;
+    // }
     
-    // printf("signal %s argc %d", signal, argc);
-    switch (signal){
-        case 'stop':{
-            if (p_kill(pid,S_SIGSTOP) < 0){
-                p_perror("error in killing process");
-            }
-        }
-        break;
-        case 'cont':{
-            if (p_kill(pid,S_SIGCONT)< 0){
-                p_perror("error in killing process");
-            }
-        }
-        break;
-        default:{
-            //term
-            if (p_kill(pid,S_SIGTERM) < 0){
-                p_perror("error in killing process");
-            }
-        }
-    }
+    // // printf("signal %s argc %d", signal, argc);
+    // switch (signal){
+    //     case 'stop':{
+    //         if (p_kill(pid,S_SIGSTOP) < 0){
+    //             p_perror("error in killing process");
+    //         }
+    //     }
+    //     break;
+    //     case 'cont':{
+    //         if (p_kill(pid,S_SIGCONT)< 0){
+    //             p_perror("error in killing process");
+    //         }
+    //     }
+    //     break;
+    //     default:{
+    //         //term
+    //         if (p_kill(pid,S_SIGTERM) < 0){
+    //             p_perror("error in killing process");
+    //         }
+    //     }
+    // }
     return;
 }

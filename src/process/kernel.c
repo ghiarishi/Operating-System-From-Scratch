@@ -100,9 +100,9 @@ int k_process_kill(Process *p, int signal){
     break;
     case S_SIGCONT:
     // need to write this
-        printf("entered sigcont in KPK: %d\n", p->pcb->pid);
+        // printf("entered sigcont in KPK: %d\n", p->pcb->pid);
         if (p->pcb->status == STOPPED){
-            printf("process to be cont: %s\n", p->pcb->argument);
+            // printf("process to be cont: %s\n", p->pcb->argument);
             dequeueStopped(p);
             p->pcb->changedStatus = 0;
             p->pcb->bgFlag = 1;
@@ -143,8 +143,6 @@ void k_process_cleanup(Process *p) {
     // printf("%d\n", temp->pcb->pid);
     
     while(temp != NULL){
-        // printf("entered while loop");
-        // printf("ppid is: %d pid is: %d waitchild: %d\n", p->pcb->ppid, temp->pcb->pid, temp->pcb->waitChild);
         if(temp->pcb->pid == p->pcb->ppid && (temp->pcb->waitChild == p->pcb->pid)){
             dequeueBlocked(temp);
             enqueue(temp);
@@ -165,7 +163,6 @@ void k_process_cleanup(Process *p) {
 
 Process *findProcessByPid(int pid){
 
-    // printf("entered find process pid\n");
     Process *temp = highQhead;
     while(temp != NULL){
         if(temp->pcb->pid == pid){
@@ -207,7 +204,7 @@ Process *findProcessByPid(int pid){
     temp = stoppedQhead;
     while(temp != NULL){
         if(temp->pcb->pid == pid){
-            // printf("BLOCKED exiting find process pid\n");
+            // printf("Stopped exiting find process pid %s\n", temp->pcb->argument);
             return temp;
         }
         temp = temp->next;
