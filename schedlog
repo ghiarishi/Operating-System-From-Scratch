@@ -24,3 +24,8 @@ PennOS Logs
 [156]	UNBLOCKED	4	0	sleep 6 
 [156]	ZOMBIE	4	0	sleep 6 
 [156]	EXITED	4	0	sleep 6 0	
+[193]	UNBLOCKED	2	0	sleep 5 
+ penn-shell 
+[193]	SCHEDULE	1	HIGH	penn-shell 	
+[193]	EXITED	2	0	sleep 5 
+[193]	EXITED	2	0	sleep 5 0	
