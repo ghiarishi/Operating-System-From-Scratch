@@ -54,7 +54,7 @@ where `filestat_t` is the directory entry defined in the PennOS handout:
 typedef struct filestat {
     char name[32];
     uint32_t size;
-    uint16_t blockno;  // will be unique for each file
+    uint16_t blockno;
     uint8_t type;
     uint8_t perm;
     time_t mtime;
@@ -235,3 +235,7 @@ Edit the I/O permissions of an open file.
 
 **Exceptions**
 - `PEINVAL`: the mode is invalid
+
+### Kernel-Level Functions
+
+Kernel-level functions are documented inline in src/fs/fat.c.
