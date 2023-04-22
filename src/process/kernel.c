@@ -99,21 +99,37 @@ int k_process_kill(Process *p, int signal){
     }
     break;
     case S_SIGCONT:
-    // need to write this
-        // printf("entered sigcont in KPK: %d\n", p->pcb->pid);
+        p->pcb->changedStatus = 0;
         if (p->pcb->status == STOPPED){
-            // printf("process to be cont: %s\n", p->pcb->argument);
             dequeueStopped(p);
-            p->pcb->changedStatus = 0;
-            p->pcb->bgFlag = 1;
-            p->pcb->status = RUNNING;
-            if(p->pcb->sleep_time_remaining > 0){
-                enqueueBlocked(p);
-            } else{
-                enqueue(p);
+            if(fgpid == 1){ // if shell in foreground (bg command)
+                // printf("Mark 3\n");
+                p->pcb->bgFlag = 1;
+                p->pcb->status = RUNNING;
+                if(p->pcb->sleep_time_remaining != -1){
+                    enqueueBlocked(p);
+                } 
+                else{
+                    enqueue(p);
+                }
+            } else { // if shell not in foreground (fg command)
+                p->pcb->bgFlag = 0;
+                if(p->pcb->sleep_time_remaining != -1){ // if sleep has time left, block it and shell
+                    enqueueBlocked(p);
+                    p->pcb->changedStatus = 0;
+                } 
+                else{
+                    p->pcb->status = RUNNING;
+                    enqueue(p);
+                }
             }
+        } else if (p->pcb->status == BLOCKED && p->pcb->sleep_time_remaining >0){
+            p->pcb->bgFlag = 0;
+        } else if (p->pcb->status == RUNNING){
+            p->pcb->bgFlag = 0;
             
         }
+        // printf("Mark 5\n");
         break;
     default:
         return -1;

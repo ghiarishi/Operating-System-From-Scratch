@@ -237,7 +237,6 @@ void enqueue(Process* newProcess) {
             }
             // printf("Processes in med Q\n");
             // iterateQueue(medQhead);
-            // printf("Sleep priority: %d\n", medQhead->pcb->priority);
     }
 }
 
@@ -345,41 +344,6 @@ void dequeueStopped(Process* newProcess){
         }
         current = current -> next;
     }
-
-    // // if first job, set the new head to the next job and free head
-    // if (stoppedQhead != NULL && stoppedQhead->pcb->pid == newProcess->pcb->pid) {
-    //     Process *old_head = stoppedQhead;
-    //     stoppedQhead = stoppedQhead->next;
-    //     // printf("%s dequeued from stopped Q head\n", newProcess->pcb->argument);
-    //     old_head->next = NULL;
-
-    //     printf("Processes in stopped Q\n");
-    //     iterateQueue(stoppedQhead);
-    //     return;
-    // }
-
-    // // iterate through all jobs until job of interest is reached
-    // Process *current = stoppedQhead;
-    // while (current -> next != NULL){
-
-    //     // if the next job is the one, replace next with the one after that
-    //     if (current -> next -> pcb -> pid == newProcess->pcb->pid){
-    //         // printf("%s deququed from stopped Q\n", newProcess->pcb->argument);
-    //         Process *removed = current -> next;
-    //         Process *newNext = removed -> next;
-    //         if (newNext == NULL){
-    //             stoppedQhead = current;
-    //         }
-    //         // if else for stopped or terminated, act differently for both
-    //         current -> next = newNext;
-    //         removed -> next = NULL; 
-    //         // freeOneJob(&removed);
-    //         printf("Processes in STOPPED Q\n");
-    //         iterateQueue(stoppedQhead);
-    //         return;
-    //     }
-    //     current = current -> next;
-    // }
 }
 
 

@@ -283,67 +283,72 @@ void psFunc (int argc, char **argv){
     //jobs : in-shell process. talking about the current shell. bg/fg.. finished/stopped/ shows pipelines.. JOB_ID printed
 
     //logging : fputs, fprintf, fwrite, create a logging.c/.h file.//user programs should not directly write to log file.
-    char stat = '\0';
-    char argbuf[4096];
 
-    f_write(PSTDOUT_FILENO, "PID PPID PRIORITY STAT", strlen("PID PPID PRIORITY STAT")+1);
-    f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
-    Process *temp = highQhead; 
-
+    char argbuf[strlen("PID PPID PRIORITY\n") + 1];
+    sprintf(argbuf, "%s ","PID PPID PRIORITY\n");
+    f_write(PSTDOUT_FILENO, argbuf, strlen("PID PPID PRIORITY\n") + 1);
+    // printf("PID PPID PRIORITY\n");
+    Process *temp = highQhead;
     while(temp != NULL){
         // printf("high\n");
-        // stat = psStatus(temp->pcb->status);
-        char argbuf[4096];
-        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
-        f_write(PSTDOUT_FILENO, argbuf, 4096);
-        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
+        // f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
+        char argbuf[strlen("PID PPID PRIORITY\n") + 1];
+        sprintf(argbuf, "%d %3d %4d \n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        f_write(PSTDOUT_FILENO, argbuf, strlen("PID PPID PRIORITY\n") + 1);
+        // printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
         temp = temp->next;
     }
-
-    memset(argbuf, '\0', strlen(argbuf));
-    temp = medQhead; 
+    temp = medQhead;
     while(temp != NULL){
         // printf("med\n");
-        stat = psStatus(temp->pcb->status);
-        char argbuf[4096];
-        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
-        f_write(PSTDOUT_FILENO, argbuf, 4096);
-        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
+        char argbuf[strlen("PID PPID PRIORITY\n") + 1];
+        sprintf(argbuf, "%d %3d %4d \n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        f_write(PSTDOUT_FILENO, argbuf, strlen("PID PPID PRIORITY\n") + 1);
+        // printf("%d %3d %4d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
         temp = temp->next;
     }
-
-    memset(argbuf, '\0', strlen(argbuf));
-    temp = lowQhead; 
+    temp = lowQhead;
     while(temp != NULL){
         // printf("low\n");
-        stat = psStatus(temp->pcb->status);
-        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
-        f_write(PSTDOUT_FILENO, argbuf, 4096);
-        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
+        // printf("%d %3d %4d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        char argbuf[strlen("PID PPID PRIORITY\n") + 1];
+        sprintf(argbuf, "%d %3d %4d \n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        f_write(PSTDOUT_FILENO, argbuf, strlen("PID PPID PRIORITY\n") + 1);
         temp = temp->next;
     }
-
-    memset(argbuf, '\0', strlen(argbuf));
-    temp = blockedQhead; 
+    temp = blockedQhead;
     while(temp != NULL){
         // printf("block\n");
-        stat = psStatus(temp->pcb->status);
-        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
-        f_write(PSTDOUT_FILENO, argbuf, 4096);
-        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
+        // printf("%d %3d %4d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        char argbuf[strlen("PID PPID PRIORITY\n") + 1];
+        sprintf(argbuf, "%d %3d %4d \n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        f_write(PSTDOUT_FILENO, argbuf, strlen("PID PPID PRIORITY\n") + 1);
         temp = temp->next;
     }
-
-    memset(argbuf, '\0', strlen(argbuf));
-    temp = stoppedQhead; 
+    temp = stoppedQhead;
     while(temp != NULL){
         // printf("stop\n");
-        stat = psStatus(temp->pcb->status);
-        sprintf(argbuf, "%3d %4d %8d %4c\n", temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat); 
-        f_write(PSTDOUT_FILENO, argbuf, 4096);
-        // fprintf("%3d %4d %8d %4c\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority, stat);
+        // printf("%d %3d %4d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        char argbuf[strlen("PID PPID PRIORITY\n") + 1];
+        sprintf(argbuf, "%d %3d %4d \n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        f_write(PSTDOUT_FILENO, argbuf, strlen("PID PPID PRIORITY\n") + 1);
         temp = temp->next;
     }
+    temp = zombieQhead;
+    while(temp != NULL){
+        // printf("hi\n");
+        // printf("%d %3d %4d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        char argbuf[strlen("PID PPID PRIORITY\n") + 1];
+        sprintf(argbuf, "%d %3d %4d \n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+        f_write(PSTDOUT_FILENO, argbuf, strlen("PID PPID PRIORITY\n") + 1);
+        temp = temp->next;
+    }
+    // temp = orphanQhead;
+    // while(temp != NULL){
+    //     printf("hi\n");
+    //     printf("%3d %4d %8d\n",temp->pcb->pid, temp->pcb->ppid, temp->pcb->priority);
+    //     temp = temp->next;
+    // }
 }
 
 void zombify(int argc, char **argv) {

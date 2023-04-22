@@ -72,14 +72,14 @@ void sigcontHandler(int signal){
 
 void sigtstpHandler(int signal){
     if(signal == SIGTSTP){ //ctrl-z
-        if(fgpid > 1){
-            int ret = p_kill(fgpid, S_SIGSTOP); 
+        if(fgpid > 1){ // if not shell running in fg
+            int ret = p_kill(fgpid, S_SIGSTOP);  // stop that process
             // printf("exit only becasue nothing to run, need to exit using p_exit");
             if (ret == -1){
                 p_exit();
             }
         }
-        if(fgpid == 1){
+        if(fgpid == 1){ // if shell is running, do nothing
             f_write(PSTDOUT_FILENO, "\n", sizeof("\n"));
             f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT));
         }
@@ -363,18 +363,17 @@ char *statusToStr(int status){
     }
 }
 
-void iterateShell(struct Job *head){
-    // printf("Shell Queue Contains: \n");
-    if(head == NULL){
-        // printf("Shell Q Empty\n");
-        return;
-    }
-    while(head!= NULL){
-        // printf("%s\n", head->commandInput);
-        head = head->next;
-    }
-}
-
+// void iterateShell(struct Job *head){
+//     fprintf(stderr,"Shell Queue Contains: \n");
+//     if(head == NULL){
+//         fprintf(stderr,"Shell Q Empty\n");
+//         return;
+//     }
+//     while(head!= NULL){
+//         fprintf(stderr,"%s\n", head->commandInput);
+//         head = head->next;
+//     }
+// }
 
 struct Job *head = NULL;
 
@@ -445,26 +444,6 @@ void pennShredder(char* buffer){
     struct parsed_command *cmd;
     int num = parse_command(buffer, &cmd);
 
-    // printf("printing if cmd stdout arg exists %s\n", cmd->stdout_file);
-
-    // error handling for parsed command
-    // switch(num){
-    //     case 1: fprintf(stderr,"invalid: parser encountered an unexpected file input token '<' \n");
-    //             break;
-    //     case 2: fprintf(stderr,"invalid: parser encountered an unexpected file output token '>' \n");
-    //             break;
-    //     case 3: fprintf(stderr,"invalid: parser encountered an unexpected pipeline token '|' \n");
-    //             break;
-    //     case 4: fprintf(stderr,"invalid: parser encountered an unexpected ampersand token '&' \n");
-    //             break;
-    //     case 5: fprintf(stderr,"invalid: parser didn't find input filename following '<' \n");
-    //             break;
-    //     case 6: fprintf(stderr, "invalid: parser didn't find output filename following '>' or '>>' \n");
-    //             break;
-    //     case 7: fprintf(stderr, "invalid: parser didn't find any commands or arguments where it expects one \n");
-    //             break;
-    // }
-
     if(num != 0){
         return;
     }
@@ -486,7 +465,6 @@ void pennShredder(char* buffer){
             
             struct Job *bgJob = getJob(head, job_id);
 
-            // if the chosen process is stopped, it must be set to run in the foreground
             if (bgJob -> status == STOPPED){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 2); // set job to running
@@ -544,153 +522,144 @@ void pennShredder(char* buffer){
     }
 
    
-    // // check for FG builtin
-    // if(strcmp("fg", cmd -> commands[0][0]) == 0){
-    //     if(head == NULL){
-    //         fprintf(stderr, "No jobs present in the queue \n");
-    //         free(cmd);
-    //         return;
-    //     }
+    // check for FG builtin
+    if(strcmp("fg", cmd -> commands[0][0]) == 0){
+        if(head == NULL){
+            fprintf(stderr, "No jobs present in the queue \n");
+            free(cmd);
+            return;
+        }
         
-    //     // case where JID is given
-    //     if(cmd -> commands[0][1] != NULL){
-    //         int job_id = atoi(cmd -> commands[0][1]);
-    //         struct Job *fgJob = getJob(head, job_id);
-    //         if (fgJob -> status == STOPPED){
-    //             // Send a SIGCONT signal to the process to continue it in the background
-    //             changeStatus(head, job_id, 0); // set job to running
-    //             changeFGBG(head, job_id, 0); // set job to FG 
-    //             fprintf(stderr,"Restarting: %s", fgJob -> commandInput);
-    //             p_kill(fgJob -> myPid, S_SIGCONT); // killpg(fgJob -> pgid, SIGCONT); 
-    //             // tcsetpgrp(STDIN_FILENO, fgJob -> myPid);
-    //             int status;
-    //             for (int i = 0; i < fgJob -> numChild; i++){
-    //                 waitpid(fgJob->pids[i], &status, WUNTRACED);   
-    //             }
-    //             // tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
-    //             if(WIFSTOPPED(status)){ 
-    //                 fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
-    //                 fgJob -> status = STOPPED; 
-    //                 if (bufferWaiting){
-    //                     //PRINT BUFFER
-    //                     for (int i = 0; i < bufferCount ; i++) {
-    //                         fprintf(stderr,"%s\n", bufferSig[i]);
-    //                     }
-    //                     free(bufferSig);
+        // case where JID is given
+        if(cmd -> commands[0][1] != NULL){
+            int job_id = atoi(cmd -> commands[0][1]);
+            struct Job *fgJob = getJob(head, job_id);
+            int pid_fg = fgJob->myPid;
+            if (fgJob -> status == STOPPED){
+                // Send a SIGCONT signal to the process to continue it in the background
+                changeStatus(head, job_id, 2); // set job to running
+                changeFGBG(head, job_id, 0); // set job to FG 
+                fgpid = pid_fg;
+                fprintf(stderr, "Restarting: %s", fgJob -> commandInput);
+                p_kill(pid_fg, S_SIGCONT);   
+                head = removeJob(head, fgJob->JobNumber);
 
-    //                     bufferWaiting=0;
-    //                     bufferCount = 0;
-    //                 }
-    //             }
-    //             if(fgJob->status != STOPPED){
-    //                 changeStatus(head, job_id, 2); // set job to finished
-    //                 head = removeJob(head, fgJob->JobNumber);
-    //             }
-    //             free(cmd);
-    //             return;
-    //         }
-    //         // not stopped, but running in BG
-    //         else{
-    //             // tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
-    //             changeFGBG(head, job_id, 0); // set job to FG 
-    //             fprintf(stderr, "%s\n", fgJob -> commandInput); 
-    //             int status;
-    //             for (int i = 0; i < fgJob -> numChild; i++){
-    //                 waitpid(fgJob->pids[i], &status, WUNTRACED);   
-    //             }
-    //             // tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
-    //             if(WIFSTOPPED(status)){ 
-    //                 fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
-    //                 fgJob -> status = STOPPED; 
-    //                 if (bufferWaiting){
-    //                     //PRINT BUFFER
-    //                     for (int i = 0; i < bufferCount ; i++) {
-    //                         fprintf(stderr, "%s\n", bufferSig[i]);
-    //                     }
-    //                     free(bufferSig);
-    //                     bufferWaiting=0;
-    //                     bufferCount = 0;
-    //                 }
-    //             }
-    //             if(fgJob->status != STOPPED){
-    //                 changeStatus(head, job_id, 2); // set job to finished
-    //                 head = removeJob(head, fgJob->JobNumber);
-    //             }
-    //             free(cmd);
-    //             return;
-    //         }
-    //     }
-    //     else{ // case where no job ID given
-    //         int job_id = getCurrentJob(head);
-    //         struct Job *fgJob = getJob(head, job_id);
-    //         if (fgJob -> status == STOPPED){
-    //             // Send a SIGCONT signal to the process to continue it in the background
-    //             changeStatus(head, job_id, 0); // set job to running
-    //             changeFGBG(head, job_id, 0); // set job to FG 
-    //             killpg(fgJob -> myPid, S_SIGCONT); //killpg(fgJob -> pgid, SIGCONT);
-    //             // tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
-    //             fprintf(stderr, "Restarting: %s", fgJob -> commandInput);
-    //             int status; 
-    //             for (int i = 0; i < fgJob -> numChild; i++){
-    //                 waitpid(fgJob->pids[i], &status, WUNTRACED);   
-    //             }
-    //             // tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
-    //             if(WIFSTOPPED(status)){ 
-    //                 fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
-    //                 fgJob -> status = STOPPED; 
-    //                 if (bufferWaiting){
-    //                     //PRINT BUFFER
-    //                     for (int i = 0; i < bufferCount ; i++) {
-    //                         fprintf(stderr, "%s\n", bufferSig[i]);
-    //                     }
-    //                     free(bufferSig);
-    //                     bufferWaiting = 0;
-    //                     bufferCount = 0;
-    //                 }
-    //              }
-    //             if(fgJob->status != STOPPED){
-    //                 changeStatus(head, job_id, 2); // set job to finished
-    //                 head = removeJob(head, fgJob->JobNumber);
-    //             }
-    //             free(cmd);
-    //             return;
-    //         }
-    //         // not stopped, but running in BG
-    //         else{
-    //             // tcsetpgrp(STDIN_FILENO, fgJob -> pgid);
-    //             changeFGBG(head, job_id, 0); // set job to FG 
-    //             fprintf(stderr,"%s\n", fgJob -> commandInput); 
-    //             int status;
-    //             for (int i = 0; i < fgJob -> numChild; i++){
-    //                 waitpid(fgJob->pids[i], &status, WUNTRACED);   
-    //             }
-    //             // tcsetpgrp(STDIN_FILENO, getpgid(0)); // give TC to parent
-    //             if(WIFSTOPPED(status)){ 
-    //                 fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
-    //                 fgJob -> status = STOPPED; 
-    //                 if (bufferWaiting){
-    //                     //PRINT BUFFER
-    //                     for (int i = 0; i < bufferCount ; i++) {
-    //                         fprintf(stderr, "%s\n", bufferSig[i]);
-    //                     }
-    //                     free(bufferSig);
-    //                     bufferWaiting=0;
-    //                     bufferCount = 0;
-    //                 }
-    //             }
-    //             if(fgJob->status != STOPPED){
-    //                 changeStatus(head, job_id, 2); // set job to finished
-    //                 head = removeJob(head, fgJob->JobNumber);
-    //             }
-    //             free(cmd);
-    //             return;
-    //         }
-    //         free(cmd);
-    //         return;
-    //     }
-    //     free(cmd);
-    //     return;
-    // }
+                int status; 
+                p_waitpid(pid_fg, &status, FALSE);
+                
+                if(W_WIFSTOPPED(status)){ 
+                    fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    fgJob -> status = STOPPED; 
+                    // if (bufferWaiting){
+                    //     //PRINT BUFFER
+                    //     for (int i = 0; i < bufferCount ; i++) {
+                    //         fprintf(stderr, "%s\n", bufferSig[i]);
+                    //     }
+                    //     free(bufferSig);
+                    //     bufferWaiting = 0;
+                    //     bufferCount = 0;
+                    // }
+                } 
+                fgpid = 1;
+                free(cmd);
+                return;
+            }
+            // not stopped, but running in BG
+            else{
+                changeFGBG(head, job_id, 0); // set job to FG 
+                fprintf(stderr,"%s\n", fgJob -> commandInput); 
+                fgpid = pid_fg;
+                p_kill(pid_fg, S_SIGCONT); 
+                head = removeJob(head, fgJob->JobNumber);
+     
+                int status;
+                p_waitpid(pid_fg, &status, FALSE);
+
+                if(W_WIFSTOPPED(status)){ 
+                    fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    fgJob -> status = STOPPED; 
+                    // if (bufferWaiting){
+                    //     //PRINT BUFFER
+                    //     for (int i = 0; i < bufferCount ; i++) {
+                    //         fprintf(stderr, "%s\n", bufferSig[i]);
+                    //     }
+                    //     free(bufferSig);
+                    //     bufferWaiting=0;
+                    //     bufferCount = 0;
+                    // }
+                } 
+                fgpid = 1;
+                free(cmd);
+                return;
+            }
+        }
+        else{ // case where no job ID given
+            int job_id = getCurrentJob(head);
+            struct Job *fgJob = getJob(head, job_id);
+            int pid_fg = fgJob->myPid;
+            if (fgJob -> status == STOPPED){
+                // Send a SIGCONT signal to the process to continue it in the background
+                changeStatus(head, job_id, 2); // set job to running
+                changeFGBG(head, job_id, 0); // set job to FG 
+                fgpid = pid_fg;
+                fprintf(stderr, "Restarting: %s", fgJob -> commandInput);
+                p_kill(pid_fg, S_SIGCONT);   
+                head = removeJob(head, fgJob->JobNumber);
+
+                int status; 
+                p_waitpid(pid_fg, &status, FALSE);
+                
+                if(W_WIFSTOPPED(status)){ 
+                    fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    fgJob -> status = STOPPED; 
+                    // if (bufferWaiting){
+                    //     //PRINT BUFFER
+                    //     for (int i = 0; i < bufferCount ; i++) {
+                    //         fprintf(stderr, "%s\n", bufferSig[i]);
+                    //     }
+                    //     free(bufferSig);
+                    //     bufferWaiting = 0;
+                    //     bufferCount = 0;
+                    // }
+                } 
+                fgpid = 1;
+                free(cmd);
+                return;
+            }
+            // not stopped, but running in BG
+            else{
+                changeFGBG(head, job_id, 0); // set job to FG 
+                fprintf(stderr,"%s\n", fgJob -> commandInput); 
+                fgpid = pid_fg;
+                p_kill(pid_fg, S_SIGCONT); 
+                head = removeJob(head, fgJob->JobNumber);
+     
+                int status;
+                p_waitpid(pid_fg, &status, FALSE);
+
+                if(W_WIFSTOPPED(status)){ 
+                    fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    fgJob -> status = STOPPED; 
+                    // if (bufferWaiting){
+                    //     //PRINT BUFFER
+                    //     for (int i = 0; i < bufferCount ; i++) {
+                    //         fprintf(stderr, "%s\n", bufferSig[i]);
+                    //     }
+                    //     free(bufferSig);
+                    //     bufferWaiting=0;
+                    //     bufferCount = 0;
+                    // }
+                } 
+                fgpid = 1;
+                free(cmd);
+                return;
+            }
+            free(cmd);
+            return;
+        }
+        free(cmd);
+        return;
+    }
     
     // check for JOBS builtin
     if(strcmp("jobs", cmd -> commands[0][0]) == 0){
@@ -843,16 +812,16 @@ void pennShell(){
         if(isatty(fileno(stdin))){
             // WRITE AND READ 
             if (f_write(PSTDOUT_FILENO, PROMPT, sizeof(PROMPT)) == -1) {
-                perror("write");
+                p_perror("write");
                 // freeAllJobs(head);
                 // freeAllJobs(current);
-                exit(EXIT_FAILURE);
+                p_exit();
             }
 
             int numBytes = f_read(PSTDIN_FILENO,  4096, buffer);
 
             if (numBytes == -1) {
-                perror("read");
+                p_perror("read");
                 // freeAllJobs(head);
                 // freeAllJobs(current);
                 exit(EXIT_FAILURE);
@@ -957,19 +926,19 @@ void pennShell(){
                     // printf("entered 2rd line ctrld \n");
                     if (f_write(PSTDOUT_FILENO, "\n", strlen("\n")) == -1) {
                         // printf("entered 3rd line ctrld \n");
-                        perror("write");
+                        p_perror("write");
                         // freeAllJobs(head);
                         // freeAllJobs(current);
-                        exit(EXIT_FAILURE);
+                        p_exit();
                     }  
                     break; // Either ways, just shut the code
                 }
                 else{ // Normal case
                     if (f_write(PSTDOUT_FILENO, "\n", strlen("\n")) == -1) {
-                        perror("write");
+                        p_perror("write");
                         // freeAllJobs(head);
                         // freeAllJobs(current);
-                        exit(EXIT_FAILURE);
+                        p_exit();
                     }  
                 }
             }

@@ -224,12 +224,12 @@ void p_sleep(unsigned int ticks){
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
     }
-    // printf("Finished with %s\n", activeProcess->pcb->argument);
 }
 
 void p_exit(void){
     // printf("p_exit\n");
     //do cleanup to avoid memory leaks
+    // fclose(fp);
     return;
 }
 

@@ -28,9 +28,12 @@ char psStatus(int stat);
 void psFunc (int argc, char **argv);
 void killFunc (int argc, char **argv);
 
+void man();
+
 void zombify(int argc, char **argv);
 void zombie_child();
 void orphanify(int argc, char **argv);
 void orphan_child();
-
+void niceFunc(char *argv[]);
+int nice_pid(char *argv[]);
 void logout();

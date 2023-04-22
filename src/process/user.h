@@ -25,7 +25,7 @@ char* concat(int argc, char *argv[]);
 void removeNicePrefix(char *argv[], int argc);
 pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1);
 pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang);
-void p_sleep(unsigned int ticks);
+void p_sleep(unsigned int ticks1);
 int p_kill(pid_t pid, int sig);
 void p_exit(void);
 int p_nice(pid_t pid, int priority);
