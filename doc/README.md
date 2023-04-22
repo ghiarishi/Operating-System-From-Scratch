@@ -1,4 +1,4 @@
-# Penn - Shell
+# Penn - OS
 
 ## Name and PennKey:
 Partner 1: Rishi Ghia : ghiar : 24017117
