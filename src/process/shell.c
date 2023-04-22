@@ -11,6 +11,7 @@ int bufferCount = 0;
 int fgpid = 1;
 pid_t newpid = 0;
 int flag_spaces = 0; 
+int retFlag = 0;
 
 char* strCopy(char* src, char* dest) {
     strtok(src, "&");
@@ -27,7 +28,7 @@ struct Job *createJob(int pid, int bgFlag, int numChildren, char *input){
     struct Job *newJob;
     newJob = (struct Job *)malloc(sizeof(struct Job));
     newJob -> commandInput = malloc((strlen(input) + 1) * sizeof(char));
-    strCopy(input, newJob -> commandInput);
+    strcpy(newJob -> commandInput, input);
     newJob -> next = NULL;
     newJob -> bgFlag = bgFlag;
     newJob -> myPid = pid;
@@ -48,20 +49,6 @@ void sigIntTermHandler(int signal) {
     // ignore for bg processes
     if(signal == SIGINT){
         if(fgpid > 1){
-<<<<<<< Updated upstream
-=======
-            // printf("2. fgpid is: %d\n", fgpid);
-            // char buf[20];
-            // buf[0] = '\0';
-            // // char s[10];
-            // strcat(buf,"SIGNALED\t");
-            // sprintf(s, "%d\t", proc->pcb->pid);
-            // strcat(buf,s);
-            // sprintf(s, "%d\t", proc->pcb->priority);
-            // strcat(buf,s);
-            // strcat(buf,proc->pcb->argument);
-            // writeLogs(buf);
->>>>>>> Stashed changes
             p_kill(fgpid, S_SIGTERM);
         }
         if(fgpid == 1){
@@ -143,27 +130,27 @@ void setSignalHandler(void){
     sigaction(SIGTSTP, &sa_stop, NULL);
 }
 
-// // clear all the mallocs to prevent memory leaks
-// void freeOneJob(struct Job *Job){
-//     free(Job -> commandInput);
-//     free(Job);
-// }
+// clear all the mallocs to prevent memory leaks
+void freeOneJob(struct Job *Job){
+    free(Job -> commandInput);
+    free(Job);
+}
 
-// // call freeOneJob for every job in order to clear the entire LL memory
-// void freeAllJobs(struct Job *head) {
-//     // if the head is null, nothing to clear
-//     if (head == NULL) {
-//         return;
-//     }
+// call freeOneJob for every job in order to clear the entire LL memory
+void freeAllJobs(struct Job *head) {
+    // if the head is null, nothing to clear
+    if (head == NULL) {
+        return;
+    }
 
-//     // iterate through LL, call freeOneJob
-//     struct Job * current = head;
-//         while (current != NULL) {
-//             struct Job* removal = current;
-//             current = current -> next;
-//             // freeOneJob(removal);
-//     }
-// }
+    // iterate through LL, call freeOneJob
+    struct Job * current = head;
+        while (current != NULL) {
+            struct Job* removal = current;
+            current = current -> next;
+            freeOneJob(removal);
+    }
+}
 
 // input parameters: head of LL, newJob we want to add to LL
 struct Job *addJob(struct Job *head, struct Job *newJob){
@@ -408,10 +395,9 @@ void shellBFunc(struct parsed_command *cmd){
     if(strcmp(cmd->commands[0][0], "nice") == 0){
         i = 2;
     }
-
+    
     // spawn builtin
     if (strcmp(cmd->commands[0][i], "sleep") == 0) {
-        // printf("PSPAWN SLEEP\n");
         curr_pid = p_spawn(sleepFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][i], "echo") == 0) {
         curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
@@ -427,7 +413,14 @@ void shellBFunc(struct parsed_command *cmd){
         curr_pid = p_spawn(orphanify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][i], "logout") == 0) {
         logout();
-    } else if (strcmp(cmd->commands[0][i], "cat") == 0) {
+        retFlag = 1;
+        return;
+    } else if (strcmp(cmd->commands[0][i], "man") == 0) {
+        man();
+        retFlag = 1;
+        return;
+    }
+    else if (strcmp(cmd->commands[0][i], "cat") == 0) {
         curr_pid = p_spawn(catFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
     } else if (strcmp(cmd->commands[0][i], "ls") == 0) {
         curr_pid = p_spawn(lsFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
@@ -458,27 +451,6 @@ void pennShredder(char* buffer){
     struct parsed_command *cmd;
     int num = parse_command(buffer, &cmd);
 
-<<<<<<< Updated upstream
-=======
-    // error handling for parsed command
-    switch(num){
-        case 1: p_perror("invalid: parser encountered an unexpected file input token '<' \n");
-                break;
-        case 2: p_perror("invalid: parser encountered an unexpected file output token '>' \n");
-                break;
-        case 3: p_perror("invalid: parser encountered an unexpected pipeline token '|' \n");
-                break;
-        case 4: p_perror("invalid: parser encountered an unexpected ampersand token '&' \n");
-                break;
-        case 5: p_perror("invalid: parser didn't find input filename following '<' \n");
-                break;
-        case 6: p_perror("invalid: parser didn't find output filename following '>' or '>>' \n");
-                break;
-        case 7: p_perror("invalid: parser didn't find any commands or arguments where it expects one \n");
-                break;
-    }
-
->>>>>>> Stashed changes
     if(num != 0){
         return;
     }
@@ -486,14 +458,10 @@ void pennShredder(char* buffer){
     // check for BG builtin
     if(strcmp("bg", cmd -> commands[0][0]) == 0){
         if(head == NULL){
-<<<<<<< Updated upstream
             char argbuf[strlen("No jobs present in the queue \n") + 1];
             sprintf(argbuf, "%s ", "No jobs present in the queue \n");
             f_write(PSTDOUT_FILENO, argbuf, strlen(argbuf) + 1);
             // fprintf(stderr, "No jobs present in the queue \n");
-=======
-            // fprintf(fp, "No jobs present in the queue \n");
->>>>>>> Stashed changes
             free(cmd);
             return;
         }
@@ -508,28 +476,22 @@ void pennShredder(char* buffer){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 2); // set job to running
                 changeFGBG(head, job_id, 1); // set job to BG 
-<<<<<<< Updated upstream
-                char argbuf[strlen(bgJob -> commandInput) + 1];
+                char argbuf[1024];
+                argbuf[0]='\0';
                 sprintf(argbuf, "Running: %s ", bgJob -> commandInput);
-                f_write(PSTDOUT_FILENO, argbuf, strlen(bgJob -> commandInput) + 1);
+                f_write(PSTDOUT_FILENO, argbuf, strlen(argbuf) + 1);
                 // fprintf(stderr,"Running: %s", bgJob -> commandInput);
-=======
-                // fprintf(fp,"Running: %s", bgJob -> commandInput);
->>>>>>> Stashed changes
                 p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
                 free(cmd);
                 return;
             } 
             // if running, move from bg to fg
             else if (bgJob -> status == RUNNING){
-<<<<<<< Updated upstream
-                char argbuf[strlen(bgJob -> commandInput) + 1];
+                char argbuf[1024];
+                argbuf[0]='\0';
                 sprintf(argbuf, "%s already running\n", bgJob -> commandInput);
-                f_write(PSTDOUT_FILENO, argbuf, strlen(bgJob -> commandInput) + 1);
+                f_write(PSTDOUT_FILENO, argbuf, strlen(argbuf) + 1);
                 // fprintf(stderr,"%s already running\n", bgJob -> commandInput);
-=======
-                // fprintf(fp,"%s already running\n", bgJob -> commandInput);
->>>>>>> Stashed changes
                 // changeFGBG(head, job_id, 1); // set job to BG 
                 // fprintf(stderr,"Running: %s", bgJob -> commandInput);
                 free(cmd);
@@ -544,9 +506,10 @@ void pennShredder(char* buffer){
                 // Send a SIGCONT signal to the process to continue it in the background
                 changeStatus(head, job_id, 2); // set job to running
                 changeFGBG(head, job_id, 1); // set job to BG 
-                char argbuf[strlen(bgJob -> commandInput) + 1];
+                char argbuf[1024];
+                argbuf[0]='\0';
                 sprintf(argbuf, "Running: %s", bgJob -> commandInput);
-                f_write(PSTDOUT_FILENO, argbuf, strlen(bgJob -> commandInput) + 1);
+                f_write(PSTDOUT_FILENO, argbuf, strlen(argbuf) + 1);
                 // fprintf(stderr,"Running: %s", bgJob -> commandInput);
                 // printf("TEST\n");
                 p_kill(bgJob -> myPid, S_SIGCONT); // killpg(bgJob -> pgid, SIGCONT);
@@ -595,7 +558,10 @@ void pennShredder(char* buffer){
                 p_waitpid(pid_fg, &status, FALSE);
                 
                 if(W_WIFSTOPPED(status)){ 
-                    fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    // fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    char argbuf[strlen(fgJob->commandInput)+1];
+                    sprintf(argbuf, "Stopped: %s\n", fgJob->commandInput); 
+                    f_write(PSTDOUT_FILENO, argbuf, strlen(fgJob->commandInput) + 1);
                     fgJob -> status = STOPPED; 
                     // if (bufferWaiting){
                     //     //PRINT BUFFER
@@ -623,7 +589,10 @@ void pennShredder(char* buffer){
                 p_waitpid(pid_fg, &status, FALSE);
 
                 if(W_WIFSTOPPED(status)){ 
-                    fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    // fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    char argbuf[50];
+                    sprintf(argbuf, "Stopped: %s\n", fgJob->commandInput); 
+                    f_write(PSTDOUT_FILENO, argbuf, strlen(fgJob->commandInput) + 1);
                     fgJob -> status = STOPPED; 
                     // if (bufferWaiting){
                     //     //PRINT BUFFER
@@ -657,7 +626,12 @@ void pennShredder(char* buffer){
                 p_waitpid(pid_fg, &status, FALSE);
                 
                 if(W_WIFSTOPPED(status)){ 
-                    fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    // fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+
+                    char argbuf[50];
+                    sprintf(argbuf, "Stopped: %s\n", fgJob->commandInput); 
+                    f_write(PSTDOUT_FILENO, argbuf, strlen(fgJob->commandInput) + 1);
+
                     fgJob -> status = STOPPED; 
                     // if (bufferWaiting){
                     //     //PRINT BUFFER
@@ -685,7 +659,13 @@ void pennShredder(char* buffer){
                 p_waitpid(pid_fg, &status, FALSE);
 
                 if(W_WIFSTOPPED(status)){ 
-                    fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    
+                    // fprintf(stderr, "Stopped: %s\n", fgJob -> commandInput); 
+                    char argbuf[50];
+                    sprintf(argbuf, "Stopped: %s\n", fgJob->commandInput); 
+                    f_write(PSTDOUT_FILENO, argbuf, strlen(fgJob->commandInput) + 1);
+
+
                     fgJob -> status = STOPPED; 
                     // if (bufferWaiting){
                     //     //PRINT BUFFER
@@ -711,10 +691,10 @@ void pennShredder(char* buffer){
     // check for JOBS builtin
     if(strcmp("jobs", cmd -> commands[0][0]) == 0){
         // if head null, print no jobs found
-        char argbuf[4096];
         if(head == NULL){
-            sprintf(argbuf, "%s already running\n", "No jobs present in the queue\n");
-            f_write(PSTDOUT_FILENO, argbuf, strlen("No jobs present in the queue\n") + 1);
+            char argbuf[strlen("No jobs present in the queue \n")+1];
+            sprintf(argbuf, "%s \n", "No jobs present in the queue\n");
+            f_write(PSTDOUT_FILENO, argbuf, strlen("No jobs present in the queue \n") + 1);
             // fprintf(stderr, "No jobs present in the queue\n");
             free(cmd);
             return;
@@ -728,8 +708,10 @@ void pennShredder(char* buffer){
                     if (len > 0 && current->commandInput[len - 1] == '\n') {
                         current->commandInput[len - 1] = '\0';
                     }
+                    char argbuf[1024];
+                    argbuf[0]='\0';
                     sprintf(argbuf, "[%d] %s (%s)\n", current -> JobNumber, current->commandInput, statusToStr(current -> status));
-                    f_write(PSTDOUT_FILENO, argbuf, 4096);
+                    f_write(PSTDOUT_FILENO, argbuf, strlen(argbuf)+1);
                     // fprintf(stderr, "[%d] %s (%s)\n", current -> JobNumber, current->commandInput, statusToStr(current -> status));
                     noBg = 1;
                 }
@@ -755,15 +737,15 @@ void pennShredder(char* buffer){
     int n = cmd -> num_commands;  
     if (cmd -> is_background){
         IS_BG = 1; 
-        char argbuf[strlen("Running:") + 1];
+        char argbuf[1024];
+        argbuf[0]='\0';
         sprintf(argbuf, "Running:");
-        f_write(PSTDOUT_FILENO, argbuf, strlen("Running:") + 1);
+        f_write(PSTDOUT_FILENO, argbuf, strlen(argbuf) + 1);
         print_parsed_command(cmd);    
     }
 
     int status = 0;
 
-<<<<<<< Updated upstream
     // create process via priority
     if(strcmp("nice", cmd -> commands[0][0]) == 0){
         shellBFunc(cmd);
@@ -772,44 +754,10 @@ void pennShredder(char* buffer){
         }
     } else {
         shellBFunc(cmd);
-=======
-    // spawn builtin
-    if (strcmp(cmd->commands[0][0], "sleep") == 0) {
-        curr_pid = p_spawn(sleepFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "echo") == 0) {
-        curr_pid = p_spawn(echoFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "busy") == 0) {
-        curr_pid = p_spawn(busyFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "ps") == 0) {
-        curr_pid = p_spawn(psFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "kill") == 0) {
-        curr_pid = p_spawn(killFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "zombify") == 0) {
-        curr_pid = p_spawn(zombify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "orphanify") == 0) {
-        curr_pid = p_spawn(orphanify, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "logout") == 0) {
-        logout();
-        return;
-    } else if (strcmp(cmd->commands[0][0], "man") == 0) {
-        man();
-        return;
-    } else if (strcmp(cmd->commands[0][0], "cat") == 0) {
-        curr_pid = p_spawn(catFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "ls") == 0) {
-        curr_pid = p_spawn(lsFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "touch") == 0) {
-        curr_pid = p_spawn(touchFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "mv") == 0) {
-        curr_pid = p_spawn(mvFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "cp") == 0) {
-        curr_pid = p_spawn(cpFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "rm") == 0) {
-        curr_pid = p_spawn(rmFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
-    } else if (strcmp(cmd->commands[0][0], "chmod") == 0) {
-        curr_pid = p_spawn(chmodFunc, cmd->commands[0], PSTDIN_FILENO, PSTDOUT_FILENO);
->>>>>>> Stashed changes
     }
+
+    if(retFlag)
+        return;
 
     // for loop to execute the commands line by line
     struct Job *new_job = NULL; // create a new job each time penn shredder is run
@@ -828,20 +776,15 @@ void pennShredder(char* buffer){
         // printf("FG process detected \n");
         // tc set to fg
         fgpid = curr_pid; // use for signal handling, and identifying the process in the foreground
-
-        printf("printing curr_pid: %d\n", curr_pid);
         
         newpid = p_waitpid(curr_pid, &status, FALSE); 
 
-        printf("printing newpid: %d\n", newpid);
-
-        // printf("pwait FG supposed to be run by now \n");
-
         // sigprocmask(SIG_UNBLOCK, &mask, NULL);
         if (W_WIFSTOPPED(status) && new_job -> status == RUNNING){
-            char argbuf[strlen(new_job->commandInput) + 1];
-            sprintf(argbuf, "Stopped: %s\n", new_job->commandInput);
-            f_write(PSTDOUT_FILENO, argbuf, strlen(new_job->commandInput) + 1);
+            char argbuf[1024];
+            argbuf[0]='\0';
+            sprintf(argbuf, "\nStopped: %s\n", new_job->commandInput);
+            f_write(PSTDOUT_FILENO, argbuf, strlen(new_job->commandInput)*3-2);
             f_write(PSTDOUT_FILENO, "\n", strlen("\n"));
             // fprintf(stderr, "\nStopped: %s", new_job-> commandInput); 
             new_job -> status = STOPPED; 
@@ -907,9 +850,10 @@ void pennShell(){
 
             if (numBytes == -1) {
                 p_perror("read");
-                // freeAllJobs(head);
-                // freeAllJobs(current);
-                exit(EXIT_FAILURE);
+                p_kill(fgpid, S_SIGTERM);
+                freeAllJobs(head);
+                freeAllJobs(current);
+                // exit(EXIT_FAILURE);
             }
 
             // loop through list
@@ -936,11 +880,12 @@ void pennShell(){
                     current = current->next;
                 } while(current != NULL);               
 
-                if (W_WIFSTOPPED(status) && current -> status == RUNNING){
+                if (W_WIFSTOPPED(status) && current->status == RUNNING){
                     // pkill
-                    char argbuf[strlen(current -> commandInput) + 1];
-                    sprintf(argbuf, "Stopped: %s\n", current -> commandInput); 
-                    f_write(PSTDOUT_FILENO, argbuf, strlen(current -> commandInput) + 1);
+                    char argbuf[strlen(current->commandInput) + 1];
+                    // printf("Stopped hacky: %s\n", current->commandInput);
+                    sprintf(argbuf, "Stopped: %s\n", current->commandInput); 
+                    f_write(PSTDOUT_FILENO, argbuf, strlen(current->commandInput) + 1);
                     current -> status = STOPPED; 
                     // if (bufferWaiting){
                     //     //PRINT BUFFER
@@ -966,7 +911,9 @@ void pennShell(){
                 }
                 else if(W_WIFEXITED(status) && current -> status == RUNNING){
                     char argbuf[4096];
-                    sprintf(argbuf, "Finished: %s\n", current -> commandInput); 
+                    // char str [4096];
+                    // strcat(str,"Finished:");
+                    sprintf(argbuf, "Finished: %s\n", current->commandInput); 
                     f_write(PSTDOUT_FILENO, argbuf, 4096);
                     head = removeJob(head, current->JobNumber);
                     

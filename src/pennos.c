@@ -28,23 +28,10 @@ int main(int argc, char** argv) {
         p_perror("invalid");
         p_exit();
     }
-<<<<<<< Updated upstream
-    // else if (argc == 2){
-        
-    //     FILE *fp = fopen(file, "w");
-    //     fprintf(fp, "Hello, world!\n");
-    //     fclose(fp);
-    // }
-    // else if (argc ==3){
-    //     FILE *fp = fopen(argv[2], "w");
-    //     fprintf(fp, "Hello, world!\n");
-    //     // fclose(fp);
-    // }
-=======
     else if (argc == 2){
         // file = "log";
         shellargs=2;
-        FILE *fp = fopen("logs", "w");
+        FILE *fp = fopen("log", "w");
         fprintf(fp, "PennOS Logs\n");
         fclose(fp);
     }
@@ -55,7 +42,6 @@ int main(int argc, char** argv) {
         fprintf(fp, "PennOS Logs\n");
         fclose(fp);
     }
->>>>>>> Stashed changes
     char *path = argv[1];
     fs = fs_mount(path);
     if (fs == NULL) {
@@ -66,8 +52,6 @@ int main(int argc, char** argv) {
     // signal(SIGINT, SIG_IGN); // Ctrl-C
     signal(SIGQUIT, SIG_IGN); /* Ctrl-\ */
     
-    // signal(SIGTSTP, SIG_IGN); // Ctrl-Z
-
     initContext();
 
     activeProcess = (Process*) malloc(sizeof(Process));
@@ -75,7 +59,7 @@ int main(int argc, char** argv) {
     activeProcess->next = NULL;
 
     char* argv1 = malloc(1 * sizeof("penn-shell"));
-    strcpy(argv1, "penn-shell");
+    // strcpy(argv1, "penn-shell");
     char* argvNew[] = {argv1, NULL};
 
     // check if can be replaced by k proc create (avoids need for if, and diff priority)

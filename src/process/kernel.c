@@ -138,6 +138,7 @@ int k_process_kill(Process *p, int signal){
         for(int i=0; i < p->pcb->numChild; i++){
             // printf("SIGTERM %d\n", i);
             Process *child = findProcessByPid(p->pcb->childPids[i]);
+            // enqueueOrphan(child);
             k_process_kill(child, S_SIGTERM);
         }
     }
@@ -189,7 +190,6 @@ int k_process_kill(Process *p, int signal){
         p->pcb->changedStatus = 0;
         if (p->pcb->status == STOPPED){
             dequeueStopped(p);
-<<<<<<< Updated upstream
             if(fgpid == 1){ // if shell in foreground (bg command)
                 // printf("Mark 3\n");
                 p->pcb->bgFlag = 1;
@@ -198,6 +198,28 @@ int k_process_kill(Process *p, int signal){
                     enqueueBlocked(p);
                 } 
                 else{
+                    char buf[50];
+                    buf[0] = '\0';
+                    char s[50];
+                    sprintf(s, "[%d]\t", ticks);
+                    strcat(buf, s);
+                    strcat(buf,"SCHEDULE\t");
+                    sprintf(s, "%d\t", p->pcb->pid);
+                    strcat(buf,s);
+                    if (p->pcb->priority == PRIORITY_HIGH)
+                        sprintf(s, "%s\t", "HIGH");
+                    else if (p->pcb->priority== PRIORITY_LOW)
+                        sprintf(s, "%s\t", "LOW");
+                    else if (p->pcb->priority == PRIORITY_MED)
+                        sprintf(s, "%s\t", "MEDIUM");
+                    strcat(buf,s);
+                    if (p->pcb->argument != NULL){
+                        sprintf(s, "%s\t", p->pcb->argument);
+                        strcat(buf,s);
+                    }
+                        
+                    strcat(buf,"\n");
+                    writeLogs(buf);
                     enqueue(p);
                 }
             } else { // if shell not in foreground (fg command)
@@ -210,39 +232,6 @@ int k_process_kill(Process *p, int signal){
                     p->pcb->status = RUNNING;
                     enqueue(p);
                 }
-=======
-            p->pcb->changedStatus = 0;
-            p->pcb->bgFlag = 1;
-            p->pcb->status = RUNNING;
-            if(p->pcb->sleep_time_remaining > 0){
-                enqueueBlocked(p);
-            } else{
-
-                char buf[50];
-                buf[0] = '\0';
-                char s[50];
-                sprintf(s, "[%d]\t", ticks);
-                strcat(buf, s);
-                strcat(buf,"SCHEDULE\t");
-                sprintf(s, "%d\t", p->pcb->pid);
-                strcat(buf,s);
-                if (p->pcb->priority == PRIORITY_HIGH)
-                    sprintf(s, "%s\t", "HIGH");
-                else if (p->pcb->priority== PRIORITY_LOW)
-                    sprintf(s, "%s\t", "LOW");
-                else if (p->pcb->priority == PRIORITY_MED)
-                    sprintf(s, "%s\t", "MEDIUM");
-                strcat(buf,s);
-                if (p->pcb->argument != NULL){
-                    sprintf(s, "%s\t", p->pcb->argument);
-                    strcat(buf,s);
-                }
-                    
-                strcat(buf,"\n");
-                writeLogs(buf);
-
-                enqueue(p);
->>>>>>> Stashed changes
             }
         } else if (p->pcb->status == BLOCKED && p->pcb->sleep_time_remaining >0){
             p->pcb->bgFlag = 0;
@@ -360,7 +349,6 @@ Process *findProcessByPid(int pid){
             // printf("MED exiting find process pid\n");
             return temp;
         }
-
         temp = temp->next;
     }
 
@@ -375,8 +363,9 @@ Process *findProcessByPid(int pid){
 
     temp = blockedQhead;
     while(temp != NULL){
+        printf("pid of med q proc %d %d\n", temp->pcb->pid, pid);
         if(temp->pcb->pid == pid){
-            // printf("BLOCKED exiting find process pid\n");
+            printf("BLOCKED exiting find process pid\n");
             return temp;
         }
         temp = temp->next;
@@ -385,7 +374,7 @@ Process *findProcessByPid(int pid){
     temp = stoppedQhead;
     while(temp != NULL){
         if(temp->pcb->pid == pid){
-            // printf("Stopped exiting find process pid %s\n", temp->pcb->argument);
+            printf("Stopped exiting find process pid %s\n", temp->pcb->argument);
             return temp;
         }
         temp = temp->next;
@@ -398,6 +387,6 @@ Process *findProcessByPid(int pid){
         }
         temp = temp->next;
     }
-    printf("Didn't find the process I was looking for.\n");
+    // printf("Didn't find the process I was looking for.\n");
     return NULL;
 }

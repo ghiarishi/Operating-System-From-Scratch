@@ -17,13 +17,12 @@ Process *highQtail = NULL;
 Process *medQhead = NULL;
 Process *medQtail = NULL;
 Process *lowQhead = NULL; 
-Process *lowQtail = NULL;
+Process *lowQtail = NULL; 
+Process *orphanQhead = NULL; 
+Process *orphanQtail = NULL;
 
 Process *blockedQhead = NULL; 
 Process *blockedQtail = NULL;
-
-Process *tempHead = NULL;
-Process *tempTail = NULL;
 
 Process *stoppedQhead = NULL; 
 Process *stoppedQtail = NULL;
@@ -34,6 +33,20 @@ Process *zombieQtail = NULL;
 void terminateProcess(void){
 
     k_process_cleanup(activeProcess);
+    char buf[50];
+    buf[0] = '\0';
+    char s[10];
+    sprintf(s, "[%d]\t", ticks);
+    strcat(buf, s);
+    strcat(buf,"EXITED\t");
+    sprintf(s, "%d\t", activeProcess->pcb->pid);
+    strcat(buf,s);
+    sprintf(s, "%d\t", activeProcess->pcb->priority);
+    strcat(buf,s);
+    strcat(buf, activeProcess->pcb->argument);
+    strcat(buf,s);
+    strcat(buf,"\n");
+    writeLogs(buf);
 
     setcontext(&schedulerContext);
 }
@@ -215,10 +228,6 @@ void enqueueStopped(Process* newProcess){
     }
     newProcess->pcb->status = STOPPED;
     newProcess->pcb->changedStatus = 1;
-<<<<<<< Updated upstream
-    // printf("Processes in stopped Q\n");
-    // iterateQueue(stoppedQhead);
-=======
     
     char buf[50];
     buf[0] = '\0'; 
@@ -235,9 +244,6 @@ void enqueueStopped(Process* newProcess){
     strcat(buf,"\n");
     writeLogs(buf);
 
-    // printf("Processes in stopped Q\n");
-    iterateQueue(stoppedQhead);
->>>>>>> Stashed changes
 }   
 
 void enqueueZombie(Process* newProcess){
@@ -260,6 +266,36 @@ void enqueueZombie(Process* newProcess){
     sprintf(s, "[%d]\t", ticks);
     strcat(buf, s);
     strcat(buf,"ZOMBIE\t");
+    sprintf(s, "%d\t", newProcess->pcb->pid);
+    strcat(buf,s);
+    sprintf(s, "%d\t", newProcess->pcb->priority);
+    strcat(buf,s);
+    sprintf(s, "%s", newProcess->pcb->argument);
+    strcat(buf,s);
+    strcat(buf,"\n");
+    writeLogs(buf);
+}
+
+void enqueueOrphan(Process* newProcess){
+    newProcess->pcb->changedStatus = 1;
+    // printf("%s enqueued into orphan Q!\n", newProcess->pcb->argument);
+    if (orphanQhead == NULL) {
+        orphanQhead = newProcess;
+        orphanQtail = newProcess;
+    }
+    else {
+        orphanQtail->next = newProcess;
+        orphanQtail = newProcess;
+    }
+    // printf("Processes in orphan Q\n");
+    // iterateQueue(zombieQhead);
+
+    char buf[50];
+    buf[0] = '\0'; 
+    char s[10];
+    sprintf(s, "[%d]\t", ticks);
+    strcat(buf, s);
+    strcat(buf,"ORPHAN\t");
     sprintf(s, "%d\t", newProcess->pcb->pid);
     strcat(buf,s);
     sprintf(s, "%d\t", newProcess->pcb->priority);
@@ -346,7 +382,6 @@ void enqueue(Process* newProcess) {
             // strcat(buf,"\n");
             // writeLogs(buf);
             if (medQhead == NULL) {
-                printf("mark 2\n");
                 medQhead = newProcess;
                 medQtail = newProcess;
             }
@@ -354,16 +389,8 @@ void enqueue(Process* newProcess) {
                 medQtail->next = newProcess;
                 medQtail = newProcess;
             }
-<<<<<<< Updated upstream
-            // printf("Processes in med Q\n");
-            // iterateQueue(medQhead);
-=======
-
-            // printf("Processes in med Q\n");
-            // iterateQueue(medQhead);
         }
             
->>>>>>> Stashed changes
     }
 
 }
@@ -400,6 +427,45 @@ void dequeueZombie(Process* newProcess){
             // freeOneJob(&removed);
             // printf("Processes in dequeue zombie Q\n");
             // iterateQueue(zombieQhead);
+            return;
+        }
+        current = current -> next;
+    }
+
+}
+
+void dequeueOrphan(Process* newProcess){
+    // if first job, set the new head to the next job and free head
+    
+    if (orphanQhead != NULL && orphanQhead->pcb->pid == newProcess->pcb->pid) {
+        Process *old_head = orphanQhead;
+        orphanQhead = orphanQhead->next;
+        // printf("%s dequeued from orphan Q head\n", newProcess->pcb->argument);
+        old_head->next = NULL;
+
+        // printf("Processes in orphan Q AFTER IMP\n");
+        // iterateQueue(orphanQhead);
+        return;
+    }
+
+    // iterate through all jobs until job of interest is reached
+    Process *current = orphanQhead;
+    while (current -> next != NULL){
+
+        // if the next job is the one, replace next with the one after that
+        if (current -> next -> pcb -> pid == newProcess->pcb->pid){
+            // printf("%s deququed from orphan Q\n", newProcess->pcb->argument);
+            Process *removed = current -> next;
+            Process *newNext = removed -> next;
+            if (newNext == NULL){
+                orphanQtail = current;
+            }
+            // if else for stopped or terminated, act differently for both
+            current -> next = newNext;
+            removed -> next = NULL; 
+            // freeOneJob(&removed);
+            // printf("Processes in dequeue orphan Q\n");
+            // iterateQueue(orphanQhead);
             return;
         }
         current = current -> next;
@@ -644,7 +710,7 @@ void initContext(void){
 }
 
 // SIGALRM
-void alarmHandler(int signum){
+void alarmHandler(void){
     ticks++;
     Process *temp = blockedQhead;
     int* array = malloc(20 * sizeof(int));

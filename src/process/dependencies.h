@@ -23,18 +23,12 @@ extern Process *zombieQhead;
 extern Process *zombieQtail;
 extern Process *orphanQhead; 
 extern Process *orphanQtail;
-extern Process *tempHead;
-extern Process *tempTail;
 
 extern int ticks; 
 extern int fgpid;
 static const int quantum = 100000;
-<<<<<<< Updated upstream
-// extern FILE *fp;
-=======
 
 extern FILE *fp;
 extern int shellargs;
 
 void writeLogs(char *logs);
->>>>>>> Stashed changes

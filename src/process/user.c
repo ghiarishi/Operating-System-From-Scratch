@@ -57,9 +57,11 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         argc++;
         i ++;
     }
+
     if(strcmp(argv[0], "nice") == 0){
         removeNicePrefix(argv, 4);
         argc = 2;
+        // printf("printing args ")
     }
 
 
@@ -80,14 +82,10 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         activeProcess->pcb->childPids[nums] = pid_new;
         makecontext(&newProcess->pcb->context, func, 2, argc, cmd->commands[0]);
     }
-<<<<<<< Updated upstream
-=======
     // printf("newProcess->pid: %d\n", newProcess->pcb->pid);
     char buf[50];
     buf[0] = '\0'; 
     char s[10];
-    sprintf(s, "[%d]\t", ticks);
-    strcat(buf, s);
     sprintf(s, "[%d]\t", ticks);
     strcat(buf, s);
     strcat(buf,"CREATED\t");
@@ -118,7 +116,6 @@ pid_t p_spawn(void (*func)(), char *argv[], int fd0, int fd1) {
         strcat(buf,newProcess->pcb->argument);
     strcat(buf,"\n");
     writeLogs(buf);
->>>>>>> Stashed changes
     enqueue(newProcess);
 
     return pid_new;
@@ -139,7 +136,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                 // printf("mark 3\n");
                 // printf("ARG ARG ARG %s\n", zombieQhead->pcb->argument);
                 dequeueZombie(zombieQhead);
-                // printf("mark 4\n");
+                // enqueueOrphan(zombieQhead);
                 for(int i = 0; i < activeProcess->pcb->numChild; i++){
                     // printf("child pids are: %d\n", activeProcess->pcb->childPids[i]);
                     if(activeProcess -> pcb -> childPids[i] == pidRet){
@@ -159,6 +156,8 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
                     curr->pcb->changedStatus = 0;
                     *wstatus = zombieQhead->pcb->status;
                     dequeueZombie(curr);
+                    
+                    // enqueueOrphan(curr);
                     for(int i = 0; i < activeProcess->pcb->numChild; i++){
                         if(activeProcess -> pcb -> childPids[i] == pid){
                             activeProcess ->pcb->childPids[i] = -2;
@@ -227,11 +226,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig){
-<<<<<<< Updated upstream
-    // printf("p_kill, pid is %d\n",pid);
-=======
-    // printf("p_kil l, pid is %d\n",pid);
->>>>>>> Stashed changes
+    
     Process *proc = findProcessByPid(pid);
     if(proc == NULL){
         p_perror("process not found\n");
@@ -241,63 +236,25 @@ int p_kill(pid_t pid, int sig){
     // printf("%d\n", sig);
     switch(sig) {
         case S_SIGTERM:
-            // printf("SIGTERM \n");
-            // char buf[20];
-            // buf[0] = '\0';
-            // char s[10];
-            // // strcat(buf,"EXITED\t");
-            // sprintf(s, "%d\t", proc->pcb->pid);
-            // strcat(buf,s);
-            // sprintf(s, "%d\t", proc->pcb->priority);
-            // strcat(buf,s);
-            // strcat(buf,proc->pcb->argument);
-            // writeLogs(buf);
+
+            return k_process_kill(proc, S_SIGTERM);
 
         case S_SIGCONT:
-            // printf("SIGCONT\n");
-            // char buf[20];
-            // buf[0] = '\0';
-            // char s[10];
-            // strcat(buf,"CONTINUED\t");
-            // sprintf(s, "%d\t", proc->pcb->pid);
-            // strcat(buf,s);
-            // sprintf(s, "%d\t", proc->pcb->priority);
-            // strcat(buf,s);
-            // strcat(buf,proc->pcb->argument);
-            // writeLogs(buf);
+    
             return k_process_kill(proc, S_SIGCONT);
 
         case S_SIGSTOP:
-            // printf("SIGSTOP \n");
-            // char buf[20];
-            // buf[0] = '\0';
-            // char s[10];
-            // strcat(buf,"CONTINUED\t");
-            // sprintf(s, "%d\t", proc->pcb->pid);
-            // strcat(buf,s);
-            // sprintf(s, "%d\t", proc->pcb->priority);
-            // strcat(buf,s);
-            // strcat(buf,proc->pcb->argument);
-            // writeLogs(buf);
             
             return k_process_kill(proc, S_SIGSTOP);
     }
     return -1;
 }
 
-<<<<<<< Updated upstream
-void p_sleep(unsigned int ticks){
-    // printf("Just entered %s\n", activeProcess->pcb->argument);
-    dequeue(activeProcess);
-    // printf("MARK 1\n");
-    activeProcess->pcb->sleep_time_remaining = ticks;
-=======
 void p_sleep(unsigned int ticks1){
     // printf("Just entered %s\n", activeProcess->pcb->argument);
     dequeue(activeProcess);
     // printf("MARK 1\n");
     activeProcess->pcb->sleep_time_remaining = ticks1;
->>>>>>> Stashed changes
     // printf("MARK 2\n");
     enqueueBlocked(activeProcess);
     // printf("MARK 3\n");
@@ -306,27 +263,14 @@ void p_sleep(unsigned int ticks1){
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
     }
-<<<<<<< Updated upstream
-=======
-    char buf[50];
-    buf[0] = '\0';
-    char s[10];
-    sprintf(s, "[%d]\t", ticks);
-    strcat(buf, s);
-    strcat(buf,"EXITED\t");
-    sprintf(s, "%d\t", activeProcess->pcb->pid);
-    strcat(buf,s);
-    sprintf(s, "%d\t", activeProcess->pcb->priority);
-    strcat(buf,s);
-    strcat(buf,activeProcess->pcb->argument);
-    writeLogs(buf);
+    
     // printf("Finished with %s\n", activeProcess->pcb->argument);
->>>>>>> Stashed changes
 }
 
 void p_exit(void){
     // printf("p_exit\n");
     //do cleanup to avoid memory leaks
+    k_process_cleanup(activeProcess);
     // fclose(fp);
     return;
 }
@@ -337,11 +281,25 @@ int p_nice(pid_t pid, int priority){
     if (proc == NULL){
         return -1;
     }
-<<<<<<< Updated upstream
     switch(proc->pcb->status){
         case RUNNING:
             dequeue(proc);
+            int old = proc->pcb->priority;
             proc->pcb->priority = priority;
+            char buf[50];
+            buf[0] = '\0';
+            char s[50];
+            sprintf(s, "[%d]\t", ticks);
+            strcat(buf, s);
+            sprintf(s, "[%d]\t", ticks);
+            strcat(buf, s);
+            strcat(buf,"NICE\t");
+            sprintf(s, "%d\t", old);
+            strcat(buf,s);
+            sprintf(s, "%d\t", priority);
+            strcat(buf,s);
+            strcat(buf,proc->pcb->argument);
+            writeLogs(buf);
             enqueue(proc);
             break;
 
@@ -358,29 +316,5 @@ int p_nice(pid_t pid, int priority){
     }
        
     return 1;
-=======
-    dequeue(proc);
-    int old = proc->pcb->priority;
-    proc->pcb->priority = priority;
-
-    char buf[50];
-    buf[0] = '\0';
-    char s[50];
-    sprintf(s, "[%d]\t", ticks);
-    strcat(buf, s);
-    sprintf(s, "[%d]\t", ticks);
-    strcat(buf, s);
-    strcat(buf,"NICE\t");
-    sprintf(s, "%d\t", old);
-    strcat(buf,s);
-    sprintf(s, "%d\t", priority);
-    strcat(buf,s);
-    strcat(buf,proc->pcb->argument);
-    writeLogs(buf);
-
-    // fprintf(fp, "[%d] NICE PID %d %d %s", ticks, old, priority, proc->pcb->argument);
-    enqueue(proc);
-    return 0;
->>>>>>> Stashed changes
 }
 

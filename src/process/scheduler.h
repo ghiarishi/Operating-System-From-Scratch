@@ -32,11 +32,13 @@ void enqueueStopped(Process* newProcess);
 void enqueue(Process* newProcess);
 void enqueueZombie(Process* newProcess);
 void dequeueZombie(Process* newProcess);
+void enqueueOrphan(Process* newProcess);
+void dequeueOrphan(Process* newProcess);
 void dequeueBlocked(Process* newProcess);
 void dequeueStopped(Process* newProcess);
 void dequeue(Process* newProcess);
 void iterateQueue(Process *head);
-void alarmHandler(int signum);
+void alarmHandler();
 void setTimer(void);
 void freeStacks(struct pcb *p);
 
