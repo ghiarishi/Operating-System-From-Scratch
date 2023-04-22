@@ -27,6 +27,6 @@ extern Process *tempHead;
 extern Process *tempTail;
 
 extern int ticks; 
+extern int fgpid;
 static const int quantum = 100000;
-
-extern FILE *fp;
+// extern FILE *fp;

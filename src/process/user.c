@@ -151,7 +151,7 @@ pid_t p_waitpid(pid_t pid, int *wstatus, bool nohang) {
 }
 
 int p_kill(pid_t pid, int sig){
-    printf("p_kill, pid is %d\n",pid);
+    // printf("p_kill, pid is %d\n",pid);
     Process *proc = findProcessByPid(pid);
     if(proc == NULL){
         printf("issue here\n");
@@ -181,19 +181,17 @@ void p_sleep(unsigned int ticks1){
     activeProcess->pcb->sleep_time_remaining = ticks1;
     printf("MARK 2\n");
     enqueueBlocked(activeProcess);
-    printf("MARK 3\n");
     swapcontext(activeContext, &schedulerContext);
     if(activeProcess->pcb->sleep_time_remaining > 0){
         dequeue(activeProcess);
         enqueueBlocked(activeProcess);
     }
-    printf("Finished with %s\n", activeProcess->pcb->argument);
 }
 
 void p_exit(void){
     // printf("p_exit\n");
     //do cleanup to avoid memory leaks
-    fclose(fp);
+    // fclose(fp);
     return;
 }
 
@@ -205,7 +203,7 @@ int p_nice(pid_t pid, int priority){
     dequeue(proc);
     int old = proc->pcb->priority;
     proc->pcb->priority = priority;
-    fprintf(fp, "[%d] NICE PID %d %d %s", ticks, old, priority, proc->pcb->argument);
+    fprintf(stderr, "[%d] NICE PID %d %d %s", ticks, old, priority, proc->pcb->argument);
     enqueue(proc);
     return 0;
 }
