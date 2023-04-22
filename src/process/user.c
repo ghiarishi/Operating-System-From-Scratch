@@ -191,7 +191,7 @@ void p_sleep(unsigned int ticks1){
 void p_exit(void){
     // printf("p_exit\n");
     //do cleanup to avoid memory leaks
-    fclose(fp);
+    // fclose(fp);
     return;
 }
 
@@ -203,7 +203,7 @@ int p_nice(pid_t pid, int priority){
     dequeue(proc);
     int old = proc->pcb->priority;
     proc->pcb->priority = priority;
-    fprintf(fp, "[%d] NICE PID %d %d %s", ticks, old, priority, proc->pcb->argument);
+    fprintf(stderr, "[%d] NICE PID %d %d %s", ticks, old, priority, proc->pcb->argument);
     enqueue(proc);
     return 0;
 }

@@ -21,23 +21,23 @@ void setTimerAlarmHandler(void) {
 int main(int argc, char** argv) {
     // mount global filesystem
     
-    char file[] = "log";
+    // char file[] = "log";
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <filesystem>\n", argv[0]);
         // exit(EXIT_FAILURE);
         p_exit();
     }
-    else if (argc == 2){
+    // else if (argc == 2){
         
-        FILE *fp = fopen(file, "w");
-        fprintf(fp, "Hello, world!\n");
-        fclose(fp);
-    }
-    else if (argc ==3){
-        FILE *fp = fopen(argv[2], "w");
-        fprintf(fp, "Hello, world!\n");
-        // fclose(fp);
-    }
+    //     FILE *fp = fopen(file, "w");
+    //     fprintf(fp, "Hello, world!\n");
+    //     fclose(fp);
+    // }
+    // else if (argc ==3){
+    //     FILE *fp = fopen(argv[2], "w");
+    //     fprintf(fp, "Hello, world!\n");
+    //     // fclose(fp);
+    // }
     char *path = argv[1];
     fs = fs_mount(path);
     if (fs == NULL) {
@@ -73,6 +73,6 @@ int main(int argc, char** argv) {
     // fprintf(stderr, "Back in the main context\n");
 
     // freeStacks();
-    fclose(fp);
+    // fclose(fp);
     return 0;
 }
