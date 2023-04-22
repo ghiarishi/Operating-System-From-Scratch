@@ -1,10 +1,10 @@
 # Penn - OS
 
-## Name and PennKey:
-Partner 1: Rishi Ghia : ghiar : 24017117
-Partner 2: Tanvi Gupta : guptanvi : 45865853
-Partner 3: Divya Kumari : divykum2 : 47522818
-Partner 4: Andrew Zhy : andrz : 12401358
+## Name and PennKey: \\ 
+Partner 1: Rishi Ghia : ghiar : 24017117 \\
+Partner 2: Tanvi Gupta : guptanvi : 45865853 \\ 
+Partner 3: Divya Kumari : divykum2 : 47522818 \\ 
+Partner 4: Andrew Zhy : andrz : 12401358 \\ 
 
 ## List of Submitted Source Files: 
 
