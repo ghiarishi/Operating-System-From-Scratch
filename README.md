@@ -1,42 +1,6 @@
 # UNIX-Like Operating System from Scratch
 
-## List of All Source Files: 
-
--> root folder
-  pennos.c
-  pennfat.c
-  README.md
-  PENN OS COMPANION DOCUMENT
-  -> folder common
-    errno.c
-    errno.h
-  -> folder fs
-    fat.c
-    fat.h
-    user.c
-    user.h
-  -> folder pennfat
-    pennfat_utils.c
-    pennfat_utils.h
-  -> process
-    dependencies.c
-    dependencies.h
-    kernel.c
-    kernel.h
-    parser.c
-    parser.h
-    pcb.c
-    pcb.h
-    scheduler.c
-    scheduler.h
-    shell.c
-    shell.h
-    user_functions.c
-    user_functions.h
-    user.c
-    user.h
-
-## Overview of Work Accomplished:
+## Overview of Code and Functionality:
 
 ### How to run the program: 
 1. Start the Docker
